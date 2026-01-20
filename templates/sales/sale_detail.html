@@ -1,0 +1,834 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_business.ui_labels.sale }} {{ sale.code|default:sale.id }} - BizControl{% endblock %}
+
+{% block extra_head %}
+  <link
+    href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css"
+    rel="stylesheet"
+  >
+  <style>
+    .sale-hero {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .sale-hero .pill {
+      background: #eef6f9;
+      color: #1f6f8b;
+      font-weight: 600;
+    }
+
+    .sale-card-title {
+      font-weight: 600;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sale-form-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .form-icon {
+      position: relative;
+    }
+
+    .form-icon .form-control,
+    .form-icon .form-select {
+      padding-left: 44px;
+    }
+
+    .form-icon .ts-wrapper .ts-control {
+      padding-left: 44px;
+    }
+
+    .form-icon i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9aa7b2;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .form-switch .form-check-input {
+      margin-top: 0;
+    }
+
+    .sale-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="sale-hero justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ current_business.ui_labels.sale }} {{ sale.code|default:sale.id }}</h1>
+      <div class="text-muted small">Estado: {{ sale.get_status_display }} · Pagamento: {{ sale.get_payment_status_display }}</div>
+      <div class="text-muted small">Entrega: {{ sale.get_delivery_status_display }}</div>
+      <div class="text-muted small">Data: {{ sale.sale_date|date:"d/m/Y H:i" }}</div>
+      {% if sale.sale_type == "deposit" %}
+        <div class="text-muted small">
+          Deposito pago: {{ deposit_paid|default:0|floatformat:2 }} MZN · Em aberto: {{ deposit_balance|default:0|floatformat:2 }} MZN
+        </div>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <span class="pill">
+        Total:
+        {% if sale.status == "draft" %}
+          {{ draft_totals.total|floatformat:2 }} MZN
+        {% else %}
+          {{ sale.total|floatformat:2 }} MZN
+        {% endif %}
+      </span>
+      <a class="btn btn-outline-secondary" href="{% url 'sales:list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="post" class="sale-form-grid" id="sale-header-form" novalidate{% if sale.status != "draft" %} data-read-only="true"{% endif %}>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_header">
+        <input type="hidden" name="confirm_open_debt" id="confirm-open-debt" value="0">
+        <div>
+          <div class="sale-card-title mb-3">
+            <i class="bi bi-receipt-cutoff"></i>
+            Detalhes da venda
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label">{{ header_form.customer.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-person"></i>
+                {{ header_form.customer }}
+              </div>
+              {% if perms.customers.add_customer and sale.status == "draft" %}
+                <div class="form-text">
+                  <a
+                    class="text-decoration-none"
+                    href="{% url 'customers:quick_create' %}"
+                    hx-get="{% url 'customers:quick_create' %}"
+                    hx-target="#customer-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    Criar cliente rapido
+                  </a>
+                </div>
+              {% endif %}
+              {% if header_form.customer.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.customer.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-lg-6 d-flex align-items-end">
+              {% if allow_credit %}
+                <div class="form-check form-switch" data-credit-toggle="wrapper">
+                  {{ header_form.is_credit }}
+                  <label class="form-check-label">{{ header_form.is_credit.label }}</label>
+                </div>
+              {% else %}
+                <div class="text-muted small">Fiado desativado para este negocio.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+          <div class="row g-3">
+            <div class="col-lg-6" data-credit-hide="true" data-deposit-hide="true">
+              <label class="form-label">{{ header_form.sale_type.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-bag-check"></i>
+                {{ header_form.sale_type }}
+              </div>
+            {% if header_form.sale_type.errors %}
+              <div class="invalid-feedback d-block">{{ header_form.sale_type.errors|striptags }}</div>
+            {% endif %}
+          </div>
+            <div class="col-lg-6" data-credit-hide="true">
+              <label class="form-label">{{ header_form.delivery_mode.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-truck"></i>
+                {{ header_form.delivery_mode }}
+              </div>
+            {% if header_form.delivery_mode.errors %}
+              <div class="invalid-feedback d-block">{{ header_form.delivery_mode.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+          <div class="row g-3">
+            <div class="col-lg-4" data-credit-hide="true">
+              <label class="form-label">{{ header_form.payment_method.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-cash-coin"></i>
+                {{ header_form.payment_method }}
+              </div>
+            <div class="form-note">Obrigatorio para venda imediata ou entrada.</div>
+            {% if header_form.payment_method.errors %}
+              <div class="invalid-feedback d-block">{{ header_form.payment_method.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          {% if allow_credit %}
+            <div class="col-lg-4" data-credit-field="due-date">
+              <label class="form-label">{{ header_form.payment_due_date.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-calendar-event"></i>
+                {{ header_form.payment_due_date }}
+              </div>
+              {% if header_form.payment_due_date.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.payment_due_date.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+
+          <div class="row g-3">
+            <div class="col-lg-4" data-credit-hide="true">
+              <label class="form-label">{{ header_form.discount_type.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-percent"></i>
+                {{ header_form.discount_type }}
+              </div>
+            {% if header_form.discount_type.errors %}
+              <div class="invalid-feedback d-block">{{ header_form.discount_type.errors|striptags }}</div>
+            {% endif %}
+          </div>
+            <div class="col-lg-4" data-credit-hide="true">
+              <label class="form-label">{{ header_form.discount_value.label }}</label>
+              <div class="input-group money-group">
+                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                {{ header_form.discount_value }}
+              <span class="input-group-text">MZN / %</span>
+            </div>
+            <div class="form-note">Use percentagem ou valor fixo.</div>
+            {% if header_form.discount_value.errors %}
+              <div class="invalid-feedback d-block">{{ header_form.discount_value.errors|striptags }}</div>
+            {% endif %}
+          </div>
+            <div class="col-lg-4 d-flex align-items-end justify-content-end">
+              {% if sale.status == "draft" %}
+                <button class="btn btn-outline-primary px-4" type="submit">
+                  <i class="bi bi-check2-circle me-1"></i>
+                Guardar rascunho
+                </button>
+              {% endif %}
+            </div>
+        </div>
+
+
+      </form>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-white border-0">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <div class="fw-semibold">Itens da venda</div>
+          <div class="text-muted small">Selecione o produto e a quantidade. O preco vem do produto.</div>
+        </div>
+        {% if sale.status == "draft" %}
+            <form
+              class="row g-3 align-items-end"
+              id="sale-item-form"
+              method="post"
+              action="{% url 'sales:add_item' sale.id %}"
+              hx-post="{% url 'sales:add_item' sale.id %}"
+              hx-trigger="manual"
+              hx-target="#sale-items"
+              hx-swap="innerHTML"
+              hx-include="#sale-header-form"
+              data-stock-url="{% url 'sales:product_stock' 0 %}"
+              novalidate
+            >
+            {% csrf_token %}
+            <div class="col-md-6">
+              <label class="form-label small">Produto</label>
+              <div class="form-icon">
+                <i class="bi bi-box"></i>
+                {{ item_form.product }}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Quantidade</label>
+              <div class="form-icon">
+                <i class="bi bi-123"></i>
+                {{ item_form.quantity }}
+              </div>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-plus-circle me-1"></i>
+                Adicionar
+              </button>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+          <div id="sale-items" data-discount-url="{% url 'sales:discount_update' sale.id %}">
+            {% include "sales/partials/sale_items.html" %}
+          </div>
+  </div>
+
+  <div class="sale-actions">
+    {% if sale.status == "draft" %}
+      <button
+        class="btn btn-success"
+        type="button"
+        id="sale-confirm-button"
+        data-confirm-action="{% url 'sales:confirm' sale.id %}"
+        data-open-debt="{{ open_receivable_total|floatformat:2 }}"
+        data-open-debt-url="{% url 'sales:customer_open_debt' 0 %}"
+      >
+        <i class="bi bi-check-circle me-1"></i>
+        Confirmar {{ current_business.ui_labels.sale|lower }}
+      </button>
+    {% endif %}
+    {% if sale.status == "confirmed" %}
+      {% if sale.invoices.exists %}
+        <a class="btn btn-outline-primary" href="{% url 'billing:invoice_detail' sale.invoices.first.id %}">Ver fatura</a>
+      {% else %}
+        <form
+          method="post"
+          action="{% url 'billing:invoice_create' sale.id %}"
+          data-swal-confirm="true"
+          data-swal-title="Emitir fatura?"
+          data-swal-text="Deseja gerar a fatura para esta venda?"
+          data-swal-confirm-text="Gerar"
+          data-swal-cancel-text="Voltar"
+        >
+          {% csrf_token %}
+          <button class="btn btn-outline-primary" type="submit">Gerar fatura</button>
+        </form>
+      {% endif %}
+      {% if perms.deliveries.add_deliveryguide %}
+        <button
+          class="btn btn-outline-success"
+          type="button"
+          id="delivery-register-button"
+          {% if can_register_delivery and not delivery_completed %}
+            hx-get="{% url 'deliveries:guide_create_modal' sale.id %}"
+            hx-target="#delivery-modal-container"
+            hx-swap="innerHTML"
+          {% else %}
+            disabled
+            title="{% if delivery_completed %}Levantamento concluido.{% else %}{{ delivery_block_reason }}{% endif %}"
+          {% endif %}
+        >
+          <i class="bi bi-truck"></i>
+          Registar levantamento
+        </button>
+      {% endif %}
+      {% if delivery_completed %}
+        <button class="btn btn-outline-danger" type="button" id="sale-cancel-button" disabled>
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar {{ current_business.ui_labels.sale|lower }}
+        </button>
+      {% else %}
+        <button
+          class="btn btn-outline-danger"
+          type="button"
+          id="sale-cancel-button"
+          hx-get="{% url 'sales:cancel' sale.id %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML"
+        >
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar {{ current_business.ui_labels.sale|lower }}
+        </button>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if payments %}
+    <div class="card mt-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Pagamentos associados</h2>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Metodo</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for payment in payments %}
+                <tr>
+                  <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
+                  <td>{{ payment.get_method_display }}</td>
+                  <td>{{ payment.amount|floatformat:2 }} MZN</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">Sem pagamentos.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+
+  {% if refunds %}
+    <div class="card mt-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Estornos</h2>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for refund in refunds %}
+                <tr>
+                  <td>{{ refund.created_at|date:"d/m/Y H:i" }}</td>
+                  <td>{{ refund.get_return_type_display }}</td>
+                  <td>{{ refund.amount|floatformat:2 }} MZN</td>
+                  <td>{{ refund.get_status_display }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">Sem estornos.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if sale.status == "confirmed" %}
+    <div class="card mt-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Levantamentos de material</h2>
+        <div id="delivery-list">
+          {% include "deliveries/partials/sale_delivery_table.html" %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div id="customer-modal-container"></div>
+  <div id="modal-container"></div>
+  <div id="delivery-modal-container"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      try {
+        if (window.initTomSelect) {
+          window.initTomSelect(document);
+        }
+      } catch (error) {
+        console.warn("TomSelect init failed", error);
+      }
+
+      try {
+        document.querySelectorAll("[data-money='true']").forEach(function (input) {
+          var normalize = function () {
+            var value = (input.value || "").replace(",", ".").replace(/[^\d.]/g, "");
+            input.value = value;
+          };
+          var format = function () {
+            if (!input.value) {
+              return;
+            }
+            var number = Number(input.value);
+            if (!Number.isNaN(number)) {
+              input.value = number.toFixed(2);
+            }
+          };
+          input.addEventListener("input", normalize);
+          input.addEventListener("blur", format);
+        });
+      } catch (error) {
+        console.warn("Money formatter failed", error);
+      }
+
+        var headerForm = document.getElementById("sale-header-form");
+        var isReadOnly = headerForm && headerForm.dataset.readOnly === "true";
+      var confirmButton = document.getElementById("sale-confirm-button");
+      if (headerForm && confirmButton) {
+        var confirmDebtInput = document.getElementById("confirm-open-debt");
+        var customerSelect = headerForm.querySelector("[name='customer']");
+        var creditToggle = document.querySelector("#{{ header_form.is_credit.id_for_label }}");
+        var formatMoney = function (value) {
+          var parsed = Number(value);
+          if (!Number.isFinite(parsed)) {
+            parsed = 0;
+          }
+          return new Intl.NumberFormat("pt-PT", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(parsed) + " MZN";
+        };
+        var submitForm = function () {
+          var confirmAction = confirmButton.dataset.confirmAction || headerForm.action;
+          headerForm.action = confirmAction;
+          headerForm.submit();
+        };
+        var handleConfirm = function () {
+          if (!window.Swal) {
+            submitForm();
+            return;
+          }
+          Swal.fire({
+            title: "Confirmar venda?",
+            text: "Esta acao vai confirmar a venda.",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Confirmar",
+            cancelButtonText: "Voltar",
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              submitForm();
+            }
+          });
+        };
+        var handleDebtCheck = function (debtAmount) {
+          if (!creditToggle || !creditToggle.checked) {
+            handleConfirm();
+            return;
+          }
+          if (confirmDebtInput && confirmDebtInput.value === "1") {
+            handleConfirm();
+            return;
+          }
+          if (debtAmount > 0) {
+            if (!window.Swal) {
+              if (confirmDebtInput) {
+                confirmDebtInput.value = "1";
+              }
+              submitForm();
+              return;
+            }
+            Swal.fire({
+              title: "Cliente com fiado em aberto",
+              text: "Valor em divida: " + formatMoney(debtAmount),
+              icon: "warning",
+              showCancelButton: true,
+              confirmButtonText: "Continuar mesmo assim",
+              cancelButtonText: "Cancelar venda",
+            }).then(function (result) {
+              if (result.isConfirmed) {
+                if (confirmDebtInput) {
+                  confirmDebtInput.value = "1";
+                }
+                submitForm();
+              }
+            });
+            return;
+          }
+          handleConfirm();
+        };
+        confirmButton.addEventListener("click", function (event) {
+          event.preventDefault();
+          var debtUrl = confirmButton.dataset.openDebtUrl || "";
+          var customerId = customerSelect ? customerSelect.value : "";
+          var fallbackDebt = parseFloat(
+            String(confirmButton.dataset.openDebt || "0").replace(",", ".")
+          );
+          if (!creditToggle || !creditToggle.checked || !customerId || !debtUrl) {
+            handleDebtCheck(Number.isFinite(fallbackDebt) ? fallbackDebt : 0);
+            return;
+          }
+          fetch(debtUrl.replace("/0/", "/" + customerId + "/"), {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              var debt = parseFloat(String(data.total || "0").replace(",", "."));
+              handleDebtCheck(Number.isFinite(debt) ? debt : 0);
+            })
+            .catch(function () {
+              handleDebtCheck(Number.isFinite(fallbackDebt) ? fallbackDebt : 0);
+            });
+        });
+        if (confirmDebtInput && customerSelect) {
+          customerSelect.addEventListener("change", function () {
+            confirmDebtInput.value = "0";
+          });
+        }
+        if (confirmDebtInput && creditToggle) {
+          creditToggle.addEventListener("change", function () {
+            confirmDebtInput.value = "0";
+          });
+        }
+      }
+
+        var toggleCreditFields = function () {
+          if (isReadOnly) {
+            return;
+          }
+          var isCredit = document.querySelector("#{{ header_form.is_credit.id_for_label }}");
+          var dueDateWrap = document.querySelector("[data-credit-field='due-date']");
+          if (!isCredit || !dueDateWrap) {
+            return;
+          }
+          var hiddenBlocks = document.querySelectorAll("[data-credit-hide='true']");
+          var saleType = document.querySelector("#{{ header_form.sale_type.id_for_label }}");
+          var deliveryMode = document.querySelector("#{{ header_form.delivery_mode.id_for_label }}");
+          var paymentMethod = document.querySelector("#{{ header_form.payment_method.id_for_label }}");
+          var discountType = document.querySelector("#{{ header_form.discount_type.id_for_label }}");
+          var discountValue = document.querySelector("#{{ header_form.discount_value.id_for_label }}");
+          if (isCredit.checked) {
+            dueDateWrap.style.display = "";
+            hiddenBlocks.forEach(function (block) {
+              block.classList.add("d-none");
+            });
+            if (saleType) {
+              saleType.value = "normal";
+            }
+            if (deliveryMode) {
+              deliveryMode.value = "immediate";
+            }
+            if (paymentMethod) {
+              paymentMethod.value = "";
+            }
+            if (discountType) {
+              discountType.value = "none";
+            }
+            if (discountValue) {
+              discountValue.value = "0";
+            }
+          } else {
+            dueDateWrap.style.display = "none";
+            hiddenBlocks.forEach(function (block) {
+              block.classList.remove("d-none");
+            });
+          }
+        };
+      toggleCreditFields();
+      var creditInput = document.querySelector("#{{ header_form.is_credit.id_for_label }}");
+      if (creditInput) {
+        creditInput.addEventListener("change", toggleCreditFields);
+      }
+        var toggleSaleType = function () {
+          if (isReadOnly) {
+            return;
+          }
+          var saleType = document.querySelector("#{{ header_form.sale_type.id_for_label }}");
+          var isCredit = document.querySelector("#{{ header_form.is_credit.id_for_label }}");
+          var creditWrap = document.querySelector("[data-credit-toggle=\"wrapper\"]");
+          var deliveryMode = document.querySelector("#{{ header_form.delivery_mode.id_for_label }}");
+          var depositBlocks = document.querySelectorAll("[data-deposit-hide='true']");
+        if (!saleType || !isCredit) {
+          return;
+        }
+        if (saleType.value === "deposit") {
+          if (creditWrap) {
+            creditWrap.classList.add("d-none");
+          }
+          isCredit.checked = false;
+          isCredit.disabled = true;
+          depositBlocks.forEach(function (block) {
+            block.classList.add("d-none");
+          });
+          if (deliveryMode) {
+            deliveryMode.value = "scheduled";
+            deliveryMode.setAttribute("disabled", "disabled");
+          }
+        } else {
+          if (creditWrap) {
+            creditWrap.classList.remove("d-none");
+          }
+          isCredit.disabled = false;
+          depositBlocks.forEach(function (block) {
+            block.classList.remove("d-none");
+          });
+          if (deliveryMode) {
+            deliveryMode.removeAttribute("disabled");
+          }
+        }
+        toggleCreditFields();
+      };
+      toggleSaleType();
+      var saleTypeEl = document.querySelector("#{{ header_form.sale_type.id_for_label }}");
+      if (saleTypeEl) {
+        saleTypeEl.addEventListener("change", toggleSaleType);
+      }
+
+        document.body.addEventListener("deliveryGuideCreated", function () {
+          var modalEl = document.getElementById("delivery-guide-modal");
+          if (!modalEl || !window.bootstrap) {
+            return;
+          }
+          var modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) {
+            modal.hide();
+          }
+          if (window.Swal) {
+            Swal.fire({
+              icon: "success",
+              title: "Levantamento registado",
+              timer: 2000,
+              showConfirmButton: false,
+            });
+          }
+        });
+
+        var itemForm = document.getElementById("sale-item-form");
+        if (itemForm && window.htmx) {
+          itemForm.addEventListener("submit", function (event) {
+            if (itemForm.dataset.skipStockCheck === "1") {
+              itemForm.dataset.skipStockCheck = "";
+              window.htmx.trigger(itemForm, "manual");
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            var productSelect = itemForm.querySelector("[name='product']");
+            var qtyInput = itemForm.querySelector("[name='quantity']");
+            if (!productSelect || !qtyInput || !productSelect.value) {
+              itemForm.dataset.skipStockCheck = "1";
+              window.htmx.trigger(itemForm, "manual");
+              return;
+            }
+            var qty = parseInt(String(qtyInput.value || "0").replace(",", "."), 10);
+            if (!Number.isFinite(qty) || qty <= 0) {
+              itemForm.dataset.skipStockCheck = "1";
+              window.htmx.trigger(itemForm, "manual");
+              return;
+            }
+            var baseUrl = itemForm.dataset.stockUrl || "";
+            if (!baseUrl) {
+              itemForm.dataset.skipStockCheck = "1";
+              window.htmx.trigger(itemForm, "manual");
+              return;
+            }
+            var stockUrl = baseUrl.replace("/0/", "/" + productSelect.value + "/");
+            fetch(stockUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+              .then(function (response) {
+                return response.json();
+              })
+              .then(function (data) {
+                if (!data || data.stock_control !== "automatic") {
+                  itemForm.dataset.skipStockCheck = "1";
+                  window.htmx.trigger(itemForm, "manual");
+                  return;
+                }
+                var available = parseInt(String(data.available || "0").replace(",", "."), 10);
+                if (Number.isFinite(available) && qty > available) {
+                  var message =
+                    "Disponivel em stock: " +
+                    String(available || "0") +
+                    " unidades.";
+                  var allowNegative = data.allow_negative === true;
+                  if (!window.Swal) {
+                    itemForm.dataset.skipStockCheck = "1";
+                    htmx.trigger(itemForm, "submit");
+                    return;
+                  }
+                  Swal.fire({
+                    icon: "warning",
+                    title: "Stock insuficiente",
+                    text: message,
+                    showCancelButton: allowNegative,
+                    confirmButtonText: allowNegative
+                      ? "Continuar mesmo assim"
+                      : "Atualizar quantidade",
+                    cancelButtonText: "Atualizar quantidade",
+                  }).then(function (result) {
+                    if (allowNegative && result.isConfirmed) {
+                      itemForm.dataset.skipStockCheck = "1";
+                      window.htmx.trigger(itemForm, "manual");
+                    } else {
+                      qtyInput.focus();
+                    }
+                  });
+                  return;
+                }
+                itemForm.dataset.skipStockCheck = "1";
+                window.htmx.trigger(itemForm, "manual");
+              })
+              .catch(function () {
+                itemForm.dataset.skipStockCheck = "1";
+                window.htmx.trigger(itemForm, "manual");
+              });
+          });
+        }
+
+        var discountType = document.querySelector("#{{ header_form.discount_type.id_for_label }}");
+        var discountValue = document.querySelector("#{{ header_form.discount_value.id_for_label }}");
+        var saleItems = document.getElementById("sale-items");
+        var discountTimer = null;
+        var triggerDiscountUpdate = function () {
+          if (!saleItems || !window.htmx) {
+            return;
+          }
+          var url = saleItems.dataset.discountUrl;
+          if (!url || !discountType || !discountValue) {
+            return;
+          }
+          var csrfTokenEl = document.querySelector("input[name=csrfmiddlewaretoken]");
+          var csrfToken = csrfTokenEl ? csrfTokenEl.value : "";
+          window.htmx.ajax("POST", url, {
+            target: "#sale-items",
+            swap: "innerHTML",
+            values: {
+              discount_type: discountType.value,
+              discount_value: discountValue.value,
+            },
+            headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+          });
+        };
+        var shouldUpdateDiscount = function () {
+          if (!discountType || !discountValue) {
+            return false;
+          }
+          if (discountType.value === "none") {
+            return true;
+          }
+          var raw = (discountValue.value || "").trim();
+          if (!raw) {
+            return false;
+          }
+          var parsed = parseFloat(raw.replace(",", "."));
+          return Number.isFinite(parsed) && parsed > 0;
+        };
+        var scheduleDiscountUpdate = function () {
+          if (!shouldUpdateDiscount()) {
+            return;
+          }
+          if (discountTimer) {
+            clearTimeout(discountTimer);
+          }
+          discountTimer = setTimeout(triggerDiscountUpdate, 350);
+        };
+        if (discountType) {
+          discountType.addEventListener("change", scheduleDiscountUpdate);
+        }
+        if (discountValue) {
+          discountValue.addEventListener("input", scheduleDiscountUpdate);
+        }
+      });
+    </script>
+  {% endblock %}

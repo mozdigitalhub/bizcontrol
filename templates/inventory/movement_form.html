@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Movimento de stock - BizControl{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+            <div>
+              <h1 class="h4 mb-1">Entrada ou ajuste</h1>
+              <div class="form-note">Campos obrigatorios marcados com *</div>
+            </div>
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{% url 'inventory:movement_list' %}'; }"
+            >
+              Voltar
+            </button>
+          </div>
+          <form
+            method="post"
+            data-swal-confirm="true"
+            data-swal-title="Confirmar?"
+            data-swal-text="Deseja guardar este movimento?"
+            data-swal-confirm-text="Guardar"
+            data-swal-cancel-text="Voltar"
+            novalidate
+          >
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+            {% endif %}
+            <div class="mb-3">
+              <label class="form-label required">{{ form.product.label }}</label>
+              {{ form.product }}
+              {% if form.product.errors %}
+                <div class="invalid-feedback d-block">{{ form.product.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">{{ form.movement_type.label }}</label>
+              {{ form.movement_type }}
+              {% if form.movement_type.errors %}
+                <div class="invalid-feedback d-block">{{ form.movement_type.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">{{ form.quantity.label }}</label>
+              {{ form.quantity }}
+              {% if form.quantity.errors %}
+                <div class="invalid-feedback d-block">{{ form.quantity.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ form.notes.label }}</label>
+              {{ form.notes }}
+              <div class="form-note">Opcional</div>
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">{{ form.notes.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="d-flex justify-content-between">
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{% url 'inventory:movement_list' %}'; }"
+              >
+                Voltar
+              </button>
+              <button class="btn btn-primary" type="submit">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      var form = document.querySelector("form");
+      if (form && !form.dataset.bound) {
+        form.dataset.bound = "true";
+        form.addEventListener("submit", function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add("was-validated");
+        });
+      }
+    })();
+  </script>
+{% endblock %}

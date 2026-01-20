@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Recebiveis - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h4 mb-0">Recebiveis</h1>
+    <div class="btn-group">
+      <a class="btn btn-outline-secondary {% if status == 'open' %}active{% endif %}" href="{% url 'receivables:list' %}?status=open">Em aberto</a>
+      <a class="btn btn-outline-secondary {% if status == 'settled' %}active{% endif %}" href="{% url 'receivables:list' %}?status=settled">Liquidados</a>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4">
+        <label class="form-label small">Pesquisa</label>
+        <input class="form-control" type="text" name="q" placeholder="Cliente" value="{{ query }}">
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Cliente</label>
+        <select class="form-select tom-select" name="customer" data-placeholder="Todos">
+          <option value="">Todos</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}" {% if customer_id|slugify == customer.id|slugify %}selected{% endif %}>{{ customer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">De</label>
+        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Ate</label>
+        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="col-lg-1">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-funnel"></i>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Pago</th>
+            <th>Saldo</th>
+            <th>Status</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for receivable in page.object_list %}
+            <tr>
+              <td>{{ receivable.customer.name }}</td>
+              <td>{{ receivable.original_amount|floatformat:2 }} MZN</td>
+              <td>{{ receivable.total_paid|floatformat:2 }} MZN</td>
+              <td>{{ receivable.balance|floatformat:2 }} MZN</td>
+              <td>
+                {% if receivable.status == "settled" %}
+                  <span class="badge text-bg-success">Liquidado</span>
+                {% else %}
+                  <span class="badge text-bg-warning">Em aberto</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'receivables:detail' receivable.id %}">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if receivable.status == "open" and perms.receivables.add_payment %}
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    type="button"
+                    hx-get="{% url 'receivables:pay_modal' receivable.id %}?target=modal-container"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-cash-coin"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sem recebiveis.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+      <div class="card-footer bg-white border-0">
+        <nav class="d-flex justify-content-end">
+          <ul class="pagination mb-0">
+            {% if page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&status={{ status }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+            {% if page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&status={{ status }}">Proximo</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="modal-container"></div>
+{% endblock %}

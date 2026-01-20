@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Fluxo de caixa - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Fluxo de caixa</h1>
+      <div class="text-muted small">Entradas e saídas do período.</div>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4 col-sm-12">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Notas ou referencia" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Tipo</label>
+        <select class="form-select tom-select" name="movement_type" data-placeholder="Tipo...">
+          <option value="">Todos</option>
+          {% for value, label in movement_choices %}
+            <option value="{{ value }}"{% if movement_type == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Metodo</label>
+        <select class="form-select tom-select" name="method" data-placeholder="Metodo...">
+          <option value="">Todos</option>
+          {% for value, label in method_choices %}
+            <option value="{{ value }}"{% if method == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">De</label>
+        <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Ate</label>
+        <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+      </div>
+      <div class="col-lg-2 col-sm-6 mt-lg-0 mt-2">
+        <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-3 mb-3">
+    {% for category in category_totals %}
+      <div class="col-lg-4">
+        <div class="card p-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-muted small">{{ category.label }}</div>
+              <div class="fw-semibold">{{ category.net_total|floatformat:2 }} MZN</div>
+            </div>
+            <div class="text-end">
+              <div class="small text-success">+ {{ category.total_in|floatformat:2 }} MZN</div>
+              <div class="small text-danger">- {{ category.total_out|floatformat:2 }} MZN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Metodo</th>
+            <th>Valor</th>
+            <th>Referencia</th>
+            <th>Notas</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for movement in page.object_list %}
+            <tr>
+              <td>{{ movement.happened_at|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if movement.movement_type == "IN" %}
+                  <span class="text-success">
+                    <i class="bi bi-arrow-down-left-circle-fill me-1"></i>
+                    {{ movement.get_movement_type_display }}
+                  </span>
+                {% else %}
+                  <span class="text-danger">
+                    <i class="bi bi-arrow-up-right-circle-fill me-1"></i>
+                    {{ movement.get_movement_type_display }}
+                  </span>
+                {% endif %}
+              </td>
+              <td>{{ movement.get_method_display }}</td>
+              <td>{{ movement.amount|floatformat:2 }} MZN</td>
+              <td>
+                {% if movement.reference_invoice_id %}
+                  <button
+                    class="btn btn-link p-0 align-baseline"
+                    type="button"
+                    hx-get="{% url 'billing:invoice_detail' movement.reference_invoice_id %}"
+                    hx-target="#cashflow-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    {{ movement.reference_label }}
+                  </button>
+                {% elif movement.reference_purchase_id %}
+                  <button
+                    class="btn btn-link p-0 align-baseline"
+                    type="button"
+                    hx-get="{% url 'finance:purchase_detail' movement.reference_purchase_id %}"
+                    hx-target="#cashflow-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    {{ movement.reference_label }}
+                  </button>
+                {% else %}
+                  {{ movement.reference_label }}
+                {% endif %}
+              </td>
+              <td>
+                {% if movement.reference_invoice_code %}
+                  <div class="fw-semibold">{{ movement.reference_invoice_code }}</div>
+                  {% if movement.notes and movement.notes != movement.reference_invoice_code %}
+                    <div class="text-muted small">{{ movement.notes }}</div>
+                  {% endif %}
+                {% elif movement.reference_purchase_code %}
+                  <div class="fw-semibold">{{ movement.reference_purchase_code }}</div>
+                  {% if movement.notes and movement.notes != movement.reference_purchase_code %}
+                    <div class="text-muted small">{{ movement.notes }}</div>
+                  {% endif %}
+                {% else %}
+                  {{ movement.notes_label }}
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  hx-get="{% url 'finance:cashflow_detail_modal' movement.id %}"
+                  hx-target="#cashflow-modal-container"
+                  hx-swap="innerHTML"
+                  aria-label="Ver detalhe"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Sem movimentos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-3">
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">Entradas</div>
+        <div class="fw-semibold text-success">{{ total_in|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">Saidas</div>
+        <div class="fw-semibold text-danger">{{ total_out|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">Saldo</div>
+        <div class="fw-semibold">{{ net_total|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+
+  <div id="cashflow-modal-container"></div>
+{% endblock %}

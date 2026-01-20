@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Cancelar compra - BizControl{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h1 class="h4 mb-2">Cancelar compra {{ purchase.code|default:purchase.id }}</h1>
+          <p class="text-muted small">Esta acao vai reverter stock e fluxo de caixa.</p>
+          <form method="post" data-swal-confirm="true" data-swal-title="Cancelar compra?" data-swal-text="Deseja cancelar esta compra?" data-swal-confirm-text="Cancelar" data-swal-cancel-text="Voltar">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Motivo (opcional)</label>
+              <textarea class="form-control" name="notes" rows="2"></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'finance:purchase_detail' purchase.id %}">Voltar</a>
+              <button class="btn btn-danger" type="submit">Cancelar compra</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

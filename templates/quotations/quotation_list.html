@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Cotacoes - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Cotacoes</h1>
+      <div class="text-muted small">Orcamentos e propostas por cliente.</div>
+    </div>
+    {% if perms.quotations.add_quotation %}
+      <a class="btn btn-primary" href="{% url 'quotations:create' %}">
+        <i class="bi bi-plus-circle me-1"></i>
+        Nova cotacao
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4">
+        <label class="form-label small">Pesquisar</label>
+        <input class="form-control" type="text" name="q" placeholder="Codigo ou cliente" value="{{ query }}">
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Data</label>
+        <div class="d-flex gap-2">
+          <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+          <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Cliente</label>
+        <select class="form-select tom-select" name="customer" data-placeholder="Pesquisar cliente..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}"{% if customer_id == customer.id|stringformat:"s" %} selected{% endif %}>{{ customer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Estado</label>
+        <select class="form-select tom-select" name="status" data-placeholder="Estado..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Codigo</th>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Validade</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for quotation in page.object_list %}
+            <tr>
+              <td>{{ quotation.code|default:quotation.id }}</td>
+              <td>{{ quotation.customer.name|default:"-" }}</td>
+              <td>{{ quotation.issue_date|date:"d/m/Y" }}</td>
+              <td>{{ quotation.valid_until|date:"d/m/Y"|default:"-" }}</td>
+              <td>{{ quotation.total|floatformat:2 }} MZN</td>
+              <td>
+                {% if quotation.status == "approved" %}
+                  <span class="badge bg-success">Aprovada</span>
+                {% elif quotation.status == "sent" %}
+                  <span class="badge bg-info text-dark">Enviada</span>
+                {% elif quotation.status == "rejected" %}
+                  <span class="badge bg-danger">Rejeitada</span>
+                {% elif quotation.status == "expired" %}
+                  <span class="badge bg-warning text-dark">Expirada</span>
+                {% elif quotation.status == "canceled" %}
+                  <span class="badge bg-secondary">Cancelada</span>
+                {% else %}
+                  <span class="badge bg-secondary">Rascunho</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'quotations:detail' quotation.id %}">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if quotation.status in editable_statuses and perms.quotations.change_quotation %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'quotations:edit' quotation.id %}">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'quotations:pdf_view' quotation.id %}" target="_blank" rel="noopener">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                {% if quotation.status in editable_statuses and perms.quotations.change_quotation %}
+                  <form
+                    class="d-inline"
+                    method="post"
+                    action="{% url 'quotations:approve' quotation.id %}"
+                    data-stock-check-url="{% url 'quotations:stock_check' quotation.id %}"
+                    data-swal-title="Aprovar cotacao?"
+                    data-swal-text="Gerar venda a partir desta cotacao."
+                    data-swal-confirm-text="Aprovar"
+                    data-swal-cancel-text="Voltar"
+                  >
+                    {% csrf_token %}
+                    <input type="hidden" name="confirm_stock" value="0">
+                    <button class="btn btn-sm btn-outline-success" type="submit">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                  <form class="d-inline" method="post" action="{% url 'quotations:reject' quotation.id %}" data-swal-confirm="true" data-swal-title="Rejeitar cotacao?" data-swal-text="Esta cotacao sera marcada como rejeitada." data-swal-confirm-text="Rejeitar" data-swal-cancel-text="Voltar">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Sem cotacoes.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock %}

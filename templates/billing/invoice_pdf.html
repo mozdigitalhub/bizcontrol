@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
+      .title { font-size: 20px; font-weight: bold; }
+      .muted { color: #666; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+      th { background: #f3f3f3; }
+      .totals { margin-top: 12px; width: 100%; }
+      .totals td { padding: 4px; }
+      .right { text-align: right; }
+      .footer { margin-top: 24px; font-size: 11px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <div class="title">Fatura {{ invoice.code|default:invoice.invoice_number }}</div>
+        <div class="muted">Data: {{ invoice.issue_date|date:"d/m/Y" }}</div>
+        {% if invoice.sale and invoice.sale.is_credit %}
+          <div class="muted">Fatura a fiado{% if invoice.due_date %} · Data prevista: {{ invoice.due_date|date:"d/m/Y" }}{% endif %}</div>
+        {% endif %}
+      </div>
+      <div class="right">
+        <div><strong>{{ business.name }}</strong></div>
+        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
+        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <strong>Cliente</strong><br>
+      {% if invoice.customer %}
+        {{ invoice.customer.name }}<br>
+        {% if invoice.customer.phone %}{{ invoice.customer.phone }}<br>{% endif %}
+        {% if invoice.customer.email %}{{ invoice.customer.email }}<br>{% endif %}
+        {% if invoice.customer.address %}{{ invoice.customer.address }}{% endif %}
+      {% else %}
+        Consumidor final
+      {% endif %}
+    </div>
+
+
+
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Qtd</th>
+          <th>Preco</th>
+          <th>IVA</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price|floatformat:2 }}</td>
+            <td>{{ item.line_tax|floatformat:2 }}</td>
+            <td>{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted">Sem itens.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr>
+        <td class="right">Subtotal:</td>
+        <td class="right">{{ invoice.subtotal|floatformat:2 }} MZN</td>
+      </tr>
+      <tr>
+        <td class="right">IVA:</td>
+        <td class="right">{{ invoice.tax_total|floatformat:2 }} MZN</td>
+      </tr>
+      {% if invoice.sale and invoice.sale.discount_total %}
+        <tr>
+          <td class="right">Desconto:</td>
+          <td class="right">-{{ invoice.sale.discount_total|floatformat:2 }} MZN</td>
+        </tr>
+      {% endif %}
+      <tr>
+        <td class="right"><strong>Total:</strong></td>
+        <td class="right"><strong>{{ invoice.total|floatformat:2 }} MZN</strong></td>
+      </tr>
+    </table>
+
+    {% if invoice.payment_snapshot %}
+      <div style="margin-top: 10px;">
+        <strong>Dados para pagamento</strong><br>
+        {% if invoice.payment_snapshot.wallets %}
+          <div><strong>Carteiras moveis</strong></div>
+          {% for wallet in invoice.payment_snapshot.wallets %}
+            <div>{{ wallet.label }} - {{ wallet.phone_number }}{% if wallet.holder_name %} ({{ wallet.holder_name }}){% endif %}</div>
+          {% endfor %}
+        {% endif %}
+        {% if invoice.payment_snapshot.banks %}
+          <div style="margin-top: 6px;"><strong>Contas bancarias</strong></div>
+          {% for bank in invoice.payment_snapshot.banks %}
+            <div>{{ bank.bank_name }} - Conta {{ bank.account_number }}{% if bank.nib %} · NIB {{ bank.nib }}{% endif %}{% if bank.holder_name %} ({{ bank.holder_name }}){% endif %}</div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="footer">
+      Obrigado pela preferencia.
+    </div>
+  </body>
+</html>

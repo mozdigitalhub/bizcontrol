@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Compras - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Compras</h1>
+      <div class="text-muted small">Registo de compras e reposicao de stock.</div>
+    </div>
+    {% if perms.finance.add_purchase %}
+      <a
+        class="btn btn-primary"
+        href="{% url 'finance:purchase_create' %}"
+        hx-get="{% url 'finance:purchase_create' %}"
+        hx-target="#purchase-modal-container"
+        hx-swap="innerHTML"
+      >
+        <i class="bi bi-plus-circle me-1"></i>
+        Nova compra
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-6 col-sm-12">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Fornecedor ou numero" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <label class="form-label small">Estado</label>
+        <select class="form-select tom-select" name="status" data-placeholder="Estado da compra...">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Codigo</th>
+            <th>Fornecedor</th>
+            <th>Tipo</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for purchase in page.object_list %}
+            <tr>
+              <td>{% if purchase.code %}{{ purchase.code }}{% else %}#{{ purchase.id }}{% endif %}</td>
+              <td>{{ purchase.supplier.name|default:"-" }}</td>
+              <td>{{ purchase.get_purchase_type_display }}</td>
+              <td>{{ purchase.purchase_date|date:"d/m/Y" }}</td>
+              <td>{{ purchase.total|floatformat:2 }} MZN</td>
+              <td>
+                {% if purchase.status == "confirmed" %}
+                  <span class="badge bg-success-subtle text-success">Confirmada</span>
+                {% elif purchase.status == "canceled" %}
+                  <span class="badge bg-danger-subtle text-danger">Cancelada</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary">Rascunho</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{% url 'finance:purchase_detail' purchase.id %}"
+                  hx-get="{% url 'finance:purchase_detail' purchase.id %}"
+                  hx-target="#purchase-modal-container"
+                  hx-swap="innerHTML"
+                  title="Ver"
+                >
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if purchase.status == "confirmed" and perms.finance.change_purchase %}
+                  <a class="btn btn-sm btn-outline-danger" href="{% url 'finance:purchase_cancel' purchase.id %}" title="Cancelar">
+                    <i class="bi bi-x-circle"></i>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Sem compras.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-3">
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">Total de compras</div>
+        <div class="fw-semibold">{{ total_amount|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+
+  <div id="purchase-modal-container"></div>
+{% endblock %}

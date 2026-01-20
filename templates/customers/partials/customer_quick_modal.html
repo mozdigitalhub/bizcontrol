@@ -1,0 +1,140 @@
+<div class="modal fade" id="customerQuickModal" tabindex="-1">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'customers:quick_create' %}"
+        hx-post="{% url 'customers:quick_create' %}"
+        hx-target="#customer-modal-container"
+        hx-swap="innerHTML"
+        hx-confirm="true"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar criacao?"
+        data-swal-text="Deseja guardar este cliente?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">Criar cliente</h5>
+            <div class="form-note">Campos obrigatorios marcados com *</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Cliente criado com sucesso.</div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" data-auto-dismiss="4000">{{ form.non_field_errors|striptags }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label required">{{ form.customer_type.label }}</label>
+            {{ form.customer_type }}
+            {% if form.customer_type.errors %}
+              <div class="invalid-feedback d-block">{{ form.customer_type.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="mb-3" data-nuit-wrapper>
+            <label class="form-label required">{{ form.nuit.label }}</label>
+            {{ form.nuit }}
+            <div class="form-note">Obrigatorio para clientes empresa.</div>
+            {% if form.nuit.errors %}
+              <div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("customerQuickModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    var form = modalEl.querySelector("form");
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = "true";
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    }
+
+    var cleanBackdrop = function () {
+      document.body.classList.remove("modal-open");
+      document.querySelectorAll(".modal-backdrop").forEach(function (el) {
+        el.remove();
+      });
+    };
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      cleanBackdrop();
+      modalEl.remove();
+    });
+
+    var typeSelect = modalEl.querySelector("[name='customer_type']");
+    var nuitWrap = modalEl.querySelector("[data-nuit-wrapper]");
+    var nuitInput = modalEl.querySelector("[name='nuit']");
+    var toggleNuit = function () {
+      if (!typeSelect || !nuitWrap || !nuitInput) {
+        return;
+      }
+      var isCompany = typeSelect.value === "company";
+      nuitWrap.style.display = isCompany ? "block" : "none";
+      if (isCompany) {
+        nuitInput.setAttribute("required", "required");
+      } else {
+        nuitInput.removeAttribute("required");
+        nuitInput.value = "";
+      }
+    };
+    if (typeSelect) {
+      typeSelect.addEventListener("change", toggleNuit);
+      toggleNuit();
+    }
+
+    {% if created %}
+      var select = document.querySelector("select[name='customer']");
+      if (select) {
+        var label = "{{ customer.name|escapejs }}{% if customer.phone %} ({{ customer.phone|escapejs }}){% endif %}";
+        if (select.tomselect) {
+          select.tomselect.addOption({ value: "{{ customer.id }}", text: label });
+          select.tomselect.setValue("{{ customer.id }}");
+        } else {
+          var option = new Option(label, "{{ customer.id }}", true, true);
+          select.add(option);
+        }
+      }
+      setTimeout(function () {
+        modal.hide();
+        cleanBackdrop();
+      }, 3000);
+    {% endif %}
+  })();
+</script>

@@ -1,0 +1,156 @@
+<div class="modal fade" id="purchase-detail-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Compra {{ purchase.code|default:purchase.id }}</h5>
+          <div class="text-muted small">Estado: {{ purchase.get_status_display }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="text-muted small">Codigo</div>
+                <div class="fw-semibold">{{ purchase.code|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Fornecedor</div>
+                <div class="fw-semibold">{{ purchase.supplier.name|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Tipo</div>
+                <div class="fw-semibold">{{ purchase.get_purchase_type_display }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Data</div>
+                <div class="fw-semibold">{{ purchase.purchase_date|date:"d/m/Y" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Metodo de pagamento</div>
+                <div class="fw-semibold">{{ purchase.get_payment_method_display|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Criado por</div>
+                <div class="fw-semibold">{{ purchase.created_by.get_full_name|default:purchase.created_by.username|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Total</div>
+                <div class="fw-semibold">{{ purchase.total|floatformat:2 }} MZN</div>
+              </div>
+            </div>
+            {% if purchase.notes %}
+              <div class="mt-3">
+                <div class="text-muted small">Observacoes</div>
+                <div>{{ purchase.notes }}</div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if purchase.purchase_type == "internal" %}
+          <div class="card">
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <div class="text-muted small">Descricao</div>
+                  <div class="fw-semibold">{{ purchase.internal_description|default:"-" }}</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="text-muted small">Valor</div>
+                  <div class="fw-semibold">{{ purchase.total|floatformat:2 }} MZN</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="card">
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Produto</th>
+                      <th>Preco unitario</th>
+                      <th>Quantidade</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in items %}
+                      <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.unit_cost|floatformat:2 }} MZN</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.line_total|floatformat:2 }} MZN</td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Sem produtos.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="card mt-3">
+          <div class="card-header bg-white fw-semibold">Rececoes ligadas</div>
+          <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Fornecedor</th>
+                  <th>Guia/Fatura</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for receipt in receipts %}
+                  <tr>
+                    <td>#{{ receipt.id }}</td>
+                    <td>{{ receipt.supplier.name }}</td>
+                    <td>{{ receipt.document_number }}</td>
+                    <td>{{ receipt.document_date|date:"d/m/Y" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">Sem rececoes ligadas.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        {% if purchase.status == "confirmed" and perms.finance.change_purchase %}
+          <a class="btn btn-outline-danger" href="{% url 'finance:purchase_cancel' purchase.id %}">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar
+          </a>
+        {% endif %}
+        <button class="btn btn-primary" type="button" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("purchase-detail-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

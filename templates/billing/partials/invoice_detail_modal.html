@@ -1,0 +1,221 @@
+<div class="modal fade" id="invoice-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Fatura {{ invoice.code|default:invoice.invoice_number }}</h5>
+          <div class="text-muted small">Estado: {{ invoice.get_status_display }}</div>
+          {% if invoice.sale and invoice.sale.is_credit %}
+            <div class="mt-1">
+              <span class="badge bg-warning text-dark">Fatura a Fiado</span>
+              {% if invoice.due_date %}
+                <span class="text-muted small ms-2">Data prevista: {{ invoice.due_date|date:"d/m/Y" }}</span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="text-muted small">Cliente</div>
+                <div class="fw-semibold">{{ invoice.customer.name|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Data</div>
+                <div class="fw-semibold">{{ invoice.issue_date|date:"d/m/Y" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Estado</div>
+                <div class="fw-semibold">{{ invoice.get_status_display }}</div>
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-4">
+                <div class="text-muted small">Total</div>
+                <div class="fw-semibold">{{ invoice.total|floatformat:2 }} MZN</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Pago</div>
+                <div class="fw-semibold">{{ invoice.amount_paid|floatformat:2 }} MZN</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Saldo</div>
+                <div class="fw-semibold">{{ invoice.balance|floatformat:2 }} MZN</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Produto</th>
+                  <th>Qtd</th>
+                  <th>Preco</th>
+                  <th>IVA</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price|floatformat:2 }}</td>
+                    <td>{{ item.line_tax|floatformat:2 }}</td>
+                    <td>{{ item.line_total|floatformat:2 }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">Sem itens.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="p-3 border-top">
+            <div class="d-flex justify-content-end">
+              <div class="me-3">Subtotal:</div>
+              <strong>{{ invoice.subtotal|floatformat:2 }} MZN</strong>
+            </div>
+            <div class="d-flex justify-content-end">
+              <div class="me-3">IVA:</div>
+              <strong>{{ invoice.tax_total|floatformat:2 }} MZN</strong>
+            </div>
+            {% if invoice.sale and invoice.sale.discount_total %}
+              <div class="d-flex justify-content-end">
+                <div class="me-3">Desconto:</div>
+                <strong>-{{ invoice.sale.discount_total|floatformat:2 }} MZN</strong>
+              </div>
+            {% endif %}
+            <div class="d-flex justify-content-end">
+              <div class="me-3">Total:</div>
+              <strong>{{ invoice.total|floatformat:2 }} MZN</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header bg-white fw-semibold">Pagamentos</div>
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Metodo</th>
+                  <th>Valor</th>
+                  <th class="text-end">Recibo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for payment in payments %}
+                  <tr>
+                    <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
+                    <td>{{ payment.get_method_display }}</td>
+                    <td>{{ payment.amount|floatformat:2 }} MZN</td>
+                    <td class="text-end">
+                      {% if payment.receipts.first %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'billing:receipt_detail' payment.receipts.first.id %}">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">Sem pagamentos.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header bg-white fw-semibold">Dados para pagamento</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="text-muted small mb-2">Carteiras moveis</div>
+                {% if invoice.payment_snapshot.wallets %}
+                  <ul class="list-unstyled mb-0">
+                    {% for wallet in invoice.payment_snapshot.wallets %}
+                      <li class="mb-2">
+                        <div class="fw-semibold">{{ wallet.label }}</div>
+                        <div class="text-muted small">{{ wallet.phone_number }} · {{ wallet.holder_name }}</div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="text-muted small">Sem carteiras ativas.</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small mb-2">Contas bancarias</div>
+                {% if invoice.payment_snapshot.banks %}
+                  <ul class="list-unstyled mb-0">
+                    {% for bank in invoice.payment_snapshot.banks %}
+                      <li class="mb-2">
+                        <div class="fw-semibold">{{ bank.bank_name }}</div>
+                        <div class="text-muted small">Conta {{ bank.account_number }} · NIB {{ bank.nib }}</div>
+                        {% if bank.holder_name %}
+                          <div class="text-muted small">{{ bank.holder_name }}</div>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="text-muted small">Sem contas ativas.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+                </div>
+      </div>
+      <div class="modal-footer">
+        {% if invoice.status != "canceled" and invoice.balance > 0 and perms.billing.add_invoicepayment %}
+          <button
+            class="btn btn-success"
+            type="button"
+            hx-get="{% url 'billing:invoice_pay_modal' invoice.id %}"
+            hx-target="#invoice-modal-container"
+            hx-swap="innerHTML"
+          >
+            <i class="bi bi-cash-stack"></i>
+            Registar pagamento
+          </button>
+        {% endif %}
+        <a class="btn btn-outline-primary" href="{% url 'billing:invoice_pdf' invoice.id %}" target="_blank" rel="noopener">
+          Ver PDF
+        </a>
+        <a class="btn btn-primary" href="{% url 'billing:invoice_pdf_download' invoice.id %}">
+          Download PDF
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("invoice-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

@@ -1,0 +1,125 @@
+<div class="modal fade" id="movementModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'inventory:movement_create' %}"
+        hx-post="{% url 'inventory:movement_create' %}"
+        hx-target="#movement-modal-container"
+        hx-swap="innerHTML"
+        hx-confirm="true"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar movimento?"
+        data-swal-text="Deseja guardar este movimento?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">
+              <i class="bi bi-box-arrow-in-down me-2"></i>
+              Entrada ou ajuste
+            </h5>
+            <div class="form-note">Registe entradas, saidas ou ajustes de stock.</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Movimento registado com sucesso.</div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" data-auto-dismiss="4000">{{ form.non_field_errors|striptags }}</div>
+          {% endif %}
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label class="form-label required">{{ form.product.label }}</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-box-seam"></i></span>
+                {{ form.product }}
+              </div>
+              <div class="form-note">Selecione o produto a atualizar.</div>
+              {% if form.product.errors %}
+                <div class="invalid-feedback d-block">{{ form.product.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required">{{ form.movement_type.label }}</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-repeat"></i></span>
+                {{ form.movement_type }}
+              </div>
+              <div class="form-note">Entrada, saida ou ajuste.</div>
+              {% if form.movement_type.errors %}
+                <div class="invalid-feedback d-block">{{ form.movement_type.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label required">{{ form.quantity.label }}</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-123"></i></span>
+                {{ form.quantity }}
+              </div>
+              <div class="form-note">Use numeros inteiros.</div>
+              {% if form.quantity.errors %}
+                <div class="invalid-feedback d-block">{{ form.quantity.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-8 mb-3">
+              <label class="form-label">{{ form.notes.label }}</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-journal-text"></i></span>
+                {{ form.notes }}
+              </div>
+              <div class="form-note">Opcional</div>
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">{{ form.notes.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar
+          </button>
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check-circle me-1"></i>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("movementModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    var form = modalEl.querySelector("form");
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = "true";
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    }
+
+    {% if created %}
+      setTimeout(function () {
+        modal.hide();
+        window.location.reload();
+      }, 3000);
+    {% endif %}
+  })();
+</script>

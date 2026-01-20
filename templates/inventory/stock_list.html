@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Stock - BizControl{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .stock-table th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6d7b86;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Stock</h1>
+      <div class="text-muted small">Resumo do stock por produto.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary" href="{% url 'catalog:product_list' %}">
+        <i class="bi bi-box-seam me-1"></i>
+        Produtos
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_list' %}">
+        <i class="bi bi-arrow-repeat me-1"></i>
+        Movimentos
+      </a>
+      {% if perms.inventory.add_stockmovement %}
+        <a
+          class="btn btn-primary"
+          href="{% url 'inventory:movement_create' %}"
+          hx-get="{% url 'inventory:movement_create' %}"
+          hx-target="#movement-modal-container"
+          hx-swap="innerHTML"
+        >
+          <i class="bi bi-plus-circle me-1"></i>
+          Entrada/Ajuste
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <a class="card p-3 text-decoration-none" href="?q={{ query }}&category={{ category_id }}&stock_status={{ stock_status }}&delivered=1">
+        <div class="text-muted small">Produtos levantados</div>
+        <div class="fw-semibold">{{ delivered_products_count }}</div>
+      </a>
+    </div>
+    <div class="col-lg-4">
+      <a class="card p-3 text-decoration-none" href="?q={{ query }}&category={{ category_id }}&stock_status={{ stock_status }}&reserved=1">
+        <div class="text-muted small">Produtos reservados</div>
+        <div class="fw-semibold">{{ reserved_products_count }}</div>
+      </a>
+    </div>
+    <div class="col-lg-4">
+      <a class="card p-3 text-decoration-none border border-danger-subtle" href="?q={{ query }}&category={{ category_id }}&stock_status=low">
+        <div class="text-danger small">Stock baixo</div>
+        <div class="fw-semibold text-danger">{{ low_stock_count }}</div>
+      </a>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-5 col-sm-12">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Pesquisar por nome ou SKU" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <label class="form-label small">Categoria</label>
+        <select class="form-select tom-select" name="category" data-placeholder="Pesquisar categoria..." data-dropdown-parent="form">
+          <option value="">Todas</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}"{% if category_id == category.id|stringformat:"s" %} selected{% endif %}>
+              {{ category.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Estado</label>
+        <select class="form-select tom-select" name="stock_status" data-placeholder="Estado do stock..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          <option value="low"{% if stock_status == "low" %} selected{% endif %}>Stock baixo</option>
+          <option value="ok"{% if stock_status == "ok" %} selected{% endif %}>OK</option>
+        </select>
+      </div>
+      <input type="hidden" name="reserved" value="{{ reserved_only }}">
+      <input type="hidden" name="delivered" value="{{ delivered_only }}">
+      <div class="col-lg-2 col-sm-12">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle stock-table">
+        <thead class="table-light">
+          <tr>
+            <th>Produto</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Disponivel</th>
+            <th>Reservado</th>
+            <th>Ultima atualizacao</th>
+            <th>Status</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in page.object_list %}
+            <tr>
+              <td class="fw-semibold">{{ product.name }}</td>
+              <td>{{ product.sku|default:"-" }}</td>
+              <td>{{ product.category.name|default:"-" }}</td>
+              <td>{{ product.available_quantity|floatformat:0 }}</td>
+              <td>{{ product.reserved_quantity|floatformat:0 }}</td>
+              <td>
+                {% if product.last_movement_at %}
+                  {{ product.last_movement_at|date:"d/m/Y H:i" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if product.is_low_stock %}
+                  <span class="badge bg-danger-subtle text-danger">Stock baixo</span>
+                {% else %}
+                  <span class="badge bg-success-subtle text-success">OK</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{% url 'inventory:product_movements' product.id %}"
+                  hx-get="{% url 'inventory:product_movements' product.id %}"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML"
+                  title="Ver ultimos movimentos"
+                  aria-label="Ver ultimos movimentos"
+                >
+                  <i class="bi bi-clock-history"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">Sem produtos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&category={{ category_id }}&stock_status={{ stock_status }}&reserved={{ reserved_only }}&delivered={{ delivered_only }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&category={{ category_id }}&stock_status={{ stock_status }}&reserved={{ reserved_only }}&delivered={{ delivered_only }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+
+  <div id="movement-modal-container"></div>
+  <div id="modal-container"></div>
+{% endblock %}

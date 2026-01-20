@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
+      .title { font-size: 20px; font-weight: bold; }
+      .muted { color: #666; }
+      .box { border: 1px solid #ddd; padding: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <div class="title">Recibo {{ receipt.code|default:receipt.receipt_number }}</div>
+        <div class="muted">Data: {{ receipt.issue_date|date:"d/m/Y" }}</div>
+      </div>
+      <div class="right">
+        <div><strong>{{ business.name }}</strong></div>
+        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
+        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="box">
+      <p>Recebemos o valor de <strong>{{ receipt.amount|floatformat:2 }} MZN</strong>.</p>
+      {% if receipt.invoice %}
+        <p>Referente a fatura {{ receipt.invoice.code|default:receipt.invoice.invoice_number }}.</p>
+      {% endif %}
+    </div>
+
+    <div class="footer" style="margin-top: 24px; font-size: 11px; color: #666;">
+      Documento gerado automaticamente.
+    </div>
+  </body>
+</html>

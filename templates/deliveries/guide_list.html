@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Guias de entrega - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Guias de entrega</h1>
+      <div class="text-muted small">Levantamentos de material registados.</div>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4 col-sm-12">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Guia, cliente ou venda" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Status</label>
+        <select class="form-select tom-select" name="status" data-placeholder="Status..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Cliente</label>
+        <select class="form-select tom-select" name="customer" data-placeholder="Cliente..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}"{% if customer_id == customer.id|stringformat:"s" %} selected{% endif %}>{{ customer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">De</label>
+        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-lg-2 col-sm-6">
+        <label class="form-label small">Ate</label>
+        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="col-lg-2 col-sm-6 mt-lg-0 mt-2">
+        <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Guia</th>
+            <th>Data</th>
+            <th>Prevista</th>
+            <th>Cliente</th>
+            <th>Origem</th>
+            <th>Transporte</th>
+            <th>Status</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for group in grouped_guides %}
+            <tr class="table-light">
+              <td colspan="8" class="fw-semibold">
+                Venda {{ group.sale.code|default:group.sale.id }} - {{ group.sale.customer.name|default:"Consumidor final" }}
+              </td>
+            </tr>
+            {% for guide in group.guides %}
+              <tr>
+                <td>{% if guide.code %}{{ guide.code }}{% else %}#{{ guide.guide_number }}{% endif %}</td>
+                <td>{{ guide.issued_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if guide.expected_delivery_date %}
+                    {{ guide.expected_delivery_date|date:"d/m/Y" }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ guide.customer.name|default:"-" }}</td>
+                <td>{{ guide.get_origin_type_display }}</td>
+                <td>
+                  <div class="fw-semibold">{{ guide.transport_responsible|default:"-" }}</div>
+                  {% if guide.transport_cost %}
+                    <div class="text-muted small">{{ guide.transport_cost|floatformat:2 }} MZN</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if guide.status == "delivered" %}
+                    <span class="badge text-bg-success">Entregue</span>
+                  {% elif guide.status == "partial" %}
+                    <span class="badge text-bg-warning">Parcial</span>
+                  {% elif guide.status == "canceled" %}
+                    <span class="badge text-bg-danger">Cancelada</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Emitida</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    hx-get="{% url 'deliveries:guide_detail' guide.id %}"
+                    hx-target="#guide-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'deliveries:guide_pdf' guide.id %}" target="_blank" rel="noopener">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">Sem guias.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+
+  <div id="guide-modal-container"></div>
+{% endblock %}

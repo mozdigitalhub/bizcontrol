@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: bizcontrol
+      POSTGRES_USER: bizcontrol
+      POSTGRES_PASSWORD: bizcontrol
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      DEBUG: "1"
+      DATABASE_URL: "postgres://bizcontrol:bizcontrol@db:5432/bizcontrol"
+      DJANGO_SETTINGS_MODULE: "bizcontrol.settings.dev"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

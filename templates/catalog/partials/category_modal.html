@@ -1,0 +1,86 @@
+<div class="modal fade" id="categoryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'catalog:category_create' %}"
+        hx-post="{% url 'catalog:category_create' %}"
+        hx-target="#category-modal-container"
+        hx-swap="innerHTML"
+        hx-confirm="true"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar criacao?"
+        data-swal-text="Deseja guardar esta categoria?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">Nova categoria</h5>
+            <div class="form-note">Campo obrigatorio marcado com *</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Categoria criada com sucesso.</div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" data-auto-dismiss="4000">{{ form.non_field_errors|striptags }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label required">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">{{ form.is_active.label }}</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("categoryModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    var form = modalEl.querySelector("form");
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = "true";
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    }
+
+    {% if created and category %}
+      var selects = document.querySelectorAll("select[name='category']");
+      selects.forEach(function (select) {
+        var option = document.createElement("option");
+        option.value = "{{ category.id }}";
+        option.textContent = "{{ category.name|escapejs }}";
+        option.selected = true;
+        select.appendChild(option);
+      });
+      setTimeout(function () {
+        modal.hide();
+      }, 3000);
+    {% endif %}
+  })();
+</script>

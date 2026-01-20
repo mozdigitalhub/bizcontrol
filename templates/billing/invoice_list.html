@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Faturas - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h4 mb-0">Faturas</h1>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-3">
+        <label class="form-label small">Pesquisa</label>
+        <input class="form-control" type="text" name="q" placeholder="Codigo ou cliente" value="{{ query }}">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Cliente</label>
+        <select class="form-select tom-select" name="customer" data-placeholder="Todos">
+          <option value="">Todos</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}" {% if customer_id|slugify == customer.id|slugify %}selected{% endif %}>{{ customer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Status</label>
+        <select class="form-select tom-select" name="status" data-placeholder="Todos">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">De</label>
+        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Ate</label>
+        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="col-lg-1">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-funnel"></i>
+        </button>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Valor minimo</label>
+        <input class="form-control" type="text" name="min_total" value="{{ min_total }}" placeholder="0,00">
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Valor maximo</label>
+        <input class="form-control" type="text" name="max_total" value="{{ max_total }}" placeholder="0,00">
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Numero</th>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in page.object_list %}
+            <tr>
+              <td>{% if invoice.code %}{{ invoice.code }}{% else %}#{{ invoice.invoice_number }}{% endif %}</td>
+              <td>{{ invoice.customer.name|default:"-" }}</td>
+              <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+              <td>{{ invoice.total|floatformat:2 }} MZN</td>
+              <td>
+                {% if invoice.status == "paid" %}
+                  <span class="badge text-bg-success">Paga</span>
+                {% elif invoice.status == "partial" %}
+                  <span class="badge text-bg-warning">Parcial</span>
+                {% elif invoice.status == "canceled" %}
+                  <span class="badge text-bg-danger">Cancelada</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Em aberto</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{% url 'billing:invoice_detail' invoice.id %}"
+                  hx-get="{% url 'billing:invoice_detail' invoice.id %}"
+                  hx-target="#invoice-modal-container"
+                  hx-swap="innerHTML"
+                >
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if invoice.status != "canceled" and invoice.balance > 0 and perms.billing.add_invoicepayment %}
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    type="button"
+                    hx-get="{% url 'billing:invoice_pay_modal' invoice.id %}"
+                    hx-target="#invoice-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-cash-stack"></i>
+                  </button>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-dark" href="{% url 'billing:invoice_pdf' invoice.id %}" target="_blank" rel="noopener">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sem faturas.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+      <div class="card-footer bg-white border-0">
+        <nav class="d-flex justify-content-end">
+          <ul class="pagination mb-0">
+            {% if page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&min_total={{ min_total }}&max_total={{ max_total }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+            {% if page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}&status={{ status }}&customer={{ customer_id }}&date_from={{ date_from }}&date_to={{ date_to }}&min_total={{ min_total }}&max_total={{ max_total }}">Proximo</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="invoice-modal-container"></div>
+{% endblock %}

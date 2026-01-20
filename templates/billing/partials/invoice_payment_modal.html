@@ -1,0 +1,84 @@
+<div class="modal fade" id="invoice-payment-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Registar pagamento</h5>
+          <div class="text-muted small">Fatura {{ invoice.code|default:invoice.invoice_number }} · Saldo {{ invoice.balance|floatformat:2 }} MZN</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form
+        method="post"
+        action="{% url 'billing:invoice_pay' invoice.id %}"
+        hx-post="{% url 'billing:invoice_pay' invoice.id %}"
+        hx-target="#invoice-modal-container"
+        hx-swap="innerHTML"
+        class="modal-body"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar pagamento?"
+        data-swal-text="Deseja registar este pagamento?"
+        data-swal-confirm-text="Registar"
+        data-swal-cancel-text="Voltar"
+      >
+        {% csrf_token %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-danger">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label required">{{ form.amount.label }}</label>
+            <div class="input-group money-group">
+              <span class="input-group-text"><i class="bi bi-cash-coin"></i></span>
+              {{ form.amount }}
+              <span class="input-group-text">MZN</span>
+            </div>
+            {% if form.amount.errors %}
+              <div class="invalid-feedback d-block">{{ form.amount.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">{{ form.method.label }}</label>
+            <div class="form-icon">
+              <i class="bi bi-credit-card"></i>
+              {{ form.method }}
+            </div>
+            {% if form.method.errors %}
+              <div class="invalid-feedback d-block">{{ form.method.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+          </div>
+        </div>
+        <div class="modal-footer px-0 pb-0">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-success" type="submit">
+            <i class="bi bi-check-circle"></i>
+            Registar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("invoice-payment-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

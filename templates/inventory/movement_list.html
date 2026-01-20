@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Movimentos de stock - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Movimentos de stock</h1>
+      <div class="text-muted small">Histórico de entradas, saídas e ajustes.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary" href="{% url 'inventory:stock_list' %}">
+        <i class="bi bi-archive me-1"></i>
+        Stock
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'catalog:product_list' %}">
+        <i class="bi bi-box-seam me-1"></i>
+        Produtos
+      </a>
+      {% if perms.inventory.add_stockmovement %}
+        <a class="btn btn-primary" href="{% url 'inventory:movement_create' %}">
+          <i class="bi bi-plus-circle me-1"></i>
+          Entrada/Ajuste
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4 col-md-6">
+        <label class="form-label small">Pesquisar produto</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Nome do produto" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <label class="form-label small">Tipo</label>
+        <select class="form-select tom-select" name="movement_type" data-placeholder="Tipo de movimento...">
+          <option value="">Todos</option>
+          {% for value, label in movement_choices %}
+            <option value="{{ value }}"{% if movement_type == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-4 col-md-8">
+        <label class="form-label small">Periodo</label>
+        <div class="d-flex gap-2">
+          <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+          <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+      </div>
+      <div class="col-lg-1 col-md-4 d-grid">
+        <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Produto</th>
+            <th>SKU</th>
+            <th>Tipo</th>
+            <th>Quantidade</th>
+            <th>Referencia</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for movement in page.object_list %}
+            <tr>
+              <td>{{ movement.product.name }}</td>
+              <td>{{ movement.product.sku|default:"-" }}</td>
+              <td>{{ movement.get_movement_type_display }}</td>
+              <td>{{ movement.quantity|floatformat:0 }}</td>
+              <td>
+                {% if movement.reference_url %}
+                  <a href="{{ movement.reference_url }}">{{ movement.reference_label }}</a>
+                {% else %}
+                  {{ movement.reference_label }}
+                {% endif %}
+              </td>
+              <td>{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sem movimentos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page.has_other_pages %}
+    <nav class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock %}

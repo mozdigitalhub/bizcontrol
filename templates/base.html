@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}BizControl{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    >
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    >
+    <link
+      href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css"
+      rel="stylesheet"
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+      :root {
+        --brand: #1f6f8b;
+        --brand-dark: #154c61;
+        --brand-soft: #e7f3f7;
+        --ink: #1d242b;
+        --muted: #6d7b86;
+        --surface: #ffffff;
+        --surface-2: #f4f7f9;
+        --accent: #f3b562;
+        --shadow: 0 12px 30px rgba(24, 42, 56, 0.08);
+      }
+
+      body.app-body {
+        font-family: "Manrope", sans-serif;
+        background: radial-gradient(circle at top left, #f8fbfd 0%, #eef4f8 40%, #e9f1f6 100%);
+        color: var(--ink);
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: flex;
+        gap: 24px;
+        padding: 24px;
+      }
+
+      .app-sidebar {
+        width: 240px;
+        background: linear-gradient(165deg, var(--brand), var(--brand-dark));
+        color: #fff;
+        border-radius: 20px;
+        padding: 24px 18px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+      }
+
+      .nav-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .nav-section-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 6px 12px 0;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s ease;
+      }
+
+      .nav-item.active,
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+      }
+
+      .nav-toggle {
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+      }
+
+      .nav-chevron {
+        margin-left: auto;
+        font-size: 12px;
+        transition: transform 0.2s ease;
+      }
+
+      .nav-toggle[aria-expanded="true"] .nav-chevron {
+        transform: rotate(180deg);
+      }
+
+      .nav-sub {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-left: 6px;
+      }
+
+      .nav-sub-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        color: rgba(255, 255, 255, 0.78);
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .nav-sub-item.active,
+      .nav-sub-item:hover {
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+      }
+
+      .logout {
+        margin-top: auto;
+      }
+
+      .app-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .app-topbar {
+        background: var(--surface);
+        border-radius: 20px;
+        padding: 18px 22px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .topbar-title h1 {
+        font-size: 22px;
+        margin: 0;
+        font-weight: 700;
+      }
+
+      .topbar-title p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .topbar-search {
+        flex: 1;
+        max-width: 420px;
+      }
+
+      .topbar-search input {
+        width: 100%;
+        border: 1px solid #e2e8ee;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-size: 14px;
+        background: #fbfdff;
+      }
+
+      .topbar-badges {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .required::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: 600;
+      }
+
+      .form-note {
+        font-size: 12px;
+        color: #6d7b86;
+      }
+
+      .money-group .input-group-text {
+        background: #f0f6f9;
+        border-color: #e2e8ee;
+        border-radius: 12px;
+      }
+
+      .pill {
+        background: var(--brand-soft);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--brand);
+      }
+
+      .app-content {
+        display: grid;
+        gap: 18px;
+      }
+
+      .card {
+        border: none;
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .table thead {
+        background: var(--surface-2);
+      }
+
+      .form-control,
+      .form-select {
+        border-radius: 12px;
+        border: 1px solid #e2e8ee;
+        background: #fbfdff;
+      }
+
+      .ts-dropdown {
+        z-index: 2000 !important;
+      }
+
+      .modal-content,
+      .modal-body {
+        position: relative;
+      }
+
+      .modal .ts-dropdown {
+        z-index: 2000 !important;
+      }
+
+      .btn-primary {
+        background: var(--brand);
+        border: none;
+      }
+
+      .btn-outline-secondary {
+        border-radius: 999px;
+      }
+
+      .stat-card,
+      .panel,
+      .chart {
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .stat-card {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: var(--brand-soft);
+        color: var(--brand);
+        font-weight: 700;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 16px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .donut {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: conic-gradient(var(--accent) calc(var(--slice) * 1%), var(--brand-soft) 0);
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+      }
+
+      .donut span {
+        width: 92px;
+        height: 92px;
+        border-radius: 50%;
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .bar {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        background: var(--brand);
+      }
+
+      .chart svg {
+        width: 100%;
+        height: 180px;
+      }
+
+      .chart-labels {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 6px;
+      }
+
+      @media (max-width: 992px) {
+        .app-shell {
+          flex-direction: column;
+        }
+
+        .app-sidebar {
+          width: 100%;
+          flex-direction: row;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+        }
+
+        .nav-list {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+
+        .nav-section {
+          width: 100%;
+        }
+
+        .nav-sub {
+          padding-left: 0;
+        }
+
+        .logout {
+          margin-top: 0;
+          margin-left: auto;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .app-topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .topbar-search {
+          max-width: 100%;
+        }
+
+        .topbar-badges {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar">
+        <div class="profile">
+          <div class="avatar">
+            {{ request.user.username|slice:":2"|upper }}
+          </div>
+          <div>
+            <div class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</div>
+            <div class="small">{{ current_business.name }}</div>
+          </div>
+        </div>
+        {% with ns=request.resolver_match.namespace current_path=request.path url_name=request.resolver_match.url_name %}
+          <nav class="nav-list">
+            <div class="nav-section">
+              <div class="nav-section-title">Principal</div>
+              <a class="nav-item{% if ns == 'reports' %} active{% endif %}" href="{% url 'reports:dashboard' %}">
+                Dashboard
+              </a>
+            </div>
+
+            <div class="nav-section">
+              <button
+                class="nav-item nav-toggle{% if ns in nav_groups.sales %} active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-sales"
+                aria-expanded="{% if ns in nav_groups.sales %}true{% else %}false{% endif %}"
+                aria-controls="nav-sales"
+              >
+                Operacoes
+                <i class="bi bi-chevron-down nav-chevron"></i>
+              </button>
+              <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
+                <div class="nav-sub">
+                  {% if perms.sales.add_sale %}
+                    <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}">
+                      {{ current_business.ui_labels.new_sale }}
+                    </a>
+                  {% endif %}
+                  <a class="nav-sub-item{% if ns in nav_groups.sales and url_name != 'new' %} active{% endif %}" href="{% url 'sales:list' %}">
+                    {{ current_business.ui_labels.sales }}
+                  </a>
+                  {% if current_business and current_business.module_quotations_enabled %}
+                    <a class="nav-sub-item{% if ns == 'quotations' %} active{% endif %}" href="{% url 'quotations:list' %}">
+                      Cotacoes
+                    </a>
+                  {% endif %}
+                  {% if perms.deliveries.view_deliveryguide %}
+                    <a class="nav-sub-item{% if ns == 'deliveries' %} active{% endif %}" href="{% url 'deliveries:guide_list' %}">
+                      Guias de entrega
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="nav-section">
+              <button
+                class="nav-item nav-toggle{% if ns in nav_groups.customers %} active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-customers"
+                aria-expanded="{% if ns in nav_groups.customers %}true{% else %}false{% endif %}"
+                aria-controls="nav-customers"
+              >
+                Clientes & Fiado
+                <i class="bi bi-chevron-down nav-chevron"></i>
+              </button>
+              <div class="collapse{% if ns in nav_groups.customers %} show{% endif %}" id="nav-customers">
+                <div class="nav-sub">
+                  <a class="nav-sub-item{% if ns == 'customers' %} active{% endif %}" href="{% url 'customers:list' %}">
+                    Clientes
+                  </a>
+                  {% if current_business and current_business.allow_credit_sales_enabled %}
+                    <a class="nav-sub-item{% if ns == 'receivables' %} active{% endif %}" href="{% url 'receivables:list' %}">
+                      Recebiveis
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="nav-section">
+              <button
+                class="nav-item nav-toggle{% if ns in nav_groups.products %} active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-products"
+                aria-expanded="{% if ns in nav_groups.products %}true{% else %}false{% endif %}"
+                aria-controls="nav-products"
+              >
+                Produtos & Stock
+                <i class="bi bi-chevron-down nav-chevron"></i>
+              </button>
+              <div class="collapse{% if ns in nav_groups.products %} show{% endif %}" id="nav-products">
+                <div class="nav-sub">
+                  {% if current_business and current_business.module_catalog_enabled %}
+                    <a class="nav-sub-item{% if ns == 'catalog' %} active{% endif %}" href="{% url 'catalog:product_list' %}">
+                      {{ current_business.ui_labels.products }}
+                    </a>
+                  {% endif %}
+                  <a class="nav-sub-item{% if ns == 'inventory' %} active{% endif %}" href="{% url 'inventory:stock_list' %}">
+                    Stock
+                  </a>
+                  {% if perms.inventory.view_goodsreceipt %}
+                    <a class="nav-sub-item{% if ns == 'inventory' and '/receipts/' in current_path %} active{% endif %}" href="{% url 'inventory:receipt_list' %}">
+                      Rececao de mercadoria
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="nav-section">
+              <button
+                class="nav-item nav-toggle{% if ns in nav_groups.billing %} active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-billing"
+                aria-expanded="{% if ns in nav_groups.billing %}true{% else %}false{% endif %}"
+                aria-controls="nav-billing"
+              >
+                Faturacao
+                <i class="bi bi-chevron-down nav-chevron"></i>
+              </button>
+              <div class="collapse{% if ns in nav_groups.billing %} show{% endif %}" id="nav-billing">
+                <div class="nav-sub">
+                  <a class="nav-sub-item{% if ns == 'billing' and '/receipts/' not in current_path %} active{% endif %}" href="{% url 'billing:invoice_list' %}">
+                    Faturas
+                  </a>
+                  <a class="nav-sub-item{% if '/receipts/' in current_path %} active{% endif %}" href="{% url 'billing:receipt_list' %}">
+                    Recibos
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {% if current_business and current_business.module_cashflow_enabled %}
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns in nav_groups.finance %} active{% endif %}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#nav-finance"
+                  aria-expanded="{% if ns in nav_groups.finance %}true{% else %}false{% endif %}"
+                  aria-controls="nav-finance"
+                >
+                  Financeiro
+                  <i class="bi bi-chevron-down nav-chevron"></i>
+                </button>
+                <div class="collapse{% if ns in nav_groups.finance %} show{% endif %}" id="nav-finance">
+                  <div class="nav-sub">
+                    <a class="nav-sub-item{% if ns == 'finance' and '/cashflow/' in current_path %} active{% endif %}" href="{% url 'finance:cashflow_list' %}">
+                      Fluxo de caixa
+                    </a>
+                    <a class="nav-sub-item{% if ns == 'finance' and '/purchases/' in current_path %} active{% endif %}" href="{% url 'finance:purchase_list' %}">
+                      Compras
+                    </a>
+                    <a class="nav-sub-item{% if ns == 'finance' and '/expenses/' in current_path %} active{% endif %}" href="{% url 'finance:expense_list' %}">
+                      Despesas
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            {% with tab=request.GET.tab|default:"tenant" %}
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns == 'tenants' and tab != 'system' %} active{% endif %}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#nav-profile"
+                  aria-expanded="{% if ns == 'tenants' and tab != 'system' %}true{% else %}false{% endif %}"
+                  aria-controls="nav-profile"
+                >
+                  Perfil
+                  <i class="bi bi-chevron-down nav-chevron"></i>
+                </button>
+                <div class="collapse{% if ns == 'tenants' and tab != 'system' %} show{% endif %}" id="nav-profile">
+                  <div class="nav-sub">
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'tenant' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=tenant">
+                      Perfil do negocio
+                    </a>
+                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'payments' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=payments">
+                        Dados para pagamento
+                      </a>
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'user' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=user">
+                      Meu perfil
+                    </a>
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'security' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=security">
+                      Seguranca
+                    </a>
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'select_business' %} active{% endif %}" href="{% url 'tenants:select_business' %}">
+                      Trocar negocio
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %} active{% endif %}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#nav-settings"
+                  aria-expanded="{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %}true{% else %}false{% endif %}"
+                  aria-controls="nav-settings"
+                >
+                  Configuracoes
+                  <i class="bi bi-chevron-down nav-chevron"></i>
+                </button>
+                <div class="collapse{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %} show{% endif %}" id="nav-settings">
+                  <div class="nav-sub">
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'system' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=system">
+                      Configuracoes do sistema
+                    </a>
+                    {% if request.user.is_staff or request.user.is_superuser %}
+                      <a class="nav-sub-item{% if '/admin/' in current_path %} active{% endif %}" href="/admin/">
+                        Administracao
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endwith %}
+          </nav>
+        {% endwith %}
+        <form class="logout" method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="btn btn-light btn-sm w-100" type="submit">Sair</button>
+        </form>
+      </aside>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="topbar-title">
+            {% block topbar_title %}
+              <h1>Bem-vindo, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+            {% endblock %}
+            {% block topbar_subtitle %}
+              <p>{{ current_business.name }} · BizControl</p>
+            {% endblock %}
+          </div>
+          <div class="topbar-search">
+            {% block topbar_search %}
+              <input type="text" placeholder="Pesquisar rapidamente...">
+            {% endblock %}
+          </div>
+          <div class="topbar-badges">
+            {% block topbar_badges %}{% endblock %}
+          </div>
+        </header>
+
+        <section class="app-content">
+          {% include "partials/messages.html" %}
+          {% block content %}{% endblock %}
+        </section>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      (function () {
+        var initTomSelect = function (root) {
+          if (!root || !window.TomSelect) {
+            return;
+          }
+          var selects = root.querySelectorAll("select.tom-select");
+          selects.forEach(function (select) {
+            if (select.tomselect) {
+              return;
+            }
+            var modalRoot = select.closest(".modal");
+            var modalBody = select.closest(".modal-body");
+            var modalContent = select.closest(".modal-content");
+            if (modalRoot && !modalRoot.classList.contains("show")) {
+              return;
+            }
+            var maxOptions = parseInt(select.dataset.maxOptions || "200", 10);
+            var cacheEnabled = select.dataset.cache !== "false";
+            var dropdownParent = select.dataset.dropdownParent;
+            var inTable = select.closest(".table-responsive");
+            if (dropdownParent === "self") {
+              dropdownParent = select.parentElement || select;
+              } else if (dropdownParent === "form") {
+                dropdownParent = select.closest(".card") || select.parentElement || select.closest("form") || document.body;
+            } else if (dropdownParent === "modal") {
+              dropdownParent = modalBody || modalContent || modalRoot || document.body;
+            } else if (modalBody) {
+              dropdownParent = modalBody;
+            } else if (modalContent) {
+              dropdownParent = modalContent;
+            } else if (modalRoot) {
+              dropdownParent = modalRoot;
+            } else if (inTable) {
+              dropdownParent = document.body;
+            } else {
+              dropdownParent = document.body;
+            }
+            var onDropdownOpen = null;
+            if (dropdownParent && dropdownParent !== document.body) {
+              var parentStyle = window.getComputedStyle(dropdownParent);
+              if (parentStyle.position === "static") {
+                dropdownParent.style.position = "relative";
+              }
+              onDropdownOpen = function () {
+                var control = this.control;
+                if (!control || !this.dropdown) {
+                  return;
+                }
+                var rect = control.getBoundingClientRect();
+                var parentRect = dropdownParent.getBoundingClientRect();
+                var top = rect.bottom - parentRect.top + dropdownParent.scrollTop;
+                var left = rect.left - parentRect.left + dropdownParent.scrollLeft;
+                this.dropdown.style.position = "absolute";
+                this.dropdown.style.top = top + "px";
+                this.dropdown.style.left = left + "px";
+                this.dropdown.style.width = rect.width + "px";
+              };
+            }
+            new TomSelect(select, {
+              create: false,
+              allowEmptyOption: true,
+              placeholder: select.getAttribute("data-placeholder") || "Pesquisar...",
+              searchField: ["text"],
+              sortField: { field: "text", direction: "asc" },
+              maxOptions: maxOptions,
+              dropdownParent: dropdownParent,
+              onDropdownOpen: onDropdownOpen,
+              score: function (search) {
+                if (!cacheEnabled) {
+                  return this.getScoreFunction(search);
+                }
+                this._scoreCache = this._scoreCache || {};
+                if (this._scoreCache[search]) {
+                  return this._scoreCache[search];
+                }
+                var score = this.getScoreFunction(search);
+                this._scoreCache[search] = score;
+                return score;
+              },
+            });
+          });
+        };
+
+        window.initTomSelect = initTomSelect;
+
+        var normalizeTextareas = function (root) {
+          if (!root) {
+            return;
+          }
+          root.querySelectorAll("textarea").forEach(function (textarea) {
+            textarea.setAttribute("rows", "3");
+          });
+        };
+
+        var scheduleDismiss = function (root) {
+          if (!root) {
+            return;
+          }
+          var alerts = root.querySelectorAll("[data-auto-dismiss]");
+          alerts.forEach(function (alert) {
+            if (alert.dataset.dismissBound === "true") {
+              return;
+            }
+            alert.dataset.dismissBound = "true";
+            var delay = parseInt(alert.dataset.autoDismiss || "4000", 10);
+            setTimeout(function () {
+              alert.remove();
+            }, delay);
+          });
+        };
+
+        var cleanupModalBackdrops = function () {
+          if (document.querySelector(".modal.show")) {
+            return;
+          }
+          document.body.classList.remove("modal-open");
+          document.body.style.removeProperty("overflow");
+          document.body.style.removeProperty("padding-right");
+          document.querySelectorAll(".modal-backdrop").forEach(function (el) {
+            el.remove();
+          });
+        };
+
+        document.addEventListener("hidden.bs.modal", function () {
+          cleanupModalBackdrops();
+        });
+
+        var initPurchaseForm = function (root) {
+          if (!root) {
+            return;
+          }
+          var forms = root.querySelectorAll("form[data-purchase-form]");
+          forms.forEach(function (form) {
+            if (form.dataset.purchaseBound === "true") {
+              return;
+            }
+            form.dataset.purchaseBound = "true";
+
+            var actionInput = form.querySelector("input[name='action']");
+            form.querySelectorAll("button[data-action]").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                if (actionInput) {
+                  actionInput.value = btn.getAttribute("data-action");
+                }
+              });
+            });
+
+            var typeField = form.querySelector("[name='purchase_type']");
+            var itemsSection = form.querySelector("[data-purchase-items]");
+            var internalSection = form.querySelector("[data-purchase-internal]");
+            var totalAmount = form.querySelector("[data-purchase-total]");
+            var internalAmount = form.querySelector("[name='internal_amount']");
+            var internalDescription = form.querySelector("[name='internal_description']");
+            var toggleSections = function () {
+              if (!typeField || !itemsSection || !internalSection) {
+                return;
+              }
+              if (typeField.value === "internal") {
+                itemsSection.style.display = "none";
+                internalSection.style.display = "";
+                itemsSection.querySelectorAll("input, select, textarea").forEach(function (field) {
+                  if (field.type === "hidden") {
+                    return;
+                  }
+                  field.disabled = true;
+                  field.required = false;
+                });
+                internalSection.querySelectorAll("input, select, textarea").forEach(function (field) {
+                  if (field.type === "hidden") {
+                    return;
+                  }
+                  field.disabled = false;
+                });
+                if (internalAmount) {
+                  internalAmount.required = true;
+                }
+                if (internalDescription) {
+                  internalDescription.required = true;
+                }
+              } else {
+                itemsSection.style.display = "";
+                internalSection.style.display = "none";
+                itemsSection.querySelectorAll("input, select, textarea").forEach(function (field) {
+                  if (field.type === "hidden") {
+                    return;
+                  }
+                  field.disabled = false;
+                });
+                internalSection.querySelectorAll("input, select, textarea").forEach(function (field) {
+                  if (field.type === "hidden") {
+                    return;
+                  }
+                  field.disabled = true;
+                  field.required = false;
+                });
+              }
+              updateTotals();
+            };
+
+            var formatMoney = function (value) {
+              var safe = Number.isFinite(value) ? value : 0;
+              return safe.toFixed(2).replace(".", ",") + " MZN";
+            };
+
+            var updateTotals = function () {
+              if (!form) {
+                return;
+              }
+              var total = 0;
+              if (typeField && typeField.value === "internal") {
+                var internalValue = parseFloat((internalAmount && internalAmount.value || "0").replace(",", "."));
+                total = Number.isFinite(internalValue) ? internalValue : 0;
+              } else {
+                form.querySelectorAll("tr.item-row").forEach(function (row) {
+                  var qtyInput = row.querySelector("[data-quantity]");
+                  var costInput = row.querySelector("[data-unit-cost]");
+                  var lineOutput = row.querySelector("[data-line-total]");
+                  var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+                  var qty = parseInt((qtyInput && qtyInput.value || "0").replace(",", "."), 10);
+                  var cost = parseFloat((costInput && costInput.value || "0").replace(",", "."));
+                  var lineTotal = (Number.isFinite(qty) ? qty : 0) * (Number.isFinite(cost) ? cost : 0);
+                  if (lineOutput) {
+                    lineOutput.value = lineTotal ? lineTotal.toFixed(2).replace(".", ",") : "0,00";
+                  }
+                  if (!deleteInput || !deleteInput.checked) {
+                    total += lineTotal;
+                  }
+                });
+              }
+              if (totalAmount) {
+                totalAmount.textContent = formatMoney(total);
+              }
+            };
+
+            if (typeField) {
+              typeField.addEventListener("change", toggleSections);
+              toggleSections();
+            }
+            if (internalAmount) {
+              internalAmount.addEventListener("input", updateTotals);
+            }
+
+            var addButton = form.querySelector("[data-add-item]");
+            if (addButton) {
+              addButton.addEventListener("click", function () {
+                var totalForms = form.querySelector("input[name='items-TOTAL_FORMS']");
+                var template = form.querySelector("template[data-items-template]");
+                if (!template) {
+                  var searchRoot = root && root.parentElement ? root.parentElement : document;
+                  template = searchRoot.querySelector("template[data-items-template]");
+                }
+                var itemsBody = form.querySelector("[data-items-body]");
+                if (!totalForms || !template || !itemsBody) {
+                  return;
+                }
+                var count = parseInt(totalForms.value || "0", 10);
+                var row = document.createElement("tr");
+                row.className = "item-row";
+                row.innerHTML = template.innerHTML.replace(/__prefix__/g, count);
+                itemsBody.appendChild(row);
+                totalForms.value = count + 1;
+                if (window.initTomSelect) {
+                  window.initTomSelect(row);
+                }
+                row.querySelectorAll("[data-quantity], [data-unit-cost]").forEach(function (input) {
+                  input.addEventListener("input", updateTotals);
+                });
+                updateTotals();
+              });
+            }
+
+            form.querySelectorAll("[data-quantity], [data-unit-cost]").forEach(function (input) {
+              input.addEventListener("input", updateTotals);
+            });
+            updateTotals();
+          });
+        };
+
+        var initReceiptForm = function (root) {
+          if (!root) {
+            return;
+          }
+          var forms = root.querySelectorAll("form[data-receipt-form]");
+          forms.forEach(function (form) {
+            if (form.dataset.receiptBound === "true") {
+              return;
+            }
+            form.dataset.receiptBound = "true";
+
+              var productPrices = {};
+              try {
+                productPrices = JSON.parse(form.dataset.products || "{}");
+              } catch (err) {
+                productPrices = {};
+              }
+              var purchaseMap = {};
+              try {
+                purchaseMap = JSON.parse(form.dataset.purchases || "{}");
+              } catch (err) {
+                purchaseMap = {};
+              }
+
+            var formatMoney = function (value) {
+              var safe = Number.isFinite(value) ? value : 0;
+              return safe.toFixed(2).replace(".", ",") + " MZN";
+            };
+
+            var updateTotals = function () {
+              var totalQty = 0;
+              var totalCost = 0;
+              form.querySelectorAll("tr.item-row").forEach(function (row) {
+                var qtyInput = row.querySelector("[data-quantity]");
+                var costInput = row.querySelector("[data-unit-cost]");
+                var lineOutput = row.querySelector("[data-line-total]");
+                var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+                var qty = parseInt((qtyInput && qtyInput.value || "0").replace(",", "."), 10);
+                var cost = parseFloat((costInput && costInput.value || "0").replace(",", "."));
+                var lineTotal = (Number.isFinite(qty) ? qty : 0) * (Number.isFinite(cost) ? cost : 0);
+                if (lineOutput) {
+                  lineOutput.value = lineTotal ? lineTotal.toFixed(2).replace(".", ",") : "0,00";
+                }
+                if (!deleteInput || !deleteInput.checked) {
+                  totalQty += Number.isFinite(qty) ? qty : 0;
+                  totalCost += Number.isFinite(lineTotal) ? lineTotal : 0;
+                }
+              });
+              var qtyEl = form.querySelector("[data-receipt-qty]");
+              var totalEl = form.querySelector("[data-receipt-total]");
+              if (qtyEl) {
+                qtyEl.textContent = totalQty ? totalQty.toFixed(0) : "0";
+              }
+              if (totalEl) {
+                totalEl.textContent = formatMoney(totalCost);
+              }
+            };
+
+            var normalizeDecimalInputs = function () {
+              form.querySelectorAll("[data-unit-cost], [data-sale-price]").forEach(function (input) {
+                if (!input || !input.value) {
+                  return;
+                }
+                input.value = String(input.value).replace(",", ".").trim();
+              });
+            };
+
+            var bindRow = function (row) {
+              if (!row) {
+                return;
+              }
+              var productSelect = row.querySelector("select");
+              var saleInput = row.querySelector("[data-sale-price]");
+              var costInput = row.querySelector("[data-unit-cost]");
+              var normalizeNumber = function (value) {
+                var parsed = parseFloat(String(value || "").replace(",", "."));
+                if (!Number.isFinite(parsed)) {
+                  return "";
+                }
+                return parsed.toFixed(2);
+              };
+              var handleProductChange = function () {
+                if (!productSelect) {
+                  return;
+                }
+                var data = productPrices[productSelect.value] || {};
+                var saleValue = data.sale;
+                var costValue = data.cost;
+                if (saleInput && !(saleInput.dataset.userChanged === "true" && saleInput.value)) {
+                  var saleNormalized = normalizeNumber(saleValue);
+                  if (saleNormalized !== "") {
+                    saleInput.value = saleNormalized;
+                  }
+                }
+                if (costInput && !(costInput.dataset.userChanged === "true" && costInput.value)) {
+                  var costNormalized = normalizeNumber(costValue);
+                  if (costNormalized !== "" && parseFloat(costNormalized) > 0) {
+                    costInput.value = costNormalized;
+                  } else {
+                    costInput.value = "";
+                  }
+                }
+              };
+              if (productSelect) {
+                productSelect.addEventListener("change", handleProductChange);
+              }
+              if (saleInput) {
+                saleInput.addEventListener("input", function () {
+                  saleInput.dataset.userChanged = saleInput.value ? "true" : "";
+                });
+                if (saleInput.value) {
+                  saleInput.dataset.userChanged = "true";
+                }
+              }
+              if (costInput) {
+                costInput.addEventListener("input", function () {
+                  costInput.dataset.userChanged = costInput.value ? "true" : "";
+                });
+                if (costInput.value) {
+                  costInput.dataset.userChanged = "true";
+                }
+              }
+              row.querySelectorAll("[data-quantity], [data-unit-cost]").forEach(function (input) {
+                input.addEventListener("input", updateTotals);
+              });
+              handleProductChange();
+            };
+
+              var cashToggle = form.querySelector("[name='cash_movement']");
+              var paymentRow = form.querySelector("[data-cashflow-field]");
+              var paymentSelect = form.querySelector("[name='payment_method']");
+              var purchaseSelect = form.querySelector("[name='purchase']");
+              var supplierSelect = form.querySelector("[name='supplier']");
+              var handlePurchaseChange = function () {
+                if (!purchaseSelect || !supplierSelect) {
+                  return;
+                }
+                var data = purchaseMap[purchaseSelect.value] || {};
+                if (!data.supplier) {
+                  return;
+                }
+                if (supplierSelect.tomselect) {
+                  supplierSelect.tomselect.setValue(String(data.supplier));
+                } else {
+                  supplierSelect.value = String(data.supplier);
+                }
+              };
+              if (purchaseSelect) {
+                purchaseSelect.addEventListener("change", handlePurchaseChange);
+              }
+            var togglePaymentField = function () {
+              if (!cashToggle || !paymentRow) {
+                return;
+              }
+              if (cashToggle.checked) {
+                paymentRow.style.display = "";
+                if (paymentSelect) {
+                  paymentSelect.required = true;
+                }
+              } else {
+                paymentRow.style.display = "none";
+                if (paymentSelect) {
+                  paymentSelect.required = false;
+                }
+              }
+            };
+              if (cashToggle) {
+                cashToggle.addEventListener("change", togglePaymentField);
+                togglePaymentField();
+              }
+
+            form.querySelectorAll("tr.item-row").forEach(bindRow);
+
+            var addButton = form.querySelector("[data-add-item]");
+            if (addButton) {
+              addButton.addEventListener("click", function () {
+                var totalForms = form.querySelector("input[name='items-TOTAL_FORMS']");
+                var template = form.querySelector("template[data-items-template]");
+                if (!template) {
+                  var searchRoot = root && root.parentElement ? root.parentElement : document;
+                  template = searchRoot.querySelector("template[data-items-template]");
+                }
+                var itemsBody = form.querySelector("[data-items-body]");
+                if (!totalForms || !template || !itemsBody) {
+                  return;
+                }
+                var count = parseInt(totalForms.value || "0", 10);
+                var row = document.createElement("tr");
+                row.className = "item-row";
+                row.innerHTML = template.innerHTML.replace(/__prefix__/g, count);
+                itemsBody.appendChild(row);
+                totalForms.value = count + 1;
+                if (window.initTomSelect) {
+                  window.initTomSelect(row);
+                }
+                bindRow(row);
+                updateTotals();
+              });
+            }
+
+            form.addEventListener("submit", function () {
+              normalizeDecimalInputs();
+            });
+
+            updateTotals();
+          });
+        };
+
+        var initQuotationForm = function (root) {
+          if (!root) {
+            return;
+          }
+          var forms = root.querySelectorAll("form[data-quotation-form]");
+          forms.forEach(function (form) {
+            if (form.dataset.quotationBound === "true") {
+              return;
+            }
+            form.dataset.quotationBound = "true";
+
+            var productPrices = {};
+            try {
+              productPrices = JSON.parse(form.dataset.products || "{}");
+            } catch (err) {
+              productPrices = {};
+            }
+            var vatRate = parseFloat(form.dataset.vatRate || "0");
+            var pricesIncludeVat = String(form.dataset.pricesIncludeVat || "false") === "true";
+
+            var formatMoney = function (value) {
+              var safe = Number.isFinite(value) ? value : 0;
+              return safe.toFixed(2).replace(".", ",") + " MZN";
+            };
+
+            var calcLine = function (unitPrice, qty) {
+              var price = Number.isFinite(unitPrice) ? unitPrice : 0;
+              var quantity = Number.isFinite(qty) ? qty : 0;
+              if (pricesIncludeVat && vatRate > 0) {
+                var base = price / (1 + vatRate);
+                var tax = price - base;
+                return {
+                  subtotal: base * quantity,
+                  tax: tax * quantity,
+                  total: price * quantity,
+                };
+              }
+              if (vatRate > 0) {
+                var lineTax = price * vatRate;
+                return {
+                  subtotal: price * quantity,
+                  tax: lineTax * quantity,
+                  total: (price + lineTax) * quantity,
+                };
+              }
+              return {
+                subtotal: price * quantity,
+                tax: 0,
+                total: price * quantity,
+              };
+            };
+
+            var updateTotals = function () {
+              var subtotal = 0;
+              var taxTotal = 0;
+              form.querySelectorAll("tr.item-row").forEach(function (row) {
+                var qtyInput = row.querySelector("[data-quantity]");
+                var priceInput = row.querySelector("[data-unit-price]");
+                var lineOutput = row.querySelector("[data-line-total]");
+                var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+                var qty = parseInt((qtyInput && qtyInput.value || "0").replace(",", "."), 10);
+                var price = parseFloat((priceInput && priceInput.value || "0").replace(",", "."));
+                var line = calcLine(price, qty);
+                if (lineOutput) {
+                  lineOutput.value = line.total ? line.total.toFixed(2).replace(".", ",") : "0,00";
+                }
+                if (!deleteInput || !deleteInput.checked) {
+                  subtotal += line.subtotal;
+                  taxTotal += line.tax;
+                }
+              });
+
+              var discountType = form.querySelector("[name='discount_type']");
+              var discountValueInput = form.querySelector("[name='discount_value']");
+              var discountValue = parseFloat((discountValueInput && discountValueInput.value || "0").replace(",", "."));
+              var discount = 0;
+              var beforeDiscount = subtotal + taxTotal;
+              if (discountType && discountType.value === "percent") {
+                discount = (beforeDiscount * (Number.isFinite(discountValue) ? discountValue : 0)) / 100;
+              } else if (discountType && discountType.value === "fixed") {
+                discount = Number.isFinite(discountValue) ? discountValue : 0;
+              }
+              if (discount < 0) {
+                discount = 0;
+              }
+              if (discount > beforeDiscount) {
+                discount = beforeDiscount;
+              }
+              var total = beforeDiscount - discount;
+
+              var subtotalEl = form.querySelector("[data-quotation-subtotal]");
+              var taxEl = form.querySelector("[data-quotation-tax]");
+              var discountEl = form.querySelector("[data-quotation-discount]");
+              var totalEl = form.querySelector("[data-quotation-total]");
+              if (subtotalEl) {
+                subtotalEl.textContent = formatMoney(subtotal);
+              }
+              if (taxEl) {
+                taxEl.textContent = formatMoney(taxTotal);
+              }
+              if (discountEl) {
+                discountEl.textContent = formatMoney(discount);
+              }
+              if (totalEl) {
+                totalEl.textContent = formatMoney(total);
+              }
+            };
+
+              var bindRow = function (row) {
+                if (!row) {
+                  return;
+                }
+                var productSelect = row.querySelector("select");
+                var priceInput = row.querySelector("[data-unit-price]");
+                var handleProductChange = function () {
+                  if (!productSelect) {
+                    return;
+                  }
+                  var data = productPrices[productSelect.value] || {};
+                  if (priceInput && !(priceInput.dataset.userChanged === "true" && priceInput.value)) {
+                    if (data.price) {
+                      priceInput.value = String(data.price).replace(",", ".");
+                    }
+                  }
+                  updateTotals();
+                };
+                if (productSelect) {
+                  productSelect.addEventListener("change", handleProductChange);
+                  if (productSelect.tomselect) {
+                    productSelect.tomselect.on("change", handleProductChange);
+                  }
+                }
+                if (priceInput) {
+                  priceInput.addEventListener("input", function () {
+                    priceInput.dataset.userChanged = priceInput.value ? "true" : "";
+                  });
+              }
+              row.querySelectorAll("[data-quantity], [data-unit-price]").forEach(function (input) {
+                input.addEventListener("input", updateTotals);
+              });
+                handleProductChange();
+              };
+
+            var addButton = form.querySelector("[data-add-item]");
+            if (addButton) {
+              addButton.addEventListener("click", function () {
+                var totalForms = form.querySelector("input[name='items-TOTAL_FORMS']");
+                var template = form.querySelector("template[data-items-template]");
+                var itemsBody = form.querySelector("[data-items-body]");
+                if (!totalForms || !template || !itemsBody) {
+                  return;
+                }
+                var count = parseInt(totalForms.value || "0", 10);
+                var row = document.createElement("tr");
+                row.className = "item-row";
+                row.innerHTML = template.innerHTML.replace(/__prefix__/g, count);
+                itemsBody.appendChild(row);
+                totalForms.value = count + 1;
+                if (window.initTomSelect) {
+                  window.initTomSelect(row);
+                }
+                bindRow(row);
+                updateTotals();
+              });
+            }
+
+            var actionInput = form.querySelector("input[name='action']");
+            form.querySelectorAll("button[data-action]").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                if (actionInput) {
+                  actionInput.value = btn.getAttribute("data-action");
+                }
+              });
+            });
+
+            form.querySelectorAll("tr.item-row").forEach(bindRow);
+            var discountType = form.querySelector("[name='discount_type']");
+            var discountValue = form.querySelector("[name='discount_value']");
+            if (discountType) {
+              discountType.addEventListener("change", updateTotals);
+            }
+            if (discountValue) {
+              discountValue.addEventListener("input", updateTotals);
+            }
+            updateTotals();
+          });
+        };
+
+        var initQuotationApproval = function (root) {
+          if (!root) {
+            return;
+          }
+          var forms = root.querySelectorAll("form[data-stock-check-url]");
+          forms.forEach(function (form) {
+            if (form.dataset.stockCheckBound === "true") {
+              return;
+            }
+            form.dataset.stockCheckBound = "true";
+            var submitButton = form.querySelector("button[type='submit']");
+            var confirmInput = form.querySelector("input[name='confirm_stock']");
+            if (!submitButton) {
+              return;
+            }
+            submitButton.addEventListener("click", function (event) {
+              if (!window.fetch || !window.Swal) {
+                return;
+              }
+              event.preventDefault();
+              if (!form.checkValidity()) {
+                form.classList.add("was-validated");
+                return;
+              }
+              var stockUrl = form.dataset.stockCheckUrl || "";
+              var confirmTitle = form.dataset.swalTitle || "Aprovar cotacao?";
+              var confirmText = form.dataset.swalText || "Deseja continuar?";
+              var confirmButton = form.dataset.swalConfirmText || "Aprovar";
+              var cancelButton = form.dataset.swalCancelText || "Voltar";
+              var confirmSubmit = function () {
+                Swal.fire({
+                  title: confirmTitle,
+                  text: confirmText,
+                  icon: "question",
+                  showCancelButton: true,
+                  confirmButtonText: confirmButton,
+                  cancelButtonText: cancelButton,
+                }).then(function (result) {
+                  if (result.isConfirmed) {
+                    form.requestSubmit(submitButton);
+                  }
+                });
+              };
+              if (!stockUrl) {
+                confirmSubmit();
+                return;
+              }
+              fetch(stockUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                .then(function (response) {
+                  return response.json();
+                })
+                .then(function (data) {
+                  var shortages = data && data.shortages ? data.shortages : [];
+                  if (shortages.length) {
+                    var list = shortages
+                      .map(function (item) {
+                        return (
+                          "<li><strong>" +
+                          item.product +
+                          "</strong>: disponivel " +
+                          item.available +
+                          " / solicitado " +
+                          item.requested +
+                          "</li>"
+                        );
+                      })
+                      .join("");
+                    Swal.fire({
+                      title: "Stock insuficiente",
+                      html:
+                        "<div class='text-start'>Os seguintes produtos nao tem stock suficiente:</div><ul class='mt-2 text-start'>" +
+                        list +
+                        "</ul>",
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonText: "Continuar mesmo assim",
+                      cancelButtonText: "Voltar",
+                    }).then(function (result) {
+                      if (result.isConfirmed) {
+                        if (confirmInput) {
+                          confirmInput.value = "1";
+                        }
+                        confirmSubmit();
+                      }
+                    });
+                    return;
+                  }
+                  confirmSubmit();
+                })
+                .catch(function () {
+                  confirmSubmit();
+                });
+            });
+          });
+        };
+
+        document.body.addEventListener("htmx:afterSwap", function (event) {
+          cleanupModalBackdrops();
+          if (window.initTomSelect) {
+            window.initTomSelect(event.target);
+          }
+          normalizeTextareas(event.target);
+          scheduleDismiss(event.target);
+        });
+
+        window.initPurchaseForm = initPurchaseForm;
+        window.initReceiptForm = initReceiptForm;
+        window.initQuotationForm = initQuotationForm;
+        window.initQuotationApproval = initQuotationApproval;
+
+        document.addEventListener("DOMContentLoaded", function () {
+          scheduleDismiss(document);
+          initTomSelect(document);
+          normalizeTextareas(document);
+          initPurchaseForm(document);
+          initReceiptForm(document);
+          initQuotationForm(document);
+          initQuotationApproval(document);
+        });
+
+        document.body.addEventListener("htmx:afterSwap", function (event) {
+          scheduleDismiss(event.target);
+          initTomSelect(event.target);
+          normalizeTextareas(event.target);
+          initPurchaseForm(event.target);
+          initReceiptForm(event.target);
+          initQuotationForm(event.target);
+          initQuotationApproval(event.target);
+        });
+        document.body.addEventListener("deliveryGuideCreated", function (event) {
+          var modalEl = document.getElementById("delivery-guide-modal");
+          if (modalEl && window.bootstrap) {
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) {
+              modal.hide();
+            }
+          }
+          if (event && event.detail && event.detail.remaining === 0) {
+            var deliveryBtn = document.getElementById("delivery-register-button");
+            if (deliveryBtn) {
+              deliveryBtn.disabled = true;
+              deliveryBtn.setAttribute("title", "Levantamento concluido.");
+            }
+            var cancelBtn = document.getElementById("sale-cancel-button");
+            if (cancelBtn) {
+              cancelBtn.disabled = true;
+            }
+          }
+          if (window.Swal) {
+            Swal.fire({
+              title: "Levantamento registado",
+              text: "O levantamento foi registado com sucesso.",
+              icon: "success",
+              confirmButtonText: "Fechar",
+            });
+          }
+        });
+
+        document.body.addEventListener("htmx:confirm", function (event) {
+          var trigger = event.target;
+          var form = trigger.closest ? trigger.closest("form") : null;
+          var configEl = trigger.dataset && trigger.dataset.swalConfirm ? trigger : form;
+          if (
+            (trigger.dataset && trigger.dataset.swalSkip === "true") ||
+            (trigger.closest && trigger.closest("[data-swal-skip='true']"))
+          ) {
+            return;
+          }
+          if (!configEl || !configEl.dataset || !configEl.dataset.swalConfirm) {
+            return;
+          }
+          if (form && !form.checkValidity()) {
+            form.classList.add("was-validated");
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          Swal.fire({
+            title: configEl.dataset.swalTitle || "Confirmar?",
+            text: configEl.dataset.swalText || "Deseja continuar?",
+            icon: configEl.dataset.swalIcon || "question",
+            showCancelButton: true,
+            confirmButtonText: configEl.dataset.swalConfirmText || "Confirmar",
+            cancelButtonText: configEl.dataset.swalCancelText || "Voltar",
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              event.detail.issueRequest(true);
+            }
+          });
+        });
+
+        document.addEventListener("submit", function (event) {
+          var form = event.target;
+          if (!form || form.tagName !== "FORM") {
+            return;
+          }
+          if (!form.dataset || !form.dataset.swalConfirm) {
+            return;
+          }
+          if (form.hasAttribute("hx-post") || form.hasAttribute("hx-put") || form.hasAttribute("hx-patch") || form.hasAttribute("hx-delete")) {
+            return;
+          }
+          if (form.dataset.confirmed === "true") {
+            form.dataset.confirmed = "";
+            return;
+          }
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add("was-validated");
+            return;
+          }
+          event.preventDefault();
+          form.classList.add("was-validated");
+          Swal.fire({
+            title: form.dataset.swalTitle || "Confirmar?",
+            text: form.dataset.swalText || "Deseja continuar?",
+            icon: form.dataset.swalIcon || "question",
+            showCancelButton: true,
+            confirmButtonText: form.dataset.swalConfirmText || "Confirmar",
+            cancelButtonText: form.dataset.swalCancelText || "Voltar",
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              form.dataset.confirmed = "true";
+              if (form.requestSubmit) {
+                form.requestSubmit();
+              } else {
+                form.submit();
+              }
+            }
+          });
+        });
+      })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

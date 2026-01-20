@@ -1,0 +1,53 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Entrar - BizControl{% endblock %}
+
+{% block content %}
+  <div>
+    <div class="mb-3">
+      <span class="badge text-bg-light text-dark">BizControl</span>
+    </div>
+    <h1 class="h3 mb-2">Entrar</h1>
+    <p class="auth-muted mb-4">Acede ao teu negocio e gere vendas, stock e fiado.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.username.id_for_label }}">Utilizador</label>
+        <input
+          type="text"
+          name="{{ form.username.name }}"
+          id="{{ form.username.id_for_label }}"
+          class="auth-input"
+          placeholder="Utilizador"
+          value="{{ form.username.value|default_if_none:'' }}"
+          autocomplete="username"
+          autofocus
+          required
+        >
+        {% if form.username.errors %}
+          <div class="text-danger small">{{ form.username.errors }}</div>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="{{ form.password.id_for_label }}">Palavra-passe</label>
+        <input
+          type="password"
+          name="{{ form.password.name }}"
+          id="{{ form.password.id_for_label }}"
+          class="auth-input"
+          placeholder="Palavra-passe"
+          autocomplete="current-password"
+          required
+        >
+        {% if form.password.errors %}
+          <div class="text-danger small">{{ form.password.errors }}</div>
+        {% endif %}
+      </div>
+      <button class="btn btn-primary w-100 py-2" type="submit">Entrar</button>
+    </form>
+  </div>
+{% endblock %}

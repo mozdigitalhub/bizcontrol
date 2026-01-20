@@ -1,0 +1,76 @@
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">{{ product.name }}</h5>
+          <div class="form-note">Detalhes do {{ current_business.ui_labels.product|lower }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">SKU</p>
+            <p class="mb-0">{{ product.sku|default:"-" }}</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Categoria</p>
+            <p class="mb-0">{{ product.category.name|default:"-" }}</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Unidade</p>
+            <p class="mb-0">{{ product.get_unit_of_measure_display }}</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Preco venda</p>
+            <p class="mb-0">{{ product.sale_price|floatformat:2 }} MZN</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Preco custo</p>
+            <p class="mb-0">{{ product.cost_price|floatformat:2 }} MZN</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Nivel minimo de stock</p>
+            <p class="mb-0">{{ product.reorder_level|default:"-" }}</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Controlo de stock</p>
+            <p class="mb-0">{{ product.get_stock_control_mode_display }}</p>
+          </div>
+          <div class="col-md-4 mb-3">
+            <p class="text-muted mb-1">Ativo</p>
+            <p class="mb-0">{% if product.is_active %}Sim{% else %}Nao{% endif %}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        {% if perms.catalog.change_product %}
+          <a
+            class="btn btn-outline-primary"
+            href="{% url 'catalog:product_edit' product.id %}"
+            hx-get="{% url 'catalog:product_edit' product.id %}"
+            hx-target="#modal-container"
+            hx-swap="innerHTML"
+            data-bs-dismiss="modal"
+          >
+            Editar
+          </a>
+        {% endif %}
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("productDetailModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  })();
+</script>

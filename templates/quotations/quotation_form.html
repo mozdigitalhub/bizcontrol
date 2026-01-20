@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{% if quotation %}Editar cotacao{% else %}Nova cotacao{% endif %} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">{% if quotation %}Editar cotacao{% else %}Nova cotacao{% endif %}</h1>
+      <div class="text-muted small">Preencha os dados e adicione itens.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'quotations:list' %}">
+      <i class="bi bi-arrow-left"></i>
+      Voltar
+    </a>
+  </div>
+
+  {% if error_summary %}
+    <div class="alert alert-danger" data-auto-dismiss="false">
+      <div class="fw-semibold mb-1">Revise os campos obrigatorios.</div>
+      <ul class="mb-0">
+        {% for item in error_summary %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" data-quotation-form data-products='{{ products_json|safe }}' data-vat-rate="{{ vat_rate }}" data-prices-include-vat="{% if prices_include_vat %}true{% else %}false{% endif %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="draft">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <label class="form-label required">{{ form.customer.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              {{ form.customer }}
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <label class="form-label">{{ form.valid_until.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              {{ form.valid_until }}
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <label class="form-label">{{ form.discount_type.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-percent"></i></span>
+              {{ form.discount_type }}
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <label class="form-label">{{ form.discount_value.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-tag"></i></span>
+              {{ form.discount_value }}
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <label class="form-label">{{ form.notes.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-journal-text"></i></span>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-semibold">Itens da cotacao</div>
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-add-item>
+            <i class="bi bi-plus-circle me-1"></i>
+            Adicionar linha
+          </button>
+        </div>
+        {{ formset.management_form }}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 28%;">Produto</th>
+                <th style="width: 14%;">Qtd</th>
+                <th style="width: 16%;">Preco</th>
+                <th style="width: 16%;">Total</th>
+                <th style="width: 10%;">Remover</th>
+              </tr>
+            </thead>
+            <tbody data-items-body>
+              {% for item_form in formset.forms %}
+                <tr class="item-row">
+                  <td>{{ item_form.product }}</td>
+                  <td>{{ item_form.quantity }}</td>
+                  <td>{{ item_form.unit_price }}</td>
+                  <td>
+                    <input class="form-control" type="text" data-line-total readonly>
+                  </td>
+                  <td class="text-center">
+                    {{ item_form.DELETE }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <template data-items-template>
+          <td>{{ formset.empty_form.product }}</td>
+          <td>{{ formset.empty_form.quantity }}</td>
+          <td>{{ formset.empty_form.unit_price }}</td>
+          <td><input class="form-control" type="text" data-line-total readonly></td>
+          <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+        </template>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <div class="text-muted small">Subtotal</div>
+          <div class="fw-semibold" data-quotation-subtotal>0,00 MZN</div>
+        </div>
+        <div>
+          <div class="text-muted small">IVA</div>
+          <div class="fw-semibold" data-quotation-tax>0,00 MZN</div>
+        </div>
+        <div>
+          <div class="text-muted small">Desconto</div>
+          <div class="fw-semibold text-danger" data-quotation-discount>0,00 MZN</div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">Total</div>
+          <div class="fw-bold" data-quotation-total>0,00 MZN</div>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'quotations:list' %}">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar cotacao
+          </a>
+          <button class="btn btn-outline-secondary" type="submit" data-action="draft">
+            Guardar rascunho
+          </button>
+          <button class="btn btn-primary" type="submit" data-action="send">
+            <i class="bi bi-check-circle me-1"></i>
+            Submeter cotacao
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      var form = document.querySelector("form[data-quotation-form]");
+      if (!form) {
+        return;
+      }
+      var actionInput = form.querySelector("input[name='action']");
+      form.querySelectorAll("button[data-action]").forEach(function (button) {
+        button.addEventListener("click", function (event) {
+          var action = button.dataset.action || "draft";
+          if (actionInput) {
+            actionInput.value = action;
+          }
+          if (action !== "send") {
+            return;
+          }
+          if (!window.Swal) {
+            return;
+          }
+          event.preventDefault();
+          if (!form.checkValidity()) {
+            form.classList.add("was-validated");
+            return;
+          }
+          Swal.fire({
+            title: "Submeter cotacao?",
+            text: "Deseja submeter esta cotacao para o cliente?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Submeter",
+            cancelButtonText: "Voltar",
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              form.requestSubmit(button);
+            }
+          });
+        });
+      });
+    })();
+  </script>
+{% endblock %}

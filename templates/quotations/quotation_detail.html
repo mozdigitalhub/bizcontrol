@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Cotacao {{ quotation.code|default:quotation.id }} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Cotacao {{ quotation.code|default:quotation.id }}</h1>
+      <div class="text-muted small">Estado: {{ quotation.get_status_display }}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary" href="{% url 'quotations:list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'quotations:pdf_view' quotation.id %}" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i>
+        PDF
+      </a>
+      {% if quotation.status in editable_statuses and perms.quotations.change_quotation %}
+        <a class="btn btn-outline-primary" href="{% url 'quotations:edit' quotation.id %}">
+          <i class="bi bi-pencil"></i>
+          Editar
+        </a>
+      {% endif %}
+      {% if perms.quotations.add_quotation %}
+        <a class="btn btn-outline-secondary" href="{% url 'quotations:duplicate' quotation.id %}">
+          <i class="bi bi-files"></i>
+          Duplicar
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="text-muted small">Cliente</div>
+              <div class="fw-semibold">{{ quotation.customer.name|default:"-" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Data</div>
+              <div class="fw-semibold">{{ quotation.issue_date|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Validade</div>
+              <div class="fw-semibold">{{ quotation.valid_until|date:"d/m/Y"|default:"-" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Moeda</div>
+              <div class="fw-semibold">{{ quotation.currency }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Total</div>
+              <div class="fw-semibold">{{ quotation.total|floatformat:2 }} MZN</div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-muted small">Venda gerada</div>
+              {% if quotation.sale %}
+                <div class="fw-semibold">
+                  <a href="{% url 'sales:detail' quotation.sale.id %}">
+                    {{ quotation.sale.code|default:quotation.sale.id }}
+                  </a>
+                </div>
+              {% else %}
+                <div class="fw-semibold">-</div>
+              {% endif %}
+            </div>
+          </div>
+          {% if quotation.notes %}
+            <div class="mt-3">
+              <div class="text-muted small">Observacoes</div>
+              <div>{{ quotation.notes }}</div>
+            </div>
+          {% endif %}
+          {% if quotation.terms %}
+            <div class="mt-3">
+              <div class="text-muted small">Condicoes</div>
+              <div>{{ quotation.terms }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Item</th>
+                <th>Qtd</th>
+                <th>Preco</th>
+                <th>IVA</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+                <tr>
+                  <td>{{ item.description }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.unit_price|floatformat:2 }}</td>
+                  <td>{{ item.line_tax|floatformat:2 }}</td>
+                  <td>{{ item.line_total|floatformat:2 }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">Sem itens.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="border-top p-3 d-flex justify-content-end gap-3">
+          <div>Subtotal: {{ quotation.subtotal|floatformat:2 }} MZN</div>
+          <div>IVA: {{ quotation.tax_total|floatformat:2 }} MZN</div>
+          <div>Desconto: -{{ quotation.discount_total|floatformat:2 }} MZN</div>
+          <div class="fw-semibold">Total: {{ quotation.total|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="fw-semibold mb-2">Acoes</div>
+          {% if quotation.status in editable_statuses and perms.quotations.change_quotation %}
+            <form
+              method="post"
+              action="{% url 'quotations:approve' quotation.id %}"
+              data-stock-check-url="{% url 'quotations:stock_check' quotation.id %}"
+              data-swal-title="Aprovar cotacao?"
+              data-swal-text="Isto ira gerar uma venda."
+              data-swal-confirm-text="Aprovar"
+              data-swal-cancel-text="Voltar"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="confirm_stock" value="0">
+              <button class="btn btn-success w-100 mb-2" type="submit">
+                <i class="bi bi-check-circle me-1"></i>
+                Aprovar
+              </button>
+            </form>
+            <form method="post" action="{% url 'quotations:reject' quotation.id %}" data-swal-confirm="true" data-swal-title="Rejeitar cotacao?" data-swal-text="Esta cotacao sera rejeitada." data-swal-confirm-text="Rejeitar" data-swal-cancel-text="Voltar">
+              {% csrf_token %}
+              <button class="btn btn-outline-danger w-100 mb-2" type="submit">
+                <i class="bi bi-x-circle me-1"></i>
+                Rejeitar
+              </button>
+            </form>
+          {% endif %}
+          {% if quotation.status not in cancel_blocked_statuses and perms.quotations.change_quotation %}
+            <form method="post" action="{% url 'quotations:cancel' quotation.id %}" data-swal-confirm="true" data-swal-title="Cancelar cotacao?" data-swal-text="Deseja cancelar esta cotacao?" data-swal-confirm-text="Cancelar" data-swal-cancel-text="Voltar">
+              {% csrf_token %}
+              <button class="btn btn-outline-secondary w-100" type="submit">
+                <i class="bi bi-x-square me-1"></i>
+                Cancelar
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="fw-semibold mb-2">Historico</div>
+          {% for entry in status_history %}
+            <div class="mb-2">
+              <div class="small text-muted">{{ entry.changed_at|date:"d/m/Y H:i" }}</div>
+              <div class="fw-semibold">{{ entry.get_status_display }}</div>
+              {% if entry.changed_by %}
+                <div class="text-muted small">{{ entry.changed_by.get_full_name|default:entry.changed_by.username }}</div>
+              {% endif %}
+              {% if entry.notes %}
+                <div class="text-muted small">{{ entry.notes }}</div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="text-muted small">Sem historico.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

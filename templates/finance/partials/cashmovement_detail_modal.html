@@ -1,0 +1,66 @@
+<div class="modal fade" id="cashflow-detail-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Movimento #{{ movement.id }}</h5>
+          <div class="text-muted small">{{ movement.happened_at|date:"d/m/Y H:i" }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="text-muted small">Tipo</div>
+            <div class="fw-semibold">{{ movement.get_movement_type_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Metodo</div>
+            <div class="fw-semibold">{{ movement.get_method_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Valor</div>
+            <div class="fw-semibold">{{ movement.amount|floatformat:2 }} MZN</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Conta</div>
+            <div class="fw-semibold">{{ movement.account.name|default:"-" }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Categoria</div>
+            <div class="fw-semibold">{{ movement.get_category_display|default:"-" }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Referencia</div>
+            <div class="fw-semibold">{{ movement.reference_type|default:"-" }} {{ movement.reference_id|default:"" }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Utilizador</div>
+            <div class="fw-semibold">{{ movement.created_by.get_full_name|default:movement.created_by.username|default:"-" }}</div>
+          </div>
+          <div class="col-12">
+            <div class="text-muted small">Notas</div>
+            <div class="fw-semibold">{{ movement.notes|default:"-" }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("cashflow-detail-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

@@ -1,0 +1,78 @@
+<div class="modal fade" id="expense-detail-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Despesa #{{ expense.id }}</h5>
+          <div class="text-muted small">Estado: {{ expense.get_status_display }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="text-muted small">Categoria</div>
+                <div class="fw-semibold">{{ expense.category.name|default:"-" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Data</div>
+                <div class="fw-semibold">{{ expense.expense_date|date:"d/m/Y" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Valor</div>
+                <div class="fw-semibold">{{ expense.amount|floatformat:2 }} MZN</div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Metodo de pagamento</div>
+                <div class="fw-semibold">{{ expense.get_payment_method_display|default:"-" }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Comprovativo</div>
+                {% if expense.attachment %}
+                  <a href="{{ expense.attachment.url }}" target="_blank">Ver anexo</a>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Criado por</div>
+                <div class="fw-semibold">{{ expense.created_by.get_full_name|default:expense.created_by.username|default:"-" }}</div>
+              </div>
+            </div>
+            {% if expense.notes %}
+              <div class="mt-3">
+                <div class="text-muted small">Observacoes</div>
+                <div>{{ expense.notes }}</div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        {% if expense.status == "paid" and perms.finance.change_expense %}
+          <a class="btn btn-outline-danger" href="{% url 'finance:expense_cancel' expense.id %}">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar
+          </a>
+        {% endif %}
+        <button class="btn btn-primary" type="button" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("expense-detail-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

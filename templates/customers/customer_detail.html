@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do cliente - BizControl{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .customer-hero {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "main cards"
+        "actions cards";
+      gap: 16px;
+      align-items: center;
+    }
+
+    .customer-hero-main {
+      grid-area: main;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .customer-hero-cards {
+      grid-area: cards;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .customer-hero-actions {
+      grid-area: actions;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .customer-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #1f6f8b, #3da0c8);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 22px;
+    }
+
+    .summary-card {
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .summary-card.success {
+      background: linear-gradient(135deg, #e9fbf3 0%, #f6fffb 100%);
+      border: 1px solid rgba(21, 145, 99, 0.2);
+    }
+
+    .summary-card.danger {
+      background: linear-gradient(135deg, #ffecec 0%, #fff6f6 100%);
+      border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+
+    .summary-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: #ffffff;
+      color: #1f6f8b;
+      box-shadow: 0 8px 16px rgba(31, 111, 139, 0.12);
+    }
+
+    .customer-info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #eef2f5;
+    }
+
+    .customer-info-row:last-child {
+      border-bottom: none;
+    }
+
+    .customer-tabs .nav-link {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .customer-tabs .nav-link.active {
+      color: var(--brand);
+    }
+
+    .table td,
+    .table th {
+      vertical-align: middle;
+    }
+
+    @media (max-width: 992px) {
+      .customer-hero {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "main"
+          "cards"
+          "actions";
+      }
+
+      .customer-hero-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="card customer-hero mb-4">
+    <div class="customer-hero-main">
+      <div class="customer-avatar">
+        {{ customer.name|slice:":2"|upper }}
+      </div>
+      <div>
+        <h1 class="h4 mb-1">{{ customer.name }}</h1>
+        <div class="text-muted small">{{ current_business.name }} - BizControl</div>
+        <span class="badge text-bg-light mt-2">Cliente</span>
+      </div>
+    </div>
+    <div class="customer-hero-cards">
+      <div class="summary-card success">
+        <div class="summary-icon">
+          <i class="bi bi-wallet2"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Total gasto</div>
+          <div class="fw-semibold fs-5">{{ total_spent|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+      <div class="summary-card danger">
+        <div class="summary-icon text-danger">
+          <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Saldo em aberto</div>
+          <div class="fw-semibold fs-5">{{ open_balance|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+    </div>
+    <div class="customer-hero-actions">
+      {% if perms.customers.change_customer %}
+        <a class="btn btn-outline-primary" href="{% url 'customers:edit' customer.id %}">
+          <i class="bi bi-pencil"></i>
+          Editar
+        </a>
+      {% endif %}
+      <a class="btn btn-outline-secondary" href="{% url 'customers:list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-xl-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h6 fw-semibold mb-3">Dados do cliente</h2>
+          <div class="customer-info-row">
+            <span class="text-muted">Email</span>
+            <span>{{ customer.email|default:"-" }}</span>
+          </div>
+          <div class="customer-info-row">
+            <span class="text-muted">Telefone</span>
+            <span>{{ customer.phone|default:"-" }}</span>
+          </div>
+          <div class="customer-info-row">
+            <span class="text-muted">Limite de credito</span>
+            <span>{{ customer.credit_limit|floatformat:2 }} MZN</span>
+          </div>
+          <div class="customer-info-row">
+            <span class="text-muted">NUIT</span>
+            <span>{{ customer.nuit|default:"-" }}</span>
+          </div>
+          <div class="customer-info-row">
+            <span class="text-muted">Endereco</span>
+            <span class="text-end">{{ customer.address|default:"-" }}</span>
+          </div>
+          {% if customer.notes %}
+            <div class="customer-info-row">
+              <span class="text-muted">Observacoes</span>
+              <span class="text-end">{{ customer.notes }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+    <div class="col-xl-8">
+      <div class="card h-100">
+        <div class="card-body">
+          <ul class="nav nav-tabs customer-tabs mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-invoices" type="button" role="tab">
+                Faturas
+              </button>
+            </li>
+            {% if current_business.module_quotations_enabled %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-quotations" type="button" role="tab">
+                  Cotacoes
+                </button>
+              </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sales" type="button" role="tab">
+                Compras
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-credit" type="button" role="tab">
+                Fiado
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-deliveries" type="button" role="tab">
+                Levantamentos
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-activity" type="button" role="tab">
+                Atividades
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-invoices" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>No. Fatura</th>
+                      <th>Data</th>
+                      <th>Valor</th>
+                      <th>Status</th>
+                      <th class="text-end">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for invoice in invoices %}
+                      <tr>
+                        <td>{{ invoice.code|default:invoice.invoice_number }}</td>
+                        <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+                        <td>{{ invoice.total|floatformat:2 }} MZN</td>
+                        <td>
+                          {% if invoice.status == "paid" %}
+                            <span class="badge text-bg-success">Paga</span>
+                          {% elif invoice.status == "partial" %}
+                            <span class="badge text-bg-warning">Parcial</span>
+                          {% elif invoice.status == "canceled" %}
+                            <span class="badge text-bg-danger">Cancelada</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">Em aberto</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <a
+                            class="btn btn-sm btn-outline-secondary"
+                            href="{% url 'billing:invoice_detail' invoice.id %}"
+                            hx-get="{% url 'billing:invoice_detail' invoice.id %}"
+                            hx-target="#invoice-modal-container"
+                            hx-swap="innerHTML"
+                          >
+                            <i class="bi bi-eye"></i>
+                            Ver
+                          </a>
+                          {% if invoice.status != "paid" and invoice.status != "canceled" and perms.billing.add_invoicepayment %}
+                            <button
+                              class="btn btn-sm btn-outline-primary"
+                              type="button"
+                              hx-get="{% url 'billing:invoice_pay_modal' invoice.id %}"
+                              hx-target="#invoice-modal-container"
+                              hx-swap="innerHTML"
+                            >
+                              <i class="bi bi-cash-stack"></i>
+                              Pagar
+                            </button>
+                          {% endif %}
+                          <a class="btn btn-sm btn-outline-primary" href="{% url 'billing:invoice_pdf' invoice.id %}" target="_blank" rel="noopener">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            PDF
+                          </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Sem faturas.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% if current_business.module_quotations_enabled %}
+              <div class="tab-pane fade" id="tab-quotations" role="tabpanel">
+                <div class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Cotacao</th>
+                        <th>Data</th>
+                        <th>Validade</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th class="text-end">Acoes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for quotation in quotations %}
+                        <tr>
+                          <td>{{ quotation.code|default:quotation.id }}</td>
+                          <td>{{ quotation.issue_date|date:"d/m/Y" }}</td>
+                          <td>{{ quotation.valid_until|date:"d/m/Y"|default:"-" }}</td>
+                          <td>{{ quotation.total|floatformat:2 }} MZN</td>
+                          <td>
+                            {% if quotation.status == "approved" %}
+                              <span class="badge text-bg-success">Aprovada</span>
+                            {% elif quotation.status == "sent" %}
+                              <span class="badge text-bg-info text-dark">Enviada</span>
+                            {% elif quotation.status == "rejected" %}
+                              <span class="badge text-bg-danger">Rejeitada</span>
+                            {% elif quotation.status == "expired" %}
+                              <span class="badge text-bg-warning text-dark">Expirada</span>
+                            {% elif quotation.status == "canceled" %}
+                              <span class="badge text-bg-secondary">Cancelada</span>
+                            {% else %}
+                              <span class="badge text-bg-secondary">Rascunho</span>
+                            {% endif %}
+                          </td>
+                          <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'quotations:detail' quotation.id %}">
+                              <i class="bi bi-eye"></i>
+                              Ver
+                            </a>
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'quotations:pdf_view' quotation.id %}" target="_blank" rel="noopener">
+                              <i class="bi bi-file-earmark-pdf"></i>
+                              PDF
+                            </a>
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">Sem cotacoes.</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            {% endif %}
+            <div class="tab-pane fade" id="tab-sales" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Venda</th>
+                      <th>Data</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th class="text-end">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sale in sales %}
+                      <tr>
+                        <td>{{ sale.code|default:sale.id }}</td>
+                        <td>{{ sale.sale_date|date:"d/m/Y H:i" }}</td>
+                        <td>{{ sale.total|floatformat:2 }} MZN</td>
+                        <td>
+                          {% if sale.status == "confirmed" %}
+                            <span class="badge text-bg-success">Confirmada</span>
+                          {% elif sale.status == "canceled" %}
+                            <span class="badge text-bg-danger">Cancelada</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">Rascunho</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:detail' sale.id %}">
+                            <i class="bi bi-eye"></i>
+                            Ver
+                          </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Sem vendas.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="tab-credit" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Total</th>
+                      <th>Pago</th>
+                      <th>Saldo</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for receivable in receivables %}
+                      <tr>
+                        <td>#{{ receivable.id }}</td>
+                        <td>{{ receivable.original_amount|floatformat:2 }} MZN</td>
+                        <td>{{ receivable.total_paid|floatformat:2 }} MZN</td>
+                        <td>{{ receivable.balance|floatformat:2 }} MZN</td>
+                        <td>
+                          {% if receivable.status == "settled" %}
+                            <span class="badge text-bg-success">Liquidado</span>
+                          {% else %}
+                            <span class="badge text-bg-warning">Em aberto</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-center text-muted">Sem fiados.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="tab-deliveries" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Guia</th>
+                      <th>Data</th>
+                      <th>Status</th>
+                      <th class="text-end">Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for guide in delivery_guides %}
+                      <tr>
+                        <td>{{ guide.code|default:guide.guide_number }}</td>
+                        <td>{{ guide.issued_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                          {% if guide.status == "delivered" %}
+                            <span class="badge text-bg-success">Entregue</span>
+                          {% elif guide.status == "partial" %}
+                            <span class="badge text-bg-warning">Parcial</span>
+                          {% elif guide.status == "canceled" %}
+                            <span class="badge text-bg-danger">Cancelada</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">Emitida</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <button
+                            class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            hx-get="{% url 'deliveries:guide_detail' guide.id %}"
+                            hx-target="#delivery-modal-container"
+                            hx-swap="innerHTML"
+                          >
+                            <i class="bi bi-eye"></i>
+                          </button>
+                          <a class="btn btn-sm btn-outline-primary" href="{% url 'deliveries:guide_pdf' guide.id %}" target="_blank" rel="noopener">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Sem levantamentos.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-activity" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Data</th>
+                      <th>Descricao</th>
+                      <th>Valor</th>
+                      <th>Metodo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for payment in payments %}
+                      <tr>
+                        <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
+                        <td>Pagamento de fiado #{{ payment.receivable.id }}</td>
+                        <td>{{ payment.amount|floatformat:2 }} MZN</td>
+                        <td>{{ payment.get_method_display }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Sem atividades recentes.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div id="invoice-modal-container"></div>
+          <div id="delivery-modal-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="h6 fw-semibold mb-3">Historico de compras</h3>
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Descricao</th>
+                  <th class="text-end">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sale in sales|slice:":5" %}
+                  <tr>
+                    <td>{{ sale.sale_date|date:"d/m/Y" }}</td>
+                    <td>Venda {{ sale.code|default:sale.id }}</td>
+                    <td class="text-end">{{ sale.total|floatformat:2 }} MZN</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="text-center text-muted">Sem compras.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="h6 fw-semibold mb-3">Fiado / Dividas</h3>
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Descricao</th>
+                  <th class="text-end">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for receivable in receivables|slice:":5" %}
+                  <tr>
+                    <td>{{ receivable.created_at|date:"d/m/Y" }}</td>
+                    <td>Fiado #{{ receivable.id }}</td>
+                    <td class="text-end">{{ receivable.balance|floatformat:2 }} MZN</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="text-center text-muted">Sem dividas.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

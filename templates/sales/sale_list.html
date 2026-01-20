@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_business.ui_labels.sales }} - BizControl{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .filter-card {
+      background: #f7f9fc;
+      border: 1px solid #e3e9f2;
+    }
+
+    .sale-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e9f2f7;
+      color: #2a5d7a;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sale-table th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6d7b86;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">{{ current_business.ui_labels.sales }}</h1>
+    {% if perms.sales.add_sale %}
+      <a class="btn btn-primary" href="{% url 'sales:new' %}">
+        <i class="bi bi-plus-circle me-1"></i>
+        {{ current_business.ui_labels.new_sale }}
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">{{ current_business.ui_labels.sales_total }}</div>
+        <div class="fw-semibold">{{ total_sales_amount|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 border border-danger-subtle">
+        <div class="text-danger small">{{ current_business.ui_labels.sales_canceled }}</div>
+        <div class="fw-semibold text-danger">{{ canceled_count }}</div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <div class="text-muted small">Em aberto</div>
+        <div class="fw-semibold">{{ open_total|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3 filter-card" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-3">
+        <label class="form-label small">Pesquisar</label>
+        <input class="form-control" type="text" name="q" placeholder="Cliente ou numero" value="{{ query }}">
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Data</label>
+        <div class="d-flex gap-2">
+          <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+          <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Cliente</label>
+        <select class="form-select tom-select" name="customer" data-placeholder="Pesquisar cliente..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}"{% if customer_id == customer.id|stringformat:"s" %} selected{% endif %}>{{ customer.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Estado</label>
+        <select class="form-select tom-select" name="status" data-placeholder="Estado da venda..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Pagamento</label>
+        <select class="form-select tom-select" name="payment_status" data-placeholder="Estado do pagamento..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for value, label in payment_choices %}
+            <option value="{{ value }}"{% if payment_status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <label class="form-label small">Levantamento</label>
+        <select class="form-select tom-select" name="delivery_status" data-placeholder="Estado do levantamento..." data-dropdown-parent="form">
+          <option value="">Todos</option>
+          {% for value, label in delivery_choices %}
+            <option value="{{ value }}"{% if delivery_status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle sale-table">
+        <thead class="table-light">
+          <tr>
+            <th>Nº</th>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Pagamento</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in page.object_list %}
+            <tr>
+              <td>{% if sale.code %}{{ sale.code }}{% else %}#{{ sale.id }}{% endif %}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="sale-avatar">
+                    {% if sale.customer %}
+                      {{ sale.customer.name|slice:":2"|upper }}
+                    {% else %}
+                      CF
+                    {% endif %}
+                  </div>
+                  <div class="fw-semibold">{{ sale.customer.name|default:"Consumidor final" }}</div>
+                </div>
+              </td>
+              <td>{{ sale.sale_date|date:"d/m/Y H:i" }}</td>
+              <td>{{ sale.total|floatformat:2 }} MZN</td>
+              <td>
+                {% if sale.status == "confirmed" %}
+                  <span class="badge bg-success">Confirmada</span>
+                {% elif sale.status == "canceled" %}
+                  <span class="badge bg-danger">Cancelada</span>
+                {% else %}
+                  <span class="badge bg-secondary">Rascunho</span>
+                {% endif %}
+                {% if sale.sale_type == "deposit" %}
+                  <span class="badge bg-info text-dark ms-1">Deposito</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if sale.status == "canceled" %}
+                  {% if sale.return_type == "total" %}
+                    <span class="badge bg-danger">Reembolso total</span>
+                  {% elif sale.return_type == "partial" %}
+                    <span class="badge bg-warning text-dark">Reembolso parcial</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Sem devolucao</span>
+                  {% endif %}
+                {% elif sale.is_credit %}
+                  <span class="badge bg-info text-dark">Fiado</span>
+                  {% if sale.payment_status == "paid" %}
+                    <span class="badge bg-success">Paga</span>
+                  {% elif sale.payment_status == "partial" %}
+                    <span class="badge bg-warning text-dark">Parcial</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Nao paga</span>
+                  {% endif %}
+                  {% if sale.payment_due_date %}
+                    <div class="small text-muted mt-1">{{ sale.payment_due_date|date:"d/m/Y" }}</div>
+                  {% endif %}
+                {% else %}
+                  {% if sale.payment_status == "paid" %}
+                    <span class="badge bg-success">Paga</span>
+                  {% elif sale.payment_status == "partial" %}
+                    <span class="badge bg-warning text-dark">Parcial</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Nao paga</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:detail' sale.id %}">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if sale.status == "confirmed" %}
+                  <a
+                    class="btn btn-sm btn-outline-danger"
+                    href="{% url 'sales:cancel' sale.id %}"
+                    hx-get="{% url 'sales:cancel' sale.id %}"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-x-circle"></i>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">{{ current_business.ui_labels.sales_empty }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+      <span class="text-muted small">
+        Mostrando {{ page.start_index }} a {{ page.end_index }} de {{ page.paginator.count }} registos
+      </span>
+      {% if page.has_other_pages %}
+        <nav>
+          <ul class="pagination mb-0">
+            {% if page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+            {% if page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="modal-container"></div>
+{% endblock %}

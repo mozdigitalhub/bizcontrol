@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Recebivel - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Recebivel #{{ receivable.id }}</h1>
+      <div class="text-muted small">Cliente: {{ receivable.customer.name }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'receivables:list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+      {% if perms.receivables.add_payment and receivable.status == 'open' %}
+        <button
+          class="btn btn-success"
+          hx-get="{% url 'receivables:pay_modal' receivable.id %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML"
+          type="button"
+        >
+          <i class="bi bi-cash-coin"></i>
+          Registrar pagamento
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="receivable-summary">
+    {% include "receivables/partials/receivable_summary.html" %}
+  </div>
+
+  <div id="modal-container"></div>
+{% endblock %}

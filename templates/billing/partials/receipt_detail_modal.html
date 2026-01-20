@@ -1,0 +1,93 @@
+<div class="modal fade" id="receipt-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Recibo {{ receipt.code|default:receipt.receipt_number }}</h5>
+          <div class="text-muted small">Data: {{ receipt.issue_date|date:"d/m/Y" }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="text-muted small">Valor</div>
+                <div class="fw-semibold">{{ receipt.amount|floatformat:2 }} MZN</div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Fatura</div>
+                <div class="fw-semibold">
+                  {% if receipt.invoice %}{{ receipt.invoice.code|default:receipt.invoice.invoice_number }}{% else %}-{% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="text-muted small">Metodo</div>
+                <div class="fw-semibold">
+                  {% if receipt.invoice_payment %}
+                    {{ receipt.invoice_payment.get_method_display }}
+                  {% elif receipt.payment %}
+                    {{ receipt.payment.get_method_display }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <div class="text-muted small">Utilizador</div>
+                <div class="fw-semibold">
+                  {% if receipt.invoice_payment and receipt.invoice_payment.created_by %}
+                    {{ receipt.invoice_payment.created_by.get_full_name|default:receipt.invoice_payment.created_by.username }}
+                  {% elif receipt.payment and receipt.payment.created_by %}
+                    {{ receipt.payment.created_by.get_full_name|default:receipt.payment.created_by.username }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Origem</div>
+                <div class="fw-semibold">
+                  {% if receipt.invoice_payment %}
+                    Pagamento de fatura
+                  {% elif receipt.payment %}
+                    Pagamento de fiado
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-primary" href="{% url 'billing:receipt_pdf' receipt.id %}" target="_blank" rel="noopener">
+          <i class="bi bi-file-earmark-pdf"></i>
+          Ver PDF
+        </a>
+        <a class="btn btn-primary" href="{% url 'billing:receipt_pdf_download' receipt.id %}">
+          <i class="bi bi-download"></i>
+          Download PDF
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("receipt-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

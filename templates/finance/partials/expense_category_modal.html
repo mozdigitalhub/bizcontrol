@@ -1,0 +1,76 @@
+<div class="modal fade" id="expenseCategoryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'finance:expense_category_create' %}"
+        hx-post="{% url 'finance:expense_category_create' %}"
+        hx-target="#expense-category-modal-container"
+        hx-swap="innerHTML"
+        hx-confirm="true"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar categoria?"
+        data-swal-text="Deseja guardar esta categoria?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">Nova categoria</h5>
+            <div class="form-note">Campo obrigatorio marcado com *</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Categoria criada com sucesso.</div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" data-auto-dismiss="4000">{{ form.non_field_errors|striptags }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label required">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">{{ form.is_active.label }}</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("expenseCategoryModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    {% if created and category %}
+      var selects = document.querySelectorAll("select[name='category']");
+      selects.forEach(function (select) {
+        var option = new Option("{{ category.name|escapejs }}", "{{ category.id }}", true, true);
+        if (select.tomselect) {
+          select.tomselect.addOption({ value: "{{ category.id }}", text: "{{ category.name|escapejs }}" });
+          select.tomselect.setValue("{{ category.id }}");
+        } else {
+          select.add(option);
+        }
+      });
+      setTimeout(function () {
+        modal.hide();
+      }, 3000);
+    {% endif %}
+  })();
+</script>

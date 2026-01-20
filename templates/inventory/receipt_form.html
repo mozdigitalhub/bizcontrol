@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Rececao de mercadoria - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Rececao de mercadoria</h1>
+      <div class="text-muted small">Registe entradas de stock por fornecedor e guia.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:receipt_list' %}">
+      <i class="bi bi-arrow-left me-1"></i>
+      Voltar
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form
+        method="post"
+        data-receipt-form="true"
+        data-products='{{ product_prices|default:"{}"|safe }}'
+        data-purchases='{{ purchase_map|default:"{}"|safe }}'
+        data-swal-confirm="true"
+        data-swal-title="Confirmar rececao?"
+        data-swal-text="Deseja guardar esta rececao de mercadoria?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger">{{ formset.non_form_errors|striptags }}</div>
+        {% endif %}
+        {% if error_summary %}
+          <div class="alert alert-danger">
+            <ul class="mb-0">
+              {% for error in error_summary %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">
+              <i class="bi bi-basket3 me-1"></i>
+              {{ form.purchase.label }}
+            </label>
+            {{ form.purchase }}
+            <div class="form-text">Opcional. Use para ligar a rececao a uma compra.</div>
+            {% if form.purchase.errors %}
+              <div class="invalid-feedback d-block">{{ form.purchase.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">
+              <i class="bi bi-person-lines-fill me-1"></i>
+              {{ form.supplier.label }}
+            </label>
+            {{ form.supplier }}
+            <div class="form-text">
+              <button
+                type="button"
+                class="btn btn-link p-0"
+                data-swal-skip="true"
+                hx-get="{% url 'finance:supplier_create' %}"
+                hx-target="#supplier-modal-container"
+                hx-swap="innerHTML"
+              >
+                Adicionar fornecedor
+              </button>
+            </div>
+            {% if form.supplier.errors %}
+              <div class="invalid-feedback d-block">{{ form.supplier.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label required">
+              <i class="bi bi-receipt me-1"></i>
+              {{ form.document_number.label }}
+            </label>
+            {{ form.document_number }}
+            {% if form.document_number.errors %}
+              <div class="invalid-feedback d-block">{{ form.document_number.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label required">
+              <i class="bi bi-calendar-event me-1"></i>
+              {{ form.document_date.label }}
+            </label>
+            {{ form.document_date }}
+            {% if form.document_date.errors %}
+              <div class="invalid-feedback d-block">{{ form.document_date.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mt-2">
+          <div class="col-md-8">
+            <label class="form-label">
+              <i class="bi bi-journal-text me-1"></i>
+              {{ form.notes.label }}
+            </label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+              <div class="invalid-feedback d-block">{{ form.notes.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <div class="form-check mt-4">
+              {{ form.cash_movement }}
+              <label class="form-check-label">{{ form.cash_movement.label }}</label>
+            </div>
+            {% if form.cash_movement.errors %}
+              <div class="invalid-feedback d-block">{{ form.cash_movement.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mt-2" data-cashflow-field style="display: none;">
+          <div class="col-md-4">
+            <label class="form-label required">
+              <i class="bi bi-credit-card-2-front me-1"></i>
+              {{ form.payment_method.label }}
+            </label>
+            {{ form.payment_method }}
+            <div class="form-text">Obrigatorio quando a rececao gera movimento de caixa.</div>
+            {% if form.payment_method.errors %}
+              <div class="invalid-feedback d-block">{{ form.payment_method.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4" data-receipt-items>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i class="bi bi-box-seam me-1"></i>
+              Produtos recebidos
+            </h6>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-add-item>
+              <i class="bi bi-plus-circle me-1"></i>
+              Adicionar linha
+            </button>
+          </div>
+          {{ formset.management_form }}
+          <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 240px;">Produto</th>
+                  <th style="min-width: 140px;">Quantidade</th>
+                  <th style="min-width: 170px;">Preco de aquisicao</th>
+                  <th style="min-width: 170px;">Preco de revenda</th>
+                  <th style="min-width: 140px;">Total custo</th>
+                  <th style="min-width: 90px;"></th>
+                </tr>
+              </thead>
+              <tbody data-items-body>
+                {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td>
+                      {{ item_form.product }}
+                      {% if item_form.product.errors %}
+                        <div class="invalid-feedback d-block">{{ item_form.product.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {{ item_form.quantity }}
+                      {% if item_form.quantity.errors %}
+                        <div class="invalid-feedback d-block">{{ item_form.quantity.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {{ item_form.unit_cost }}
+                      {% if item_form.unit_cost.errors %}
+                        <div class="invalid-feedback d-block">{{ item_form.unit_cost.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {{ item_form.sale_price }}
+                      {% if item_form.sale_price.errors %}
+                        <div class="invalid-feedback d-block">{{ item_form.sale_price.errors|striptags }}</div>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <input class="form-control bg-light" type="text" value="0,00" readonly data-line-total>
+                    </td>
+                    <td class="text-end">
+                      {% if item_form.DELETE %}
+                        <div class="form-check">
+                          {{ item_form.DELETE }}
+                          <label class="form-check-label">Remover</label>
+                        </div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="form-note mt-2">Preencha pelo menos um produto com quantidade.</div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <div class="text-end">
+            <div class="text-muted small">Quantidade total</div>
+            <div class="fs-5 fw-semibold" data-receipt-qty>0</div>
+            <div class="text-muted small mt-2">Custo total (quando informado)</div>
+            <div class="fs-6 fw-semibold" data-receipt-total>0,00 MZN</div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button class="btn btn-primary" type="submit">
+            Confirmar rececao
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="supplier-modal-container"></div>
+
+  <template data-items-template>
+    <td>
+      {{ formset.empty_form.product }}
+    </td>
+    <td>
+      {{ formset.empty_form.quantity }}
+    </td>
+    <td>
+      {{ formset.empty_form.unit_cost }}
+    </td>
+    <td>
+      {{ formset.empty_form.sale_price }}
+    </td>
+    <td>
+      <input class="form-control bg-light" type="text" value="0,00" readonly data-line-total>
+    </td>
+    <td></td>
+  </template>
+{% endblock %}

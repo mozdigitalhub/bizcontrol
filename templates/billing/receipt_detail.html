@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Recibo {{ receipt.code|default:receipt.receipt_number }} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h4 mb-0">Recibo {{ receipt.code|default:receipt.receipt_number }}</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'billing:receipt_list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+      <a class="btn btn-outline-primary" href="{% url 'billing:receipt_pdf' receipt.id %}" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i>
+        Ver PDF
+      </a>
+      <a class="btn btn-primary" href="{% url 'billing:receipt_pdf_download' receipt.id %}">
+        <i class="bi bi-download"></i>
+        Download
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <p class="text-muted mb-1">Data</p>
+          <p>{{ receipt.issue_date|date:"d/m/Y" }}</p>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">Valor</p>
+          <p>{{ receipt.amount|floatformat:2 }} MZN</p>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">Fatura</p>
+          <p>{% if receipt.invoice %}{{ receipt.invoice.code|default:receipt.invoice.invoice_number }}{% else %}-{% endif %}</p>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">Metodo</p>
+          <p>
+            {% if receipt.invoice_payment %}
+              {{ receipt.invoice_payment.get_method_display }}
+            {% elif receipt.payment %}
+              {{ receipt.payment.get_method_display }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">Utilizador</p>
+          <p>
+            {% if receipt.invoice_payment and receipt.invoice_payment.created_by %}
+              {{ receipt.invoice_payment.created_by.get_full_name|default:receipt.invoice_payment.created_by.username }}
+            {% elif receipt.payment and receipt.payment.created_by %}
+              {{ receipt.payment.created_by.get_full_name|default:receipt.payment.created_by.username }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Guia {{ guide.code|default:guide.guide_number }} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Guia {{ guide.code|default:guide.guide_number }}</h1>
+      <div class="text-muted small">Cliente: {{ guide.customer.name|default:"-" }}</div>
+      <div class="text-muted small">Status: {{ guide.get_status_display }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'deliveries:guide_list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+      <a class="btn btn-outline-primary" href="{% url 'deliveries:guide_pdf' guide.id %}" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i>
+        Ver PDF
+      </a>
+      <a class="btn btn-primary" href="{% url 'deliveries:guide_pdf_download' guide.id %}">
+        <i class="bi bi-download"></i>
+        Download
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="text-muted small">Origem</div>
+          <div class="fw-semibold">{{ guide.get_origin_type_display }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Data</div>
+          <div class="fw-semibold">{{ guide.issued_at|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Responsavel</div>
+          <div class="fw-semibold">{{ guide.delivered_by.get_full_name|default:guide.delivered_by.username|default:"-" }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Data prevista</div>
+          <div class="fw-semibold">
+            {% if guide.expected_delivery_date %}
+              {{ guide.expected_delivery_date|date:"d/m/Y" }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Transporte</div>
+          <div class="fw-semibold">{{ guide.transport_responsible|default:"-" }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-muted small">Custo transporte</div>
+          <div class="fw-semibold">
+            {% if guide.transport_cost %}
+              {{ guide.transport_cost|floatformat:2 }} MZN
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-white fw-semibold">Itens levantados</div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produto</th>
+            <th>Qtd</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.product.name }}</td>
+              <td>{{ item.quantity }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="2" class="text-center text-muted">Sem itens.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-white fw-semibold">Resumo do contrato</div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Produto</th>
+            <th>Contratado</th>
+            <th>Levantado</th>
+            <th>Pendente</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in summary_items %}
+            <tr>
+              <td>{{ row.item.product.name }}</td>
+              <td>{{ row.ordered_qty }}</td>
+              <td>{{ row.delivered_qty }}</td>
+              <td>{{ row.remaining_qty }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

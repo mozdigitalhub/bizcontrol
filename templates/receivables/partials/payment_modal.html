@@ -1,0 +1,95 @@
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <form
+        method="post"
+        action="{% url 'receivables:pay' receivable.id %}"
+        hx-post="{% url 'receivables:pay' receivable.id %}"
+        hx-target="#{{ target_id|default:'receivable-summary' }}"
+        hx-swap="innerHTML"
+        class="modal-body"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar pagamento?"
+        data-swal-text="Deseja registar este pagamento?"
+        data-swal-confirm-text="Registar"
+        data-swal-cancel-text="Voltar"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="target" value="{{ target_id|default:'receivable-summary' }}">
+        <div class="modal-header px-0">
+          <div>
+            <h5 class="modal-title mb-1">Registrar pagamento</h5>
+            <div class="text-muted small">Saldo em aberto: {{ receivable.balance|floatformat:2 }} MZN</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-danger mt-3 mb-0">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mt-3 mb-0">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+        {% if success %}
+          <div class="alert alert-success mt-3 mb-0">
+            Pagamento registado com sucesso.
+          </div>
+        {% else %}
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <label class="form-label required">{{ form.amount.label }}</label>
+              <div class="input-group money-group">
+                <span class="input-group-text"><i class="bi bi-cash-coin"></i></span>
+                {{ form.amount }}
+                <span class="input-group-text">MZN</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label required">{{ form.method.label }}</label>
+              <div class="form-icon">
+                <i class="bi bi-credit-card"></i>
+                {{ form.method }}
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ form.notes.label }}</label>
+              {{ form.notes }}
+            </div>
+          </div>
+        {% endif %}
+        <div class="modal-footer px-0 pb-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          {% if not success %}
+            <button class="btn btn-success" type="submit">
+              <i class="bi bi-check-circle"></i>
+              Registar
+            </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("paymentModal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    document.body.addEventListener("receivablePaymentSuccess", function () {
+      modal.hide();
+    }, { once: true });
+    {% if success %}
+      setTimeout(function () {
+        modal.hide();
+      }, 800);
+    {% endif %}
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+  })();
+</script>

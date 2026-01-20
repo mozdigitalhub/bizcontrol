@@ -1,0 +1,59 @@
+<div class="modal fade" id="productMovementsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Ultimos movimentos</h5>
+          <div class="form-note">{{ product.name }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Quantidade</th>
+                <th>Referencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for movement in movements %}
+                <tr>
+                  <td>{{ movement.created_at|date:"d/m/Y H:i" }}</td>
+                  <td>{{ movement.get_movement_type_display }}</td>
+                  <td>{{ movement.quantity|floatformat:0 }}</td>
+                  <td>
+                    {% if movement.reference_url %}
+                      <a class="text-decoration-none" href="{{ movement.reference_url }}">{{ movement.reference_label }}</a>
+                    {% else %}
+                      {{ movement.reference_label|default:"-" }}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">Sem movimentos.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-secondary" href="{% url 'inventory:movement_list' %}">Ver todos</a>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("productMovementsModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  })();
+</script>

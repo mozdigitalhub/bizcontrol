@@ -1,0 +1,199 @@
+<div class="modal fade" id="productModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'catalog:product_create' %}"
+        hx-post="{% url 'catalog:product_create' %}"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        hx-confirm="true"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar criacao?"
+        data-swal-text="Deseja guardar este produto?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">{{ current_business.ui_labels.new_product }}</h5>
+            <div class="form-note">Campos obrigatorios marcados com *</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">
+              {{ current_business.ui_labels.product }} criado com sucesso.
+            </div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" data-auto-dismiss="4000">
+              {{ form.non_field_errors|striptags }}
+            </div>
+          {% endif %}
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">{{ form.name.label }}</label>
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.sku.label }}</label>
+              {{ form.sku }}
+              <div class="d-flex justify-content-between">
+                <span class="form-note">Opcional</span>
+                <span class="form-note" id="sku-preview-modal">Sem SKU</span>
+              </div>
+              {% if form.sku.errors %}
+                <div class="invalid-feedback d-block">{{ form.sku.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ form.category.label }}</label>
+            {{ form.category }}
+            <div class="d-flex justify-content-between">
+              <span class="form-note">Opcional</span>
+              <a
+                class="form-note text-decoration-none"
+                href="{% url 'catalog:category_create' %}"
+                hx-get="{% url 'catalog:category_create' %}"
+                hx-target="#category-modal-container"
+                hx-swap="innerHTML"
+              >
+                Adicionar categoria
+              </a>
+            </div>
+            {% if form.category.errors %}
+              <div class="invalid-feedback d-block">{{ form.category.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">{{ form.cost_price.label }}</label>
+              <div class="input-group money-group">
+                {{ form.cost_price }}
+                <span class="input-group-text">MZN</span>
+              </div>
+              <div class="form-note">Opcional</div>
+              {% if form.cost_price.errors %}
+                <div class="invalid-feedback d-block">{{ form.cost_price.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required">{{ form.sale_price.label }}</label>
+              <div class="input-group money-group">
+                {{ form.sale_price }}
+                <span class="input-group-text">MZN</span>
+              </div>
+              {% if form.sale_price.errors %}
+                <div class="invalid-feedback d-block">{{ form.sale_price.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">{{ form.reorder_level.label }}</label>
+              {{ form.reorder_level }}
+              <div class="form-note">Opcional</div>
+              {% if form.reorder_level.errors %}
+                <div class="invalid-feedback d-block">{{ form.reorder_level.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label required">{{ form.unit_of_measure.label }}</label>
+              {{ form.unit_of_measure }}
+              {% if form.unit_of_measure.errors %}
+                <div class="invalid-feedback d-block">{{ form.unit_of_measure.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label required">{{ form.stock_control_mode.label }}</label>
+              {{ form.stock_control_mode }}
+              {% if form.stock_control_mode.errors %}
+                <div class="invalid-feedback d-block">{{ form.stock_control_mode.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-4 mb-3 d-flex align-items-end">
+              <div class="form-check mt-4">
+                {{ form.is_active }}
+                <label class="form-check-label">{{ form.is_active.label }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-note">
+            Dica: use <strong>manual</strong> para servicos e <strong>automatico</strong> para produtos com stock.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="category-modal-container"></div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("productModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    var skuInput = modalEl.querySelector("#{{ form.sku.id_for_label }}");
+    var skuPreview = modalEl.querySelector("#sku-preview-modal");
+    if (skuInput && skuPreview) {
+      var updateSku = function () {
+        var value = skuInput.value.trim();
+        skuPreview.textContent = value ? "SKU: " + value : "Sem SKU";
+      };
+      skuInput.addEventListener("input", updateSku);
+      updateSku();
+    }
+
+    var form = modalEl.querySelector("form");
+    if (form && !form.dataset.bound) {
+      form.dataset.bound = "true";
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+          form.classList.add("was-validated");
+        }
+      });
+    }
+
+    var moneyInputs = modalEl.querySelectorAll("[data-money='true']");
+    moneyInputs.forEach(function (input) {
+      var normalize = function () {
+        var value = input.value.replace(",", ".").replace(/[^\d.]/g, "");
+        input.value = value;
+      };
+      var format = function () {
+        if (!input.value) {
+          return;
+        }
+        var number = Number(input.value);
+        if (!Number.isNaN(number)) {
+          input.value = number.toFixed(2);
+        }
+      };
+      input.addEventListener("input", normalize);
+      input.addEventListener("blur", format);
+    });
+
+    {% if created %}
+      setTimeout(function () {
+        modal.hide();
+        window.location.reload();
+      }, 3000);
+    {% endif %}
+  })();
+</script>

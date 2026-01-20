@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Recibos - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h4 mb-0">Recibos</h1>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-4">
+        <label class="form-label small">Pesquisa</label>
+        <input class="form-control" type="text" name="q" placeholder="Numero ou fatura" value="{{ query }}">
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">De</label>
+        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Ate</label>
+        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-funnel"></i>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Numero</th>
+            <th>Fatura</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for group in grouped_receipts %}
+            <tr class="table-light">
+              <td colspan="5" class="fw-semibold">
+                {% if group.sale %}
+                  Venda {{ group.sale.code|default:group.sale.id }} · {{ group.sale.customer.name|default:"Consumidor final" }}
+                {% else %}
+                  Outros recibos
+                {% endif %}
+              </td>
+            </tr>
+            {% for receipt in group.receipts %}
+              <tr>
+                <td>{% if receipt.code %}{{ receipt.code }}{% else %}#{{ receipt.receipt_number }}{% endif %}</td>
+                <td>{% if receipt.invoice %}{{ receipt.invoice.code|default:receipt.invoice.invoice_number }}{% else %}-{% endif %}</td>
+                <td>{{ receipt.issue_date|date:"d/m/Y" }}</td>
+                <td>{{ receipt.amount|floatformat:2 }} MZN</td>
+                <td class="text-end">
+                  <a
+                    class="btn btn-sm btn-outline-secondary"
+                    href="{% url 'billing:receipt_detail' receipt.id %}"
+                    hx-get="{% url 'billing:receipt_detail' receipt.id %}"
+                    hx-target="#receipt-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'billing:receipt_pdf' receipt.id %}" target="_blank" rel="noopener">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted">Sem recibos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+      <div class="card-footer bg-white border-0">
+        <nav class="d-flex justify-content-end">
+          <ul class="pagination mb-0">
+            {% if page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}&date_from={{ date_from }}&date_to={{ date_to }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+            {% if page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}&date_from={{ date_from }}&date_to={{ date_to }}">Proximo</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+  <div id="receipt-modal-container"></div>
+{% endblock %}

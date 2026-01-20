@@ -1,0 +1,213 @@
+<div class="modal fade" id="delivery-guide-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-1">Registar levantamento</h5>
+          <div class="text-muted small">Venda {{ sale.code|default:sale.id }} - {{ sale.customer.name|default:"Consumidor final" }}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        {% if error %}
+          <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if deposit_data %}
+          <div class="alert alert-info">
+            {% if deposit_allow_over %}
+              Levantamento por deposito: permissao ativa para levantar acima do pago.
+            {% else %}
+              Levantamento por deposito: a quantidade disponivel depende do valor pago.
+            {% endif %}
+          </div>
+        {% endif %}
+        <form
+          method="post"
+          action="{% url 'deliveries:guide_create' sale.id %}"
+          hx-post="{% url 'deliveries:guide_create' sale.id %}"
+          hx-target="#delivery-list"
+          hx-swap="outerHTML"
+          novalidate
+        >
+          {% csrf_token %}
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="customer-transport-toggle">
+                <label class="form-check-label" for="customer-transport-toggle">
+                  Cliente levanta com transporte proprio
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="row g-3 mb-3" id="transport-fields">
+            <div class="col-md-4">
+              <label class="form-label">Data prevista</label>
+              <input class="form-control" type="date" name="expected_delivery_date" id="expected-delivery-date">
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Responsavel pelo transporte</label>
+              <input
+                class="form-control"
+                type="text"
+                name="transport_responsible"
+                placeholder="Ex: Motorista / Transportadora"
+                id="transport-responsible"
+              >
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Custo de transporte</label>
+              <input
+                class="form-control"
+                type="number"
+                step="0.01"
+                min="0"
+                inputmode="decimal"
+                name="transport_cost"
+                placeholder="0,00"
+                id="transport-cost"
+              >
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipo de levantamento</label>
+            <div class="btn-group" role="group" aria-label="Tipo de levantamento">
+              <input type="radio" class="btn-check" name="delivery_kind" id="delivery-partial" value="partial" checked>
+              <label class="btn btn-outline-secondary" for="delivery-partial">Parcial</label>
+              <input type="radio" class="btn-check" name="delivery_kind" id="delivery-total" value="total">
+              <label class="btn btn-outline-secondary" for="delivery-total">Total</label>
+            </div>
+            <div class="form-note mt-1">No total, os itens pendentes sao preenchidos automaticamente.</div>
+          </div>
+          <div class="table-responsive mb-3">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Produto</th>
+                  <th>Contratado</th>
+                  <th>Levantado</th>
+                  <th>Pendente</th>
+                  <th>Qtd a levantar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in summary_items %}
+                  <tr>
+                    <td>{{ row.item.product.name }}</td>
+                    <td>{{ row.ordered_qty }}</td>
+                    <td>{{ row.delivered_qty }}</td>
+                    <td>
+                      {{ row.remaining_qty }}
+                      {% if deposit_data and not deposit_allow_over %}
+                        <div class="text-muted small">Permitido: {{ row.allowed_remaining }}</div>
+                      {% endif %}
+                    </td>
+                    <td style="max-width: 160px;">
+                      <input
+                        class="form-control"
+                        type="number"
+                        step="1"
+                        min="0"
+                        name="qty_{{ row.item.id }}"
+                        value=""
+                        data-remaining="{{ row.remaining_qty }}"
+                        data-allowed="{{ row.allowed_remaining }}"
+                        {% if row.remaining_qty <= 0 %}readonly{% endif %}
+                      >
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">Sem itens para levantar.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observacoes</label>
+            <textarea class="form-control" name="notes" rows="3" placeholder="Notas do levantamento..."></textarea>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-check-circle me-1"></i>
+              Confirmar levantamento
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("delivery-guide-modal");
+    if (!modalEl || !window.bootstrap) {
+      return;
+    }
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+
+    var partialInput = modalEl.querySelector("#delivery-partial");
+    var totalInput = modalEl.querySelector("#delivery-total");
+    var qtyInputs = modalEl.querySelectorAll("input[name^='qty_']");
+    var customerToggle = modalEl.querySelector("#customer-transport-toggle");
+    var responsibleInput = modalEl.querySelector("#transport-responsible");
+    var costInput = modalEl.querySelector("#transport-cost");
+    var dateInput = modalEl.querySelector("#expected-delivery-date");
+    var transportFields = modalEl.querySelector("#transport-fields");
+    var toggleDeliveryKind = function () {
+      var isTotal = totalInput && totalInput.checked;
+      qtyInputs.forEach(function (input) {
+        var remaining = input.getAttribute("data-remaining") || "0";
+        if (isTotal) {
+          input.value = remaining;
+          input.setAttribute("readonly", "readonly");
+        } else {
+          if (input.hasAttribute("readonly") && remaining !== "0") {
+            input.removeAttribute("readonly");
+          }
+        }
+      });
+    };
+    if (partialInput) {
+      partialInput.addEventListener("change", toggleDeliveryKind);
+    }
+    if (totalInput) {
+      totalInput.addEventListener("change", toggleDeliveryKind);
+    }
+    toggleDeliveryKind();
+
+    if (customerToggle) {
+      customerToggle.addEventListener("change", function () {
+        var isCustomer = customerToggle.checked;
+        if (transportFields) {
+          transportFields.classList.toggle("d-none", isCustomer);
+        }
+        if (responsibleInput) {
+          if (isCustomer) {
+            responsibleInput.value = "Auto-levantamento";
+          }
+          responsibleInput.readOnly = false;
+        }
+        if (costInput) {
+          if (isCustomer) {
+            costInput.value = "0";
+          }
+          costInput.readOnly = false;
+        }
+        if (dateInput) {
+          if (isCustomer) {
+            dateInput.value = "";
+          }
+          dateInput.readOnly = false;
+        }
+      });
+    }
+  })();
+</script>

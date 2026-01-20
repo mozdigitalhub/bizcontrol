@@ -1,0 +1,104 @@
+<div class="modal fade" id="saleCancelModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form
+        method="post"
+        action="{% url 'sales:cancel' sale.id %}"
+        hx-post="{% url 'sales:cancel' sale.id %}"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        data-swal-confirm="true"
+        data-swal-title="Cancelar venda?"
+        data-swal-text="Esta acao vai cancelar a venda."
+        data-swal-confirm-text="Cancelar venda"
+        data-swal-cancel-text="Voltar"
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">Cancelar venda {{ sale.code|default:sale.id }}</h5>
+            <div class="form-note">Indique o tipo de devolucao para ajustar o stock.</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if canceled %}
+            <div class="alert alert-success">Venda cancelada com sucesso.</div>
+          {% elif error %}
+            <div class="alert alert-danger">{{ error }}</div>
+          {% else %}
+            {% if allow_returns %}
+              <div class="mb-3">
+                <label class="form-label required">Tipo de devolucao</label>
+                <select class="form-select" name="return_type" id="return-type">
+                  <option value="none">Sem devolucao</option>
+                  <option value="partial">Devolucao parcial</option>
+                  <option value="total">Devolucao total</option>
+                </select>
+              </div>
+            {% else %}
+              <input type="hidden" name="return_type" value="none">
+              <div class="alert alert-info mb-3">Devolucoes desativadas para este negocio.</div>
+            {% endif %}
+            <div class="mb-3">
+              <label class="form-label">Motivo (opcional)</label>
+              <textarea class="form-control" name="notes" rows="2" placeholder="Descreva o motivo"></textarea>
+            </div>
+            {% if allow_returns %}
+              <div id="partial-returns" style="display: none;">
+                <h6 class="mb-2">Quantidade a devolver</h6>
+                {% for item in items %}
+                  <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="flex-grow-1">{{ item.product.name }}</div>
+                    <input
+                      class="form-control"
+                      type="number"
+                      min="0"
+                      max="{{ item.quantity }}"
+                      step="1"
+                      name="return_qty_{{ item.id }}"
+                      value="0"
+                    >
+                  </div>
+                {% empty %}
+                  <div class="text-muted">Sem itens para devolver.</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          {% if not canceled %}
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+            <button class="btn btn-danger" type="submit">Cancelar venda</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("saleCancelModal");
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    var select = modalEl.querySelector("#return-type");
+    var partialSection = modalEl.querySelector("#partial-returns");
+    if (select && partialSection) {
+      var toggle = function () {
+        partialSection.style.display = select.value === "partial" ? "" : "none";
+      };
+      select.addEventListener("change", toggle);
+      toggle();
+    }
+
+    {% if canceled %}
+      setTimeout(function () {
+        modal.hide();
+        window.location.reload();
+      }, 700);
+    {% endif %}
+  })();
+</script>

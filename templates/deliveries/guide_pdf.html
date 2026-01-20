@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
+      .title { font-size: 20px; font-weight: bold; }
+      .muted { color: #666; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+      th { background: #f3f3f3; }
+      .footer { margin-top: 24px; font-size: 11px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <div class="title">Guia de entrega {{ guide.code|default:guide.guide_number }}</div>
+        <div class="muted">Data: {{ guide.issued_at|date:"d/m/Y H:i" }}</div>
+        <div class="muted">Origem: {{ guide.get_origin_type_display }}</div>
+      </div>
+      <div class="right">
+        <div><strong>{{ business.name }}</strong></div>
+        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
+        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <strong>Cliente</strong><br>
+      {% if guide.customer %}
+        {{ guide.customer.name }}<br>
+        {% if guide.customer.phone %}{{ guide.customer.phone }}<br>{% endif %}
+        {% if guide.customer.email %}{{ guide.customer.email }}<br>{% endif %}
+        {% if guide.customer.address %}{{ guide.customer.address }}{% endif %}
+      {% else %}
+        Consumidor final
+      {% endif %}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Qtd levantada</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="2" class="muted">Sem itens.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 16px;">
+      <strong>Transporte</strong><br>
+      <div class="muted">Data prevista: {% if guide.expected_delivery_date %}{{ guide.expected_delivery_date|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+      <div class="muted">Responsavel: {{ guide.transport_responsible|default:"-" }}</div>
+      <div class="muted">Custo: {% if guide.transport_cost %}{{ guide.transport_cost|floatformat:2 }} MZN{% else %}-{% endif %}</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Contratado</th>
+          <th>Levantado</th>
+          <th>Pendente</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary_items %}
+          <tr>
+            <td>{{ row.item.product.name }}</td>
+            <td>{{ row.ordered_qty }}</td>
+            <td>{{ row.delivered_qty }}</td>
+            <td>{{ row.remaining_qty }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="footer">
+      Obrigado pela preferencia.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Selecionar negocio - BizControl{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h1 class="h5 mb-3">Selecionar negocio</h1>
+          {% if is_superuser %}
+            {% if businesses %}
+              <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label class="form-label" for="business_id">Negocio</label>
+                  <select class="form-select tom-select" id="business_id" name="business_id" required data-placeholder="Pesquisar negocio...">
+                    {% for business in businesses %}
+                      <option value="{{ business.id }}">{{ business.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button class="btn btn-primary" type="submit">Continuar</button>
+              </form>
+            {% else %}
+              <div class="alert alert-warning mb-0">
+                Nao existe nenhum negocio registado.
+              </div>
+            {% endif %}
+          {% elif memberships %}
+            <form method="post">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label class="form-label" for="business_id">Negocio</label>
+                <select class="form-select tom-select" id="business_id" name="business_id" required data-placeholder="Pesquisar negocio...">
+                  {% for membership in memberships %}
+                    <option value="{{ membership.business.id }}">{{ membership.business.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button class="btn btn-primary" type="submit">Continuar</button>
+            </form>
+          {% else %}
+            <div class="alert alert-warning mb-0">
+              Nao existe nenhum negocio associado a este utilizador.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

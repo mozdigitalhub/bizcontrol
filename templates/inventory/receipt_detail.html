@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Rececao #{{ receipt.id }} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Rececao #{{ receipt.id }}</h1>
+      <div class="text-muted small">Fornecedor {{ receipt.supplier.name }} · {{ receipt.document_number }}</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:receipt_list' %}">
+      <i class="bi bi-arrow-left me-1"></i>
+      Voltar
+    </a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Guia/Fatura</div>
+          <div class="fw-semibold">{{ receipt.document_number }}</div>
+          <div class="text-muted small mt-2">Compra associada</div>
+          <div class="fw-semibold">
+            {% if receipt.purchase %}
+              {{ receipt.purchase.code|default:receipt.purchase.id }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+          <div class="text-muted small mt-2">Data</div>
+          <div class="fw-semibold">{{ receipt.document_date|date:"d/m/Y" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Fornecedor</div>
+          <div class="fw-semibold">{{ receipt.supplier.name }}</div>
+          <div class="text-muted small mt-2">Registado por</div>
+          <div class="fw-semibold">
+            {% if receipt.created_by %}
+              {{ receipt.created_by.get_full_name|default:receipt.created_by.username }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Quantidade total</div>
+          <div class="fw-semibold">{{ total_quantity|floatformat:0 }}</div>
+          <div class="text-muted small mt-2">Custo total</div>
+          <div class="fw-semibold">{{ total_cost|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small">Impacto no caixa</div>
+          {% if receipt.cash_movement %}
+            <div class="fw-semibold">Saida registada</div>
+            <div class="text-muted small mt-2">Metodo</div>
+            <div class="fw-semibold">
+              {% if receipt.cash_movement.payment_method %}
+                {{ receipt.cash_movement.payment_method.name }}
+              {% else %}
+                {{ receipt.cash_movement.get_method_display }}
+              {% endif %}
+            </div>
+            <div class="text-muted small mt-2">Valor</div>
+            <div class="fw-semibold">{{ receipt.cash_movement.amount|floatformat:2 }} MZN</div>
+          {% else %}
+            <div class="fw-semibold">Sem movimento de caixa</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="text-muted small">Observacoes</div>
+      <div class="fw-semibold">{{ receipt.notes|default:"-" }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Preco de aquisicao</th>
+            <th>Preco de revenda</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td class="fw-semibold">{{ item.product.name }}</td>
+              <td>{{ item.quantity|floatformat:0 }}</td>
+              <td>
+                {% if item.unit_cost %}
+                  {{ item.unit_cost|floatformat:2 }} MZN
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ item.sale_price|floatformat:2 }} MZN</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

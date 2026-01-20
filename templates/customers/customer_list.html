@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h4 mb-0">Clientes</h1>
+    {% if perms.customers.add_customer %}
+      <a class="btn btn-primary" href="{% url 'customers:create' %}">
+        <i class="bi bi-plus-circle"></i>
+        Novo cliente
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-lg-8">
+        <label class="form-label small">Pesquisa</label>
+        <input class="form-control" type="text" name="q" placeholder="Pesquisar por nome ou telefone" value="{{ query }}">
+      </div>
+      <div class="col-lg-4">
+        <button class="btn btn-outline-secondary w-100" type="submit">
+          <i class="bi bi-search"></i>
+          Pesquisar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>Email</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in page.object_list %}
+            <tr>
+              <td>{{ customer.name }}</td>
+              <td>{{ customer.phone|default:"-" }}</td>
+              <td>{{ customer.email|default:"-" }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:detail' customer.id %}">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if perms.customers.change_customer %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'customers:edit' customer.id %}">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                {% endif %}
+                {% if perms.receivables.add_payment and customer.open_receivable %}
+                  <button
+                    class="btn btn-sm btn-outline-success"
+                    type="button"
+                    hx-get="{% url 'receivables:pay_modal' customer.open_receivable.id %}?target=modal-container"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    <i class="bi bi-cash-coin"></i>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">Sem clientes.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+      <div class="card-footer bg-white border-0">
+        <nav class="d-flex justify-content-end">
+          <ul class="pagination mb-0">
+            {% if page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}">Anterior</a>
+              </li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+            {% if page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}">Proximo</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="modal-container"></div>
+{% endblock %}

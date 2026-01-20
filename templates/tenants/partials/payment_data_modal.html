@@ -1,0 +1,144 @@
+<div class="modal fade" id="tenant-payment-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form
+        method="post"
+        action="{% if method_type == 'wallet' %}{% if form.instance.pk %}{% url 'tenants:wallet_edit' form.instance.pk %}{% else %}{% url 'tenants:wallet_create' %}{% endif %}{% else %}{% if form.instance.pk %}{% url 'tenants:bank_edit' form.instance.pk %}{% else %}{% url 'tenants:bank_create' %}{% endif %}{% endif %}"
+        hx-post="{% if method_type == 'wallet' %}{% if form.instance.pk %}{% url 'tenants:wallet_edit' form.instance.pk %}{% else %}{% url 'tenants:wallet_create' %}{% endif %}{% else %}{% if form.instance.pk %}{% url 'tenants:bank_edit' form.instance.pk %}{% else %}{% url 'tenants:bank_create' %}{% endif %}{% endif %}"
+        hx-target="#tenant-payment-modal-container"
+        hx-swap="innerHTML"
+        data-swal-confirm="true"
+        data-swal-title="Confirmar?"
+        data-swal-text="Deseja guardar estes dados?"
+        data-swal-confirm-text="Guardar"
+        data-swal-cancel-text="Voltar"
+        novalidate
+      >
+        {% csrf_token %}
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-1">
+              {% if method_type == "wallet" %}Carteira movel{% else %}Conta bancaria{% endif %}
+            </h5>
+            <div class="text-muted small">Dados para recebimento</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {% if created %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Dados registados com sucesso.</div>
+          {% endif %}
+          {% if updated %}
+            <div class="alert alert-success" data-auto-dismiss="4000">Dados atualizados com sucesso.</div>
+          {% endif %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+          {% endif %}
+
+          {% if method_type == "wallet" %}
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-phone me-1"></i>
+                {{ form.wallet_type.label }}
+              </label>
+              {{ form.wallet_type }}
+              {% if form.wallet_type.errors %}
+                <div class="invalid-feedback d-block">{{ form.wallet_type.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-person me-1"></i>
+                {{ form.holder_name.label }}
+              </label>
+              {{ form.holder_name }}
+              {% if form.holder_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.holder_name.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-telephone me-1"></i>
+                {{ form.phone_number.label }}
+              </label>
+              {{ form.phone_number }}
+              {% if form.phone_number.errors %}
+                <div class="invalid-feedback d-block">{{ form.phone_number.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-bank me-1"></i>
+                {{ form.bank_name.label }}
+              </label>
+              {{ form.bank_name }}
+              {% if form.bank_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.bank_name.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-credit-card-2-front me-1"></i>
+                {{ form.account_number.label }}
+              </label>
+              {{ form.account_number }}
+              {% if form.account_number.errors %}
+                <div class="invalid-feedback d-block">{{ form.account_number.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">
+                <i class="bi bi-file-earmark-text me-1"></i>
+                {{ form.nib.label }}
+              </label>
+              {{ form.nib }}
+              {% if form.nib.errors %}
+                <div class="invalid-feedback d-block">{{ form.nib.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label">
+                <i class="bi bi-person me-1"></i>
+                {{ form.holder_name.label }}
+              </label>
+              {{ form.holder_name }}
+              {% if form.holder_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.holder_name.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="form-check">
+            {{ form.is_active }}
+            <label class="form-check-label">{{ form.is_active.label }}</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modalEl = document.getElementById("tenant-payment-modal");
+    if (!modalEl) {
+      return;
+    }
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener("hidden.bs.modal", function () {
+      modalEl.remove();
+    });
+    {% if created or updated %}
+      setTimeout(function () {
+        modal.hide();
+        window.location.reload();
+      }, 1500);
+    {% endif %}
+  })();
+</script>

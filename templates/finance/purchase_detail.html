@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Compra {{ purchase.code|default:purchase.id }} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Compra {{ purchase.code|default:purchase.id }}</h1>
+      <div class="text-muted small">Estado: {{ purchase.get_status_display }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'finance:purchase_list' %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+      {% if purchase.status == "confirmed" and perms.finance.change_purchase %}
+        <a class="btn btn-outline-danger" href="{% url 'finance:purchase_cancel' purchase.id %}">
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-3">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="text-muted small">Codigo</div>
+            <div class="fw-semibold">{{ purchase.code|default:"-" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Fornecedor</div>
+            <div class="fw-semibold">{{ purchase.supplier.name|default:"-" }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Tipo</div>
+            <div class="fw-semibold">{{ purchase.get_purchase_type_display }}</div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-muted small">Data</div>
+            <div class="fw-semibold">{{ purchase.purchase_date|date:"d/m/Y" }}</div>
+          </div>
+        </div>
+      </div>
+  </div>
+
+  {% if purchase.purchase_type == "internal" %}
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Descricao</div>
+        <div class="fw-semibold mb-3">{{ purchase.internal_description|default:"-" }}</div>
+        <div class="text-muted small">Valor</div>
+        <div class="fw-semibold">{{ purchase.total|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Produto</th>
+              <th>Quantidade</th>
+              <th>Custo unitario</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity|floatformat:0 }}</td>
+                <td>{{ item.unit_cost|floatformat:2 }}</td>
+                <td>{{ item.line_total|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Sem itens.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="border-top p-3 d-flex justify-content-end">
+        <div class="me-3">Total:</div>
+        <strong>{{ purchase.total|floatformat:2 }} MZN</strong>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card mt-3">
+    <div class="card-header bg-white fw-semibold">Rececoes ligadas</div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Fornecedor</th>
+            <th>Guia/Fatura</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for receipt in receipts %}
+            <tr>
+              <td>#{{ receipt.id }}</td>
+              <td>{{ receipt.supplier.name }}</td>
+              <td>{{ receipt.document_number }}</td>
+              <td>{{ receipt.document_date|date:"d/m/Y" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">Sem rececoes ligadas.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
+      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
+      .title { font-size: 20px; font-weight: bold; }
+      .muted { color: #666; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+      th { background: #f3f3f3; }
+      .totals { margin-top: 12px; width: 100%; }
+      .totals td { padding: 4px; }
+      .right { text-align: right; }
+      .footer { margin-top: 24px; font-size: 11px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <div class="title">Cotacao {{ quotation.code|default:quotation.id }}</div>
+        <div class="muted">Data: {{ quotation.issue_date|date:"d/m/Y" }}</div>
+        {% if quotation.valid_until %}
+          <div class="muted">Validade: {{ quotation.valid_until|date:"d/m/Y" }}</div>
+        {% endif %}
+      </div>
+      <div class="right">
+        <div><strong>{{ business.name }}</strong></div>
+        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
+        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <strong>Cliente</strong><br>
+      {% if quotation.customer %}
+        {{ quotation.customer.name }}<br>
+        {% if quotation.customer.phone %}{{ quotation.customer.phone }}<br>{% endif %}
+        {% if quotation.customer.email %}{{ quotation.customer.email }}<br>{% endif %}
+        {% if quotation.customer.address %}{{ quotation.customer.address }}{% endif %}
+      {% else %}
+        Consumidor final
+      {% endif %}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qtd</th>
+          <th>Preco</th>
+          <th>IVA</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price|floatformat:2 }}</td>
+            <td>{{ item.line_tax|floatformat:2 }}</td>
+            <td>{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted">Sem itens.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr>
+        <td class="right">Subtotal:</td>
+        <td class="right">{{ quotation.subtotal|floatformat:2 }} MZN</td>
+      </tr>
+      <tr>
+        <td class="right">IVA:</td>
+        <td class="right">{{ quotation.tax_total|floatformat:2 }} MZN</td>
+      </tr>
+      {% if quotation.discount_total %}
+        <tr>
+          <td class="right">Desconto:</td>
+          <td class="right">-{{ quotation.discount_total|floatformat:2 }} MZN</td>
+        </tr>
+      {% endif %}
+      <tr>
+        <td class="right"><strong>Total:</strong></td>
+        <td class="right"><strong>{{ quotation.total|floatformat:2 }} MZN</strong></td>
+      </tr>
+    </table>
+
+    {% if quotation.payment_snapshot %}
+      <div style="margin-top: 10px;">
+        <strong>Dados para pagamento</strong><br>
+        {% if quotation.payment_snapshot.wallets %}
+          <div><strong>Carteiras moveis</strong></div>
+          {% for wallet in quotation.payment_snapshot.wallets %}
+            <div>{{ wallet.label }} - {{ wallet.phone_number }}{% if wallet.holder_name %} ({{ wallet.holder_name }}){% endif %}</div>
+          {% endfor %}
+        {% endif %}
+        {% if quotation.payment_snapshot.banks %}
+          <div style="margin-top: 6px;"><strong>Contas bancarias</strong></div>
+          {% for bank in quotation.payment_snapshot.banks %}
+            <div>{{ bank.bank_name }} - Conta {{ bank.account_number }}{% if bank.nib %} Aú NIB {{ bank.nib }}{% endif %}{% if bank.holder_name %} ({{ bank.holder_name }}){% endif %}</div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="footer">
+      Obrigado pela preferencia.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Relatorios - Metodos de Pagamento{% endblock %}
+
+{% block extra_head %}
+  {% include "reports/partials/_report_styles.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="report-header">
+    <div>
+      <h2 class="mb-1">Metodos de Pagamento</h2>
+      <div class="text-muted">Distribuicao de entradas por metodo.</div>
+    </div>
+    {% if request.user.is_superuser or 'reports.export' in tenant_permissions %}
+      <div class="report-actions export-actions">
+        <a class="btn btn-outline-secondary" href="?{{ request.GET.urlencode }}&export=csv">
+          <i class="bi bi-download me-1"></i>Exportar CSV
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="filter-card mt-3">
+    <form class="filter-grid" method="get">
+      <div>
+        <label class="form-label">De</label>
+        <input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label class="form-label">Ate</label>
+        <input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+      </div>
+      <div class="d-flex align-items-end preset-group">
+        <div class="btn-group w-100" role="group">
+          <a class="btn btn-outline-secondary{% if preset == 'today' %} active{% endif %}" href="?preset=today">Hoje</a>
+          <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == 'month' %} active{% endif %}" href="?preset=month">Este mes</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-lg-6">
+      <div class="chart-card">
+        <h5 class="mb-3">Distribuicao</h5>
+        <div class="chart-wrapper">
+          <canvas id="paymentChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="chart-card h-100">
+        <h5 class="mb-3">Detalhes</h5>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Metodo</th>
+                <th>Total</th>
+                <th>Transacoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in breakdown %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td>{{ item.total|floatformat:2 }} MZN</td>
+                  <td>{{ item.count }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">Sem dados para este periodo.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {{ labels|json_script:"payment-labels" }}
+  {{ values|json_script:"payment-values" }}
+  <script>
+    (function () {
+      var labels = JSON.parse(document.getElementById("payment-labels").textContent);
+      var values = JSON.parse(document.getElementById("payment-values").textContent);
+      var ctx = document.getElementById("paymentChart");
+      if (!ctx) {
+        return;
+      }
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ["#1f6f8b", "#58a6b9", "#f3b562", "#ec7c7c", "#7bd389", "#a78bfa"]
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+      });
+    })();
+  </script>
+{% endblock %}

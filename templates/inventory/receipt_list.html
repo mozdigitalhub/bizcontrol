@@ -2,6 +2,52 @@
 
 {% block title %}Rececao de mercadoria - BizControl{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .filter-card {
+      background: #f7f9fc;
+      border: 1px solid #e3e9f2;
+    }
+
+    .summary-card {
+      border-radius: 16px;
+      border: 1px solid #e3e9f2;
+      box-shadow: 0 10px 18px rgba(31, 60, 76, 0.06);
+    }
+
+    .summary-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .filter-group .input-group-text {
+      background: #ffffff;
+      border-right: 0;
+      color: #60707c;
+    }
+
+    .filter-group .form-control,
+    .filter-group .form-select {
+      border-left: 0;
+    }
+
+    .filter-group .ts-wrapper .ts-control {
+      border-left: 0;
+    }
+
+    .receipt-table th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6d7b86;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
@@ -16,36 +62,90 @@
     {% endif %}
   </div>
 
-  <form class="card p-3 mb-3" method="get">
-    <div class="row g-2 align-items-end">
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Total de rececoes</div>
+            <div class="fw-semibold">{{ total_receipts }}</div>
+          </div>
+          <div class="summary-icon bg-primary-subtle text-primary">
+            <i class="bi bi-clipboard-check"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Itens recebidos</div>
+            <div class="fw-semibold">{{ total_items }}</div>
+          </div>
+          <div class="summary-icon bg-success-subtle text-success">
+            <i class="bi bi-box-seam"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Fornecedores</div>
+            <div class="fw-semibold">{{ supplier_count }}</div>
+          </div>
+          <div class="summary-icon bg-warning-subtle text-warning">
+            <i class="bi bi-truck"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3 filter-card" method="get">
+    <div class="row g-3 align-items-end">
       <div class="col-lg-4 col-sm-12">
         <label class="form-label small">Pesquisar</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input class="form-control" type="text" name="q" placeholder="Guia ou fornecedor" value="{{ query }}">
         </div>
       </div>
-      <div class="col-lg-3 col-sm-6">
+      <div class="col-lg-4 col-sm-6">
+        <label class="form-label small">Periodo</label>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-sm-6">
         <label class="form-label small">Fornecedor</label>
-        <select class="form-select tom-select" name="supplier" data-placeholder="Pesquisar fornecedor...">
-          <option value="">Todos</option>
-          {% for supplier in suppliers %}
-            <option value="{{ supplier.id }}"{% if supplier_id == supplier.id|stringformat:"s" %} selected{% endif %}>
-              {{ supplier.name }}
-            </option>
-          {% endfor %}
-        </select>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <select class="form-select tom-select" name="supplier" data-placeholder="Pesquisar fornecedor...">
+            <option value="">Todos</option>
+            {% for supplier in suppliers %}
+              <option value="{{ supplier.id }}"{% if supplier_id == supplier.id|stringformat:"s" %} selected{% endif %}>
+                {{ supplier.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="col-lg-2 col-sm-6">
-        <label class="form-label small">De</label>
-        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
-      </div>
-      <div class="col-lg-2 col-sm-6">
-        <label class="form-label small">Ate</label>
-        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
-      </div>
-      <div class="col-lg-1 col-sm-6">
-        <button class="btn btn-outline-secondary w-100" type="submit">
+      <div class="col-lg-3 col-sm-6">
+        <button class="btn btn-primary w-100" type="submit">
           <i class="bi bi-filter me-1"></i>
           Filtrar
         </button>
@@ -55,7 +155,7 @@
 
   <div class="card">
     <div class="table-responsive">
-      <table class="table mb-0 table-hover align-middle">
+      <table class="table mb-0 table-hover align-middle receipt-table">
         <thead class="table-light">
           <tr>
             <th>#</th>
@@ -116,21 +216,26 @@
 
   <div id="purchase-modal-container"></div>
 
-  {% if page.has_other_pages %}
-    <nav class="mt-3">
-      <ul class="pagination justify-content-center">
-        {% if page.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?q={{ query }}&supplier={{ supplier_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
-          </li>
-        {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
-        {% if page.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?q={{ query }}&supplier={{ supplier_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
-  {% endif %}
+  <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+    <span class="text-muted small">
+      Mostrando {{ page.start_index }} a {{ page.end_index }} de {{ page.paginator.count }} registos
+    </span>
+    {% if page.has_other_pages %}
+      <nav>
+        <ul class="pagination mb-0">
+          {% if page.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&supplier={{ supplier_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+          {% if page.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&supplier={{ supplier_id }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
 {% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Relatorios - Visao geral{% endblock %}
+
+{% block extra_head %}
+  {% include "reports/partials/_report_styles.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="report-header">
+    <div>
+      <h2 class="mb-1">Relatorios</h2>
+      <div class="text-muted">Visao geral do negocio.</div>
+    </div>
+  </div>
+
+  <div class="filter-card mt-3">
+    <form class="filter-grid" method="get">
+      <div>
+        <label class="form-label">De</label>
+        <input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label class="form-label">Ate</label>
+        <input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+      </div>
+      <div class="d-flex align-items-end preset-group">
+        <div class="btn-group w-100" role="group">
+          <a class="btn btn-outline-secondary{% if preset == 'today' %} active{% endif %}" href="?preset=today">Hoje</a>
+          <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == 'month' %} active{% endif %}" href="?preset=month">Este mes</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="summary-grid mt-3">
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="text-muted small">Total de vendas</div>
+        <div class="fw-semibold">{{ summary.total|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div class="text-muted small">Transacoes</div>
+        <div class="fw-semibold">{{ summary.count }}</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-graph-up"></i></div>
+      <div>
+        <div class="text-muted small">Ticket medio</div>
+        <div class="fw-semibold">{{ summary.ticket|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-lg-8">
+      <div class="chart-card">
+        <h5 class="mb-3">Vendas (periodo)</h5>
+        <div class="chart-wrapper">
+          <canvas id="salesChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="chart-card h-100">
+        <h5 class="mb-3">Metodos de pagamento</h5>
+        <div class="chart-wrapper">
+          <canvas id="paymentChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {{ sales_labels|json_script:"sales-labels" }}
+  {{ sales_values|json_script:"sales-values" }}
+  {{ labels|json_script:"payment-labels" }}
+  {{ values|json_script:"payment-values" }}
+  <script>
+    (function () {
+      var salesLabels = JSON.parse(document.getElementById("sales-labels").textContent);
+      var salesValues = JSON.parse(document.getElementById("sales-values").textContent);
+      var paymentLabels = JSON.parse(document.getElementById("payment-labels").textContent);
+      var paymentValues = JSON.parse(document.getElementById("payment-values").textContent);
+
+      var salesCtx = document.getElementById("salesChart");
+      if (salesCtx) {
+        new Chart(salesCtx, {
+          type: "line",
+          data: {
+            labels: salesLabels,
+            datasets: [{
+              label: "Total",
+              data: salesValues,
+              borderColor: "#1f6f8b",
+              backgroundColor: "rgba(31, 111, 139, 0.15)",
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { ticks: { callback: (value) => value + " MZN" } }
+            }
+          }
+        });
+      }
+
+      var paymentCtx = document.getElementById("paymentChart");
+      if (paymentCtx) {
+        new Chart(paymentCtx, {
+          type: "doughnut",
+          data: {
+            labels: paymentLabels,
+            datasets: [{
+              data: paymentValues,
+              backgroundColor: ["#1f6f8b", "#58a6b9", "#f3b562", "#ec7c7c", "#7bd389", "#a78bfa"]
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

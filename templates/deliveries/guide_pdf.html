@@ -3,95 +3,227 @@
   <head>
     <meta charset="utf-8">
     <style>
-      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
-      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
-      .title { font-size: 20px; font-weight: bold; }
-      .muted { color: #666; }
-      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-      th { background: #f3f3f3; }
-      .footer { margin-top: 24px; font-size: 11px; color: #666; }
+      @page {
+        size: A4;
+        margin: 22mm 18mm;
+      }
+      :root {
+        --accent: #1f6f8b;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #e5e9f0;
+        --panel: #f3f6fb;
+      }
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: var(--text);
+        font-size: 12px;
+      }
+      .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .brand-logo {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #f1f5f9;
+        padding: 6px;
+      }
+      .brand-name {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .brand-meta {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .doc-title {
+        text-align: right;
+      }
+      .doc-title h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+        letter-spacing: 1px;
+      }
+      .doc-code {
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .doc-meta {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .badge-issued { background: #e8f1f7; color: #0f4c5c; }
+      .badge-partial { background: #fff1d6; color: #9a5a00; }
+      .badge-delivered { background: #dff6ea; color: #137a4b; }
+      .badge-canceled { background: #fde8e8; color: #b42318; }
+      .section-title {
+        margin: 18px 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+      }
+      .panel {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .items th {
+        background: var(--accent);
+        color: #fff;
+        padding: 8px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .items td {
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      .right {
+        text-align: right;
+      }
+      .footer {
+        margin-top: 22px;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+      }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div>
-        <div class="title">Guia de entrega {{ guide.code|default:guide.guide_number }}</div>
-        <div class="muted">Data: {{ guide.issued_at|date:"d/m/Y H:i" }}</div>
-        <div class="muted">Origem: {{ guide.get_origin_type_display }}</div>
+    <div class="doc-header">
+      <div class="brand">
+        {% if logo_url %}
+          <img class="brand-logo" src="{{ logo_url }}" alt="Logo">
+        {% else %}
+          <div class="brand-logo"></div>
+        {% endif %}
+        <div>
+          <div class="brand-name">{{ business.name }}</div>
+          <div class="brand-meta">
+            {% if business.address %}{{ business.address }}<br>{% endif %}
+            {% if business.city or business.country %}
+              {{ business.city }}{% if business.city and business.country %}, {% endif %}{{ business.country }}<br>
+            {% endif %}
+            {% if business.phone %}Tel: {{ business.phone }}<br>{% endif %}
+            {% if business.email %}Email: {{ business.email }}{% endif %}
+          </div>
+        </div>
       </div>
-      <div class="right">
-        <div><strong>{{ business.name }}</strong></div>
-        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
-        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
-        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
-        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      <div class="doc-title">
+        <h1>GUIA DE ENTREGA</h1>
+        <div class="doc-code">Nº: {{ guide.code|default:guide.guide_number }}</div>
+        <div class="doc-meta">Data: {{ guide.issued_at|date:"d/m/Y H:i" }}</div>
+        <div class="doc-meta">Origem: {{ guide.get_origin_type_display }}</div>
+        {% if guide.status == "issued" %}
+          <span class="badge badge-issued">Emitida</span>
+        {% elif guide.status == "partial" %}
+          <span class="badge badge-partial">Parcial</span>
+        {% elif guide.status == "delivered" %}
+          <span class="badge badge-delivered">Entregue</span>
+        {% elif guide.status == "canceled" %}
+          <span class="badge badge-canceled">Cancelada</span>
+        {% endif %}
       </div>
     </div>
 
-    <div>
-      <strong>Cliente</strong><br>
+    <div class="section-title">Cliente</div>
+    <div class="panel">
       {% if guide.customer %}
-        {{ guide.customer.name }}<br>
-        {% if guide.customer.phone %}{{ guide.customer.phone }}<br>{% endif %}
-        {% if guide.customer.email %}{{ guide.customer.email }}<br>{% endif %}
-        {% if guide.customer.address %}{{ guide.customer.address }}{% endif %}
+        <div><strong>{{ guide.customer.name }}</strong></div>
+        {% if guide.customer.nuit %}<div class="brand-meta">NUIT: {{ guide.customer.nuit }}</div>{% endif %}
+        {% if guide.customer.email %}<div class="brand-meta">{{ guide.customer.email }}</div>{% endif %}
+        {% if guide.customer.phone %}<div class="brand-meta">{{ guide.customer.phone }}</div>{% endif %}
+        {% if guide.customer.address %}<div class="brand-meta">{{ guide.customer.address }}</div>{% endif %}
       {% else %}
-        Consumidor final
+        <div><strong>Consumidor final</strong></div>
       {% endif %}
     </div>
 
-    <table>
+    <div class="section-title">Produtos levantados</div>
+    <table class="items">
       <thead>
         <tr>
           <th>Produto</th>
-          <th>Qtd levantada</th>
+          <th class="right">Qtd levantada</th>
         </tr>
       </thead>
       <tbody>
         {% for item in items %}
           <tr>
             <td>{{ item.product.name }}</td>
-            <td>{{ item.quantity }}</td>
+            <td class="right">{{ item.quantity }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="2" class="muted">Sem itens.</td>
+            <td colspan="2" class="brand-meta">Sem itens.</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
 
-    <div style="margin-top: 16px;">
-      <strong>Transporte</strong><br>
-      <div class="muted">Data prevista: {% if guide.expected_delivery_date %}{{ guide.expected_delivery_date|date:"d/m/Y" }}{% else %}-{% endif %}</div>
-      <div class="muted">Responsavel: {{ guide.transport_responsible|default:"-" }}</div>
-      <div class="muted">Custo: {% if guide.transport_cost %}{{ guide.transport_cost|floatformat:2 }} MZN{% else %}-{% endif %}</div>
-    </div>
-
-    <table>
+    <div class="section-title">Resumo da venda</div>
+    <table class="items">
       <thead>
         <tr>
           <th>Produto</th>
-          <th>Contratado</th>
-          <th>Levantado</th>
-          <th>Pendente</th>
+          <th class="right">Contratado</th>
+          <th class="right">Levantado</th>
+          <th class="right">Pendente</th>
         </tr>
       </thead>
       <tbody>
         {% for row in summary_items %}
           <tr>
             <td>{{ row.item.product.name }}</td>
-            <td>{{ row.ordered_qty }}</td>
-            <td>{{ row.delivered_qty }}</td>
-            <td>{{ row.remaining_qty }}</td>
+            <td class="right">{{ row.ordered_qty }}</td>
+            <td class="right">{{ row.delivered_qty }}</td>
+            <td class="right">{{ row.remaining_qty }}</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
 
+    <div class="section-title">Transporte</div>
+    <div class="panel">
+      <div class="brand-meta">Data prevista: {% if guide.expected_delivery_date %}{{ guide.expected_delivery_date|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+      <div class="brand-meta">Responsavel: {{ guide.transport_responsible|default:"-" }}</div>
+      <div class="brand-meta">Custo: {% if guide.transport_cost %}{{ guide.transport_cost|floatformat:2 }} {{ business.currency|default:"MZN" }}{% else %}-{% endif %}</div>
+    </div>
+
     <div class="footer">
-      Obrigado pela preferencia.
+      Documento emitido eletronicamente. Obrigado pela sua preferencia.
     </div>
   </body>
 </html>

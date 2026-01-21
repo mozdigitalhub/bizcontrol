@@ -1,0 +1,105 @@
+﻿{% extends "base.html" %}
+{% block title %}Perfil do negocio - BizControl{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h4 class="mb-1">Perfil do negocio</h4>
+      <div class="text-muted small">Dados KYC e identificacao do negocio.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="text-muted small mb-2">Logotipo</div>
+        <div class="p-3 border rounded-4 bg-light">
+          {% if business.logo %}
+            <img src="{{ business.logo.url }}" alt="Logo" class="img-fluid rounded-3 mb-3" style="max-height: 140px;">
+          {% else %}
+            <div class="text-muted small">Sem logo registado.</div>
+          {% endif %}
+          <label class="form-label mt-2">{{ form.logo.label }}</label>
+          {{ form.logo }}
+          {% if form.logo.errors %}
+            <div class="invalid-feedback d-block">{{ form.logo.errors|striptags }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label required">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.legal_name.label }}</label>
+            {{ form.legal_name }}
+            {% if form.legal_name.errors %}<div class="invalid-feedback d-block">{{ form.legal_name.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">{{ form.address.label }}</label>
+            {{ form.address }}
+            {% if form.address.errors %}<div class="invalid-feedback d-block">{{ form.address.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.city.label }}</label>
+            {{ form.city }}
+            {% if form.city.errors %}<div class="invalid-feedback d-block">{{ form.city.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ form.country.label }}</label>
+            {{ form.country }}
+            {% if form.country.errors %}<div class="invalid-feedback d-block">{{ form.country.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <div class="mb-3">
+      <h6 class="mb-1">Fiscal e legal</h6>
+      <div class="text-muted small">Informacoes de registo obrigatorias.</div>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label required">{{ form.nuit.label }}</label>
+        {{ form.nuit }}
+        {% if form.nuit.errors %}<div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>{% endif %}
+        {% if not is_owner %}<div class="form-note">Apenas o owner pode alterar o NUIT.</div>{% endif %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.commercial_registration.label }}</label>
+        {{ form.commercial_registration }}
+        {% if form.commercial_registration.errors %}<div class="invalid-feedback d-block">{{ form.commercial_registration.errors|striptags }}</div>{% endif %}
+        {% if not is_owner %}<div class="form-note">Apenas o owner pode alterar o registo comercial.</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+      <button class="btn btn-primary" type="submit">
+        <i class="bi bi-save me-1"></i>Guardar
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

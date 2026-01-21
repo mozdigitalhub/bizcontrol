@@ -1,5 +1,5 @@
-from django.contrib import messages
 import json
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -16,6 +16,7 @@ from django.db.models import (
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from catalog.models import Category, Product
 from deliveries.models import DeliveryGuide, DeliveryGuideItem
@@ -394,6 +395,10 @@ def receipt_list(request):
     supplier_id = request.GET.get("supplier", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     receipts = (
         GoodsReceipt.objects.filter(business=request.business)
         .select_related("supplier", "purchase")
@@ -410,6 +415,9 @@ def receipt_list(request):
         receipts = receipts.filter(document_date__gte=date_from)
     if date_to:
         receipts = receipts.filter(document_date__lte=date_to)
+    total_receipts = receipts.count()
+    total_items = receipts.aggregate(total=Sum("items__quantity")).get("total") or 0
+    supplier_count = receipts.values("supplier_id").distinct().count()
     paginator = Paginator(receipts.order_by("-document_date", "-created_at"), 20)
     page = paginator.get_page(request.GET.get("page"))
     suppliers = request.business.suppliers.filter(is_active=True).order_by("name")
@@ -423,6 +431,9 @@ def receipt_list(request):
             "date_from": date_from,
             "date_to": date_to,
             "suppliers": suppliers,
+            "total_receipts": total_receipts,
+            "total_items": total_items,
+            "supplier_count": supplier_count,
         },
     )
 

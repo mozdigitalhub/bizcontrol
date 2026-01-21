@@ -1,9 +1,12 @@
-from datetime import date, timedelta
+import csv
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Sum
+from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce, TruncMonth
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -13,22 +16,17 @@ from inventory.services import get_product_stock
 from receivables.models import Payment, Receivable
 from sales.models import Sale, SaleItem
 from tenants.decorators import business_required
-
-
-MONTH_LABELS = [
-    "Jan",
-    "Fev",
-    "Mar",
-    "Abr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Set",
-    "Out",
-    "Nov",
-    "Dez",
-]
+from tenants.permissions import tenant_permission_required, user_has_tenant_permission
+from reports.services import (
+    MONTH_LABELS,
+    get_cashflow_series,
+    get_date_range,
+    get_payment_breakdown,
+    get_receivables_aging,
+    get_sales_series,
+    get_sales_summary,
+    get_stock_summary,
+)
 
 
 @login_required
@@ -208,3 +206,342 @@ def dashboard(request):
         "month_labels": [MONTH_LABELS[m.month - 1] for m in months],
     }
     return render(request, "reports/dashboard.html", context)
+
+
+def _export_csv(request, *, filename, headers, rows):
+    if not user_has_tenant_permission(request, "reports.export"):
+        messages.error(request, "Sem permissao para exportar relatorios.")
+        return None
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow(row)
+    return response
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_basic")
+def overview(request):
+    preset = request.GET.get("preset") or ""
+    date_from_raw = request.GET.get("date_from")
+    date_to_raw = request.GET.get("date_to")
+    if not preset and not date_from_raw and not date_to_raw:
+        preset = "30d"
+    date_from, date_to = get_date_range(
+        date_from=_parse_date(date_from_raw),
+        date_to=_parse_date(date_to_raw),
+        preset=preset,
+        default_days=30,
+    )
+    summary = get_sales_summary(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+    labels, values = get_sales_series(
+        business=request.business,
+        date_from=date_from,
+        date_to=date_to,
+        granularity="daily",
+    )
+    payments = get_payment_breakdown(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+    payment_labels = [item["label"] for item in payments]
+    payment_values = [item["total"] for item in payments]
+
+    context = {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "summary": summary,
+        "sales_labels": labels,
+        "sales_values": values,
+        "payments": payments,
+        "labels": payment_labels,
+        "values": payment_values,
+    }
+    return render(request, "reports/overview.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_basic")
+def sales_report(request):
+    preset = request.GET.get("preset") or ""
+    date_from_raw = request.GET.get("date_from")
+    date_to_raw = request.GET.get("date_to")
+    granularity = request.GET.get("granularity") or "daily"
+    date_from, date_to = get_date_range(
+        date_from=_parse_date(date_from_raw),
+        date_to=_parse_date(date_to_raw),
+        preset=preset,
+        default_days=30,
+    )
+    summary = get_sales_summary(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+    labels, values = get_sales_series(
+        business=request.business,
+        date_from=date_from,
+        date_to=date_to,
+        granularity=granularity,
+    )
+    table_rows = [{"label": label, "value": value} for label, value in zip(labels, values)]
+
+    if request.GET.get("export") == "csv":
+        rows = []
+        for label, value in zip(labels, values):
+            rows.append([label, f"{value:.2f}"])
+        response = _export_csv(
+            request,
+            filename="relatorio_vendas.csv",
+            headers=["Periodo", "Total"],
+            rows=rows,
+        )
+        if response:
+            return response
+
+    context = {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "granularity": granularity,
+        "summary": summary,
+        "labels": labels,
+        "values": values,
+        "table_rows": table_rows,
+    }
+    return render(request, "reports/sales.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_finance")
+def payment_methods_report(request):
+    preset = request.GET.get("preset") or ""
+    date_from_raw = request.GET.get("date_from")
+    date_to_raw = request.GET.get("date_to")
+    date_from, date_to = get_date_range(
+        date_from=_parse_date(date_from_raw),
+        date_to=_parse_date(date_to_raw),
+        preset=preset,
+        default_days=30,
+    )
+    breakdown = get_payment_breakdown(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+
+    if request.GET.get("export") == "csv":
+        rows = [
+            [item["label"], f'{item["total"]:.2f}', item["count"]]
+            for item in breakdown
+        ]
+        response = _export_csv(
+            request,
+            filename="relatorio_metodos_pagamento.csv",
+            headers=["Metodo", "Total", "Transacoes"],
+            rows=rows,
+        )
+        if response:
+            return response
+
+    context = {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "breakdown": breakdown,
+        "labels": [item["label"] for item in breakdown],
+        "values": [item["total"] for item in breakdown],
+    }
+    return render(request, "reports/payments.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_finance")
+def cashflow_report(request):
+    preset = request.GET.get("preset") or ""
+    date_from_raw = request.GET.get("date_from")
+    date_to_raw = request.GET.get("date_to")
+    granularity = request.GET.get("granularity") or "daily"
+    date_from, date_to = get_date_range(
+        date_from=_parse_date(date_from_raw),
+        date_to=_parse_date(date_to_raw),
+        preset=preset,
+        default_days=30,
+    )
+    labels, values_in, values_out = get_cashflow_series(
+        business=request.business,
+        date_from=date_from,
+        date_to=date_to,
+        granularity=granularity,
+    )
+    total_in = sum(values_in)
+    total_out = sum(values_out)
+
+    if request.GET.get("export") == "csv":
+        rows = [
+            [label, f"{in_value:.2f}", f"{out_value:.2f}"]
+            for label, in_value, out_value in zip(labels, values_in, values_out)
+        ]
+        response = _export_csv(
+            request,
+            filename="relatorio_fluxo_caixa.csv",
+            headers=["Periodo", "Entradas", "Saidas"],
+            rows=rows,
+        )
+        if response:
+            return response
+
+    context = {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "granularity": granularity,
+        "labels": labels,
+        "values_in": values_in,
+        "values_out": values_out,
+        "total_in": total_in,
+        "total_out": total_out,
+        "net": total_in - total_out,
+    }
+    return render(request, "reports/cashflow.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_stock")
+def stock_report(request):
+    products, low_stock = get_stock_summary(business=request.business)
+    total_skus = len(products)
+    out_of_stock = sum(1 for item in products if item["quantity"] <= 0)
+    total_value = sum(item["stock_value"] for item in products)
+    top_value = sorted(products, key=lambda item: item["stock_value"], reverse=True)[:10]
+
+    if request.GET.get("export") == "csv":
+        rows = [
+            [item["name"], item["quantity"], f'{item["stock_value"]:.2f}']
+            for item in products
+        ]
+        response = _export_csv(
+            request,
+            filename="relatorio_stock.csv",
+            headers=["Produto", "Quantidade", "Valor estimado"],
+            rows=rows,
+        )
+        if response:
+            return response
+
+    context = {
+        "products": products,
+        "low_stock": low_stock,
+        "total_skus": total_skus,
+        "out_of_stock": out_of_stock,
+        "total_value": total_value,
+        "labels": [item["name"] for item in top_value],
+        "values": [item["stock_value"] for item in top_value],
+    }
+    return render(request, "reports/stock.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_finance")
+def receivables_report(request):
+    buckets, rows = get_receivables_aging(business=request.business)
+    if request.GET.get("export") == "csv":
+        response = _export_csv(
+            request,
+            filename="relatorio_recebiveis.csv",
+            headers=["Cliente", "Saldo", "Dias em aberto"],
+            rows=[
+                [row["customer"], f'{row["balance"]:.2f}', row["days"]]
+                for row in rows
+            ],
+        )
+        if response:
+            return response
+
+    context = {
+        "buckets": buckets,
+        "rows": rows,
+        "labels": list(buckets.keys()),
+        "values": list(buckets.values()),
+    }
+    return render(request, "reports/receivables.html", context)
+
+
+@login_required
+@business_required
+@tenant_permission_required("reports.view_basic")
+def staff_report(request):
+    preset = request.GET.get("preset") or ""
+    date_from_raw = request.GET.get("date_from")
+    date_to_raw = request.GET.get("date_to")
+    date_from, date_to = get_date_range(
+        date_from=_parse_date(date_from_raw),
+        date_to=_parse_date(date_to_raw),
+        preset=preset,
+        default_days=30,
+    )
+    rows = (
+        Sale.objects.filter(
+            business=request.business,
+            status=Sale.STATUS_CONFIRMED,
+            sale_date__date__gte=date_from,
+            sale_date__date__lte=date_to,
+        )
+        .values("created_by__first_name", "created_by__last_name", "created_by__username")
+        .annotate(
+            total=Coalesce(Sum("total"), Decimal("0")),
+            count=Coalesce(Count("id"), 0),
+        )
+        .order_by("-total")
+    )
+    staff = []
+    for row in rows:
+        name_parts = [row["created_by__first_name"], row["created_by__last_name"]]
+        name = " ".join(part for part in name_parts if part)
+        if not name:
+            name = row["created_by__username"] or "Sem nome"
+        staff.append(
+            {
+                "name": name,
+                "total": float(row["total"]),
+                "count": int(row["count"]),
+            }
+        )
+
+    if request.GET.get("export") == "csv":
+        response = _export_csv(
+            request,
+            filename="relatorio_staff.csv",
+            headers=["Colaborador", "Total vendas", "Transacoes"],
+            rows=[
+                [item["name"], f'{item["total"]:.2f}', item["count"]]
+                for item in staff
+            ],
+        )
+        if response:
+            return response
+
+    context = {
+        "date_from": date_from,
+        "date_to": date_to,
+        "preset": preset,
+        "staff": staff,
+        "labels": [item["name"] for item in staff],
+        "values": [item["total"] for item in staff],
+    }
+    return render(request, "reports/staff.html", context)
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None

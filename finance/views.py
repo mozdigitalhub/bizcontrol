@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -53,6 +54,12 @@ def _purchase_error_summary(form, formset):
 def purchase_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     purchases = Purchase.objects.filter(business=request.business).select_related("supplier")
     if query:
         purchases = purchases.filter(
@@ -62,7 +69,13 @@ def purchase_list(request):
         )
     if status:
         purchases = purchases.filter(status=status)
+    if date_from:
+        purchases = purchases.filter(purchase_date__gte=date_from)
+    if date_to:
+        purchases = purchases.filter(purchase_date__lte=date_to)
     totals = purchases.aggregate(total=Sum("total"))
+    confirmed_count = purchases.filter(status=Purchase.STATUS_CONFIRMED).count()
+    draft_count = purchases.filter(status=Purchase.STATUS_DRAFT).count()
     paginator = Paginator(purchases.order_by("-purchase_date"), 20)
     page = paginator.get_page(request.GET.get("page"))
     return render(
@@ -72,8 +85,12 @@ def purchase_list(request):
             "page": page,
             "query": query,
             "status": status,
+            "date_from": date_from,
+            "date_to": date_to,
             "status_choices": Purchase.STATUS_CHOICES,
             "total_amount": totals["total"] or Decimal("0"),
+            "confirmed_count": confirmed_count,
+            "draft_count": draft_count,
         },
     )
 
@@ -422,6 +439,12 @@ def expense_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
     category_id = request.GET.get("category", "").strip()
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     expenses = Expense.objects.filter(business=request.business).select_related("category")
     if query:
         expenses = expenses.filter(Q(title__icontains=query))
@@ -429,6 +452,10 @@ def expense_list(request):
         expenses = expenses.filter(status=status)
     if category_id:
         expenses = expenses.filter(category_id=category_id)
+    if date_from:
+        expenses = expenses.filter(expense_date__gte=date_from)
+    if date_to:
+        expenses = expenses.filter(expense_date__lte=date_to)
     totals = expenses.aggregate(total=Sum("amount"))
     paginator = Paginator(expenses.order_by("-expense_date"), 20)
     page = paginator.get_page(request.GET.get("page"))
@@ -441,6 +468,8 @@ def expense_list(request):
             "query": query,
             "status": status,
             "category_id": category_id,
+            "date_from": date_from,
+            "date_to": date_to,
             "status_choices": Expense.STATUS_CHOICES,
             "categories": categories,
             "total_amount": totals["total"] or Decimal("0"),

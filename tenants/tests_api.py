@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from tenants.models import Business, BusinessMembership
+from tenants.models import Business, BusinessMembership, TenantRole
 
 
 class TenantRegisterApiTests(APITestCase):
@@ -37,6 +37,9 @@ class TenantRegisterApiTests(APITestCase):
         owner = get_user_model().objects.get(username="joao@example.com")
         membership = BusinessMembership.objects.get(business=business, user=owner)
         self.assertEqual(membership.role, BusinessMembership.ROLE_OWNER)
+        self.assertIsNotNone(membership.role_profile)
+        if membership.role_profile:
+            self.assertEqual(membership.role_profile.code, TenantRole.ROLE_OWNER_ADMIN)
 
     def test_register_duplicate_email(self):
         User = get_user_model()

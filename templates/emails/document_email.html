@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="pt">
+  <body style="font-family: Arial, sans-serif; color: #1f2937; font-size: 14px;">
+    <p>Olá {{ recipient_name|default:"Cliente" }},</p>
+    <p>
+      Segue em anexo {{ document_label }} <strong>{{ document_code }}</strong>
+      emitido por <strong>{{ business.name }}</strong>.
+    </p>
+    {% if message %}
+      <p>{{ message|linebreaksbr }}</p>
+    {% endif %}
+    <p>Obrigado pela sua preferencia.</p>
+    <p style="color:#6b7280; font-size: 12px;">
+      Este email foi enviado automaticamente pelo BizControl.
+    </p>
+  </body>
+</html>

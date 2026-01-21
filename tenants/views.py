@@ -1,4 +1,7 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
+from django.db.models import Q
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,10 +19,24 @@ from tenants.decorators import _is_owner, business_required, owner_required
 from tenants.forms import (
     BusinessProfileForm,
     BusinessSettingsForm,
+    StaffForm,
     TenantBankAccountForm,
     TenantMobileWalletForm,
 )
-from tenants.models import Business, BusinessMembership, TenantBankAccount, TenantMobileWallet
+from tenants.models import (
+    Business,
+    BusinessMembership,
+    RoleAuditLog,
+    TenantBankAccount,
+    TenantMobileWallet,
+    TenantRole,
+)
+from tenants.permissions import tenant_permission_required
+from tenants.rbac import (
+    ensure_tenant_roles,
+    get_permission_groups,
+    reset_role_permissions,
+)
 from tenants.serializers import TenantRegisterSerializer
 
 
@@ -57,60 +74,63 @@ def select_business(request):
     )
 
 
+
+
 @login_required
 @business_required
-def business_settings(request):
+def business_profile(request):
     business = request.business
     is_owner = _is_owner(request)
-    active_tab = request.GET.get("tab", "tenant")
+    if request.method == "POST":
+        form = BusinessProfileForm(
+            request.POST,
+            request.FILES,
+            instance=business,
+            can_edit_legal=is_owner,
+        )
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Perfil do negocio atualizado.")
+            return redirect("tenants:business_profile")
+    else:
+        form = BusinessProfileForm(instance=business, can_edit_legal=is_owner)
+    return render(
+        request,
+        "tenants/business_profile.html",
+        {"form": form, "business": business, "is_owner": is_owner},
+    )
+
+
+@login_required
+@business_required
+def tenant_payment_data(request):
+    business = request.business
+    is_owner = _is_owner(request)
     wallets = TenantMobileWallet.objects.filter(business=business).order_by("-is_active", "id")
     banks = TenantBankAccount.objects.filter(business=business).order_by("-is_active", "id")
+    return render(
+        request,
+        "tenants/payment_data.html",
+        {"business": business, "wallets": wallets, "banks": banks, "is_owner": is_owner},
+    )
 
+
+@login_required
+@business_required
+def user_profile(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
-
+    membership = getattr(request, "membership", None)
     if request.method == "POST":
-        action = request.POST.get("action", "tenant_profile")
-        if action == "tenant_profile":
-            profile_form = BusinessProfileForm(
-                request.POST,
-                request.FILES,
-                instance=business,
-                can_edit_legal=is_owner,
-            )
-            settings_form = BusinessSettingsForm(
-                instance=business, can_edit_settings=is_owner
-            )
+        action = request.POST.get("action", "profile")
+        if action == "password":
             user_form = UserProfileForm(instance=profile, user=request.user)
-            password_form = UserPasswordForm(user=request.user)
-            if profile_form.is_valid():
-                profile_form.save()
-                messages.success(request, "Perfil do negocio atualizado.")
-                return redirect(f"{reverse('tenants:settings')}?tab=tenant")
-            active_tab = "tenant"
-        elif action == "system_settings":
-            profile_form = BusinessProfileForm(
-                instance=business, can_edit_legal=is_owner
-            )
-            settings_form = BusinessSettingsForm(
-                request.POST, instance=business, can_edit_settings=is_owner
-            )
-            user_form = UserProfileForm(instance=profile, user=request.user)
-            password_form = UserPasswordForm(user=request.user)
-            if not is_owner:
-                messages.error(request, "Sem permissao para alterar configuracoes.")
-                return redirect(f"{reverse('tenants:settings')}?tab=system")
-            if settings_form.is_valid():
-                settings_form.save()
-                messages.success(request, "Configuracoes atualizadas.")
-                return redirect(f"{reverse('tenants:settings')}?tab=system")
-            active_tab = "system"
-        elif action == "user_profile":
-            profile_form = BusinessProfileForm(
-                instance=business, can_edit_legal=is_owner
-            )
-            settings_form = BusinessSettingsForm(
-                instance=business, can_edit_settings=is_owner
-            )
+            password_form = UserPasswordForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Password alterada.")
+                return redirect("tenants:user_profile")
+        else:
             user_form = UserProfileForm(
                 request.POST, request.FILES, instance=profile, user=request.user
             )
@@ -122,56 +142,42 @@ def business_settings(request):
                 user.save(update_fields=["first_name", "last_name"])
                 user_form.save()
                 messages.success(request, "Perfil atualizado.")
-                return redirect(f"{reverse('tenants:settings')}?tab=user")
-            active_tab = "user"
-        elif action == "password":
-            profile_form = BusinessProfileForm(
-                instance=business, can_edit_legal=is_owner
-            )
-            settings_form = BusinessSettingsForm(
-                instance=business, can_edit_settings=is_owner
-            )
-            user_form = UserProfileForm(instance=profile, user=request.user)
-            password_form = UserPasswordForm(user=request.user, data=request.POST)
-            if password_form.is_valid():
-                user = password_form.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, "Password alterada.")
-                return redirect(f"{reverse('tenants:settings')}?tab=security")
-            active_tab = "security"
-        else:
-            profile_form = BusinessProfileForm(
-                instance=business, can_edit_legal=is_owner
-            )
-            settings_form = BusinessSettingsForm(
-                instance=business, can_edit_settings=is_owner
-            )
-            user_form = UserProfileForm(instance=profile, user=request.user)
-            password_form = UserPasswordForm(user=request.user)
+                return redirect("tenants:user_profile")
     else:
-        profile_form = BusinessProfileForm(
-            instance=business, can_edit_legal=is_owner
-        )
-        settings_form = BusinessSettingsForm(
-            instance=business, can_edit_settings=is_owner
-        )
         user_form = UserProfileForm(instance=profile, user=request.user)
         password_form = UserPasswordForm(user=request.user)
-
     return render(
         request,
-        "tenants/settings.html",
+        "tenants/user_profile.html",
         {
-            "profile_form": profile_form,
-            "settings_form": settings_form,
             "user_form": user_form,
             "password_form": password_form,
-            "business": business,
-            "is_owner": is_owner,
-            "active_tab": active_tab,
-            "wallets": wallets,
-            "banks": banks,
+            "membership": membership,
         },
+    )
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_tax")
+def system_settings(request):
+    business = request.business
+    can_edit = _is_owner(request) or request.user.is_superuser
+    settings_form = BusinessSettingsForm(
+        instance=business, can_edit_settings=can_edit
+    )
+    if request.method == "POST":
+        settings_form = BusinessSettingsForm(
+            request.POST, instance=business, can_edit_settings=can_edit
+        )
+        if settings_form.is_valid():
+            settings_form.save()
+            messages.success(request, "Configuracoes atualizadas.")
+            return redirect("tenants:system_settings")
+    return render(
+        request,
+        "tenants/system_settings.html",
+        {"settings_form": settings_form, "business": business},
     )
 
 
@@ -290,7 +296,7 @@ def tenant_bank_edit(request, bank_id):
 @owner_required
 def tenant_payment_delete(request, kind, pk):
     if request.method != "POST":
-        return redirect("tenants:settings")
+        return redirect("tenants:payment_data")
     if kind == "wallet":
         obj = get_object_or_404(
             TenantMobileWallet, id=pk, business=request.business
@@ -301,7 +307,7 @@ def tenant_payment_delete(request, kind, pk):
         )
     obj.delete()
     messages.success(request, "Dados removidos.")
-    return redirect(f"{reverse('tenants:settings')}?tab=payments")
+    return redirect("tenants:payment_data")
 
 
 class TenantRegisterAPIView(APIView):
@@ -356,3 +362,264 @@ class TenantRegisterAPIView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_staff")
+def staff_list(request):
+    business = request.business
+    ensure_tenant_roles(business)
+    memberships = (
+        BusinessMembership.objects.filter(business=business)
+        .select_related("user", "role_profile")
+        .order_by("user__first_name", "user__last_name")
+    )
+    query = (request.GET.get("q") or "").strip()
+    role_id = request.GET.get("role")
+    status_filter = request.GET.get("status")
+    if query:
+        memberships = memberships.filter(
+            Q(user__first_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+            | Q(user__email__icontains=query)
+        )
+    if role_id:
+        memberships = memberships.filter(role_profile_id=role_id)
+    if status_filter == "active":
+        memberships = memberships.filter(is_active=True)
+    elif status_filter == "inactive":
+        memberships = memberships.filter(is_active=False)
+
+    roles = TenantRole.objects.filter(business=business, is_active=True).order_by("name")
+    return render(
+        request,
+        "tenants/staff_list.html",
+        {
+            "memberships": memberships.distinct(),
+            "roles": roles,
+            "filters": {
+                "q": query,
+                "role": role_id or "",
+                "status": status_filter or "",
+            },
+        },
+    )
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_staff")
+def staff_create(request):
+    business = request.business
+    ensure_tenant_roles(business)
+    if request.method == "POST":
+        form = StaffForm(request.POST, business=business)
+        if form.is_valid():
+            cleaned = form.cleaned_data
+            email = cleaned.get("email")
+            phone = cleaned.get("phone")
+            username = email or phone
+            User = get_user_model()
+            password = cleaned.get("password") or User.objects.make_random_password()
+            user = User.objects.create_user(
+                username=username,
+                email=email or "",
+                first_name=cleaned.get("first_name", ""),
+                last_name=cleaned.get("last_name", ""),
+                password=password,
+            )
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.phone = phone or ""
+            profile.save(update_fields=["phone"])
+            membership = BusinessMembership.objects.create(
+                business=business,
+                user=user,
+                role=BusinessMembership.ROLE_STAFF,
+                role_profile=cleaned.get("role_profile"),
+                is_active=bool(cleaned.get("is_active")),
+                department=cleaned.get("department", ""),
+                notes=cleaned.get("notes", ""),
+                created_by=request.user,
+                updated_by=request.user,
+            )
+            membership.extra_permissions.set(cleaned.get("extra_permissions"))
+            membership.revoked_permissions.set(cleaned.get("revoked_permissions"))
+            RoleAuditLog.objects.create(
+                business=business,
+                target_type=RoleAuditLog.TARGET_USER,
+                membership=membership,
+                action=RoleAuditLog.ACTION_ASSIGN,
+                payload={
+                    "role": membership.role_profile.code if membership.role_profile else None,
+                    "extra_permissions": [p.id for p in cleaned.get("extra_permissions")],
+                    "revoked_permissions": [p.id for p in cleaned.get("revoked_permissions")],
+                },
+                changed_by=request.user,
+            )
+            if cleaned.get("password"):
+                messages.success(request, "Colaborador criado com sucesso.")
+            else:
+                messages.success(request, f"Colaborador criado. Password temporaria: {password}")
+            return redirect("tenants:staff_list")
+    else:
+        form = StaffForm(business=business)
+    return render(
+        request,
+        "tenants/staff_form.html",
+        {"form": form, "title": "Novo colaborador"},
+    )
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_staff")
+def staff_edit(request, membership_id):
+    business = request.business
+    ensure_tenant_roles(business)
+    membership = get_object_or_404(
+        BusinessMembership.objects.select_related("user", "role_profile"),
+        business=business,
+        id=membership_id,
+    )
+    user = membership.user
+    if request.method == "POST":
+        form = StaffForm(
+            request.POST,
+            business=business,
+            user_instance=user,
+            membership_instance=membership,
+        )
+        if form.is_valid():
+            cleaned = form.cleaned_data
+            user.first_name = cleaned.get("first_name", "")
+            user.last_name = cleaned.get("last_name", "")
+            user.save(update_fields=["first_name", "last_name"])
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.phone = cleaned.get("phone") or profile.phone
+            profile.save(update_fields=["phone"])
+            membership.role_profile = cleaned.get("role_profile")
+            membership.is_active = bool(cleaned.get("is_active"))
+            membership.department = cleaned.get("department", "")
+            membership.notes = cleaned.get("notes", "")
+            membership.updated_by = request.user
+            membership.save()
+            membership.extra_permissions.set(cleaned.get("extra_permissions"))
+            membership.revoked_permissions.set(cleaned.get("revoked_permissions"))
+            RoleAuditLog.objects.create(
+                business=business,
+                target_type=RoleAuditLog.TARGET_USER,
+                membership=membership,
+                action=RoleAuditLog.ACTION_ASSIGN,
+                payload={
+                    "role": membership.role_profile.code if membership.role_profile else None,
+                    "extra_permissions": [p.id for p in cleaned.get("extra_permissions")],
+                    "revoked_permissions": [p.id for p in cleaned.get("revoked_permissions")],
+                },
+                changed_by=request.user,
+            )
+            messages.success(request, "Colaborador atualizado.")
+            return redirect("tenants:staff_list")
+    else:
+        phone_value = ""
+        if hasattr(user, "profile"):
+            phone_value = user.profile.phone
+        form = StaffForm(
+            business=business,
+            user_instance=user,
+            membership_instance=membership,
+            initial={
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "phone": phone_value,
+            },
+        )
+    return render(
+        request,
+        "tenants/staff_form.html",
+        {
+            "form": form,
+            "title": "Editar colaborador",
+            "membership": membership,
+            "user": user,
+            "effective_permissions": sorted(membership.get_effective_permission_keys()),
+        },
+    )
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_staff")
+def staff_toggle(request, membership_id):
+    if request.method != "POST":
+        return redirect("tenants:staff_list")
+    membership = get_object_or_404(
+        BusinessMembership, business=request.business, id=membership_id
+    )
+    membership.is_active = not membership.is_active
+    membership.updated_by = request.user
+    membership.save(update_fields=["is_active", "updated_by", "updated_at"])
+    RoleAuditLog.objects.create(
+        business=request.business,
+        target_type=RoleAuditLog.TARGET_USER,
+        membership=membership,
+        action=RoleAuditLog.ACTION_ASSIGN,
+        payload={"is_active": membership.is_active},
+        changed_by=request.user,
+    )
+    messages.success(request, "Estado atualizado.")
+    return redirect("tenants:staff_list")
+
+
+@login_required
+@business_required
+@tenant_permission_required("tenants.manage_roles")
+def roles_permissions(request):
+    business = request.business
+    ensure_tenant_roles(business)
+    roles = TenantRole.objects.filter(business=business).order_by("name")
+    role_id = request.GET.get("role") or (roles.first().id if roles else None)
+    role = get_object_or_404(TenantRole, id=role_id, business=business) if role_id else None
+    permission_groups = get_permission_groups()
+    selected_perm_ids = set()
+    if role:
+        selected_perm_ids = set(role.permissions.values_list("id", flat=True))
+    if request.method == "POST" and role:
+        action = request.POST.get("action", "save")
+        if action == "reset":
+            reset_role_permissions(role, updated_by=request.user)
+            RoleAuditLog.objects.create(
+                business=business,
+                target_type=RoleAuditLog.TARGET_ROLE,
+                role=role,
+                action=RoleAuditLog.ACTION_RESET,
+                payload={"role": role.code},
+                changed_by=request.user,
+            )
+            messages.success(request, "Perfil restaurado para o padrao.")
+        else:
+            perm_ids = request.POST.getlist("permissions")
+            role.permissions.set(Permission.objects.filter(id__in=perm_ids))
+            role.updated_by = request.user
+            role.save(update_fields=["updated_by", "updated_at"])
+            RoleAuditLog.objects.create(
+                business=business,
+                target_type=RoleAuditLog.TARGET_ROLE,
+                role=role,
+                action=RoleAuditLog.ACTION_UPDATE,
+                payload={"permissions": perm_ids},
+                changed_by=request.user,
+            )
+            messages.success(request, "Permissoes atualizadas.")
+        return redirect(f"{reverse('tenants:roles')}?role={role.id}")
+
+    return render(
+        request,
+        "tenants/roles_permissions.html",
+        {
+            "roles": roles,
+            "selected_role": role,
+            "permission_groups": permission_groups,
+            "selected_perm_ids": selected_perm_ids,
+        },
+    )

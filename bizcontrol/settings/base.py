@@ -34,6 +34,10 @@ CORS_ALLOWED_ORIGINS = get_env_list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "no-reply@bizcontrol.app")
+RESEND_FROM_NAME = os.environ.get("RESEND_FROM_NAME", "BizControl")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

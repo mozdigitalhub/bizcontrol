@@ -2,28 +2,125 @@
 
 {% block title %}Recibos - BizControl{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .filter-card {
+      background: #f7f9fc;
+      border: 1px solid #e3e9f2;
+    }
+
+    .summary-card {
+      border-radius: 16px;
+      border: 1px solid #e3e9f2;
+      box-shadow: 0 10px 18px rgba(31, 60, 76, 0.06);
+    }
+
+    .summary-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .filter-group .input-group-text {
+      background: #ffffff;
+      border-right: 0;
+      color: #60707c;
+    }
+
+    .filter-group .form-control,
+    .filter-group .form-select {
+      border-left: 0;
+    }
+
+    .receipt-table th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6d7b86;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h4 mb-0">Recibos</h1>
   </div>
 
-  <form class="card p-3 mb-3" method="get">
-    <div class="row g-2 align-items-end">
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Total recebido</div>
+            <div class="fw-semibold">{{ total_amount|floatformat:2 }} MZN</div>
+          </div>
+          <div class="summary-icon bg-success-subtle text-success">
+            <i class="bi bi-cash-coin"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Recibos emitidos</div>
+            <div class="fw-semibold">{{ receipt_count }}</div>
+          </div>
+          <div class="summary-icon bg-primary-subtle text-primary">
+            <i class="bi bi-file-earmark-text"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Periodo filtrado</div>
+            <div class="fw-semibold">{{ date_from }} - {{ date_to }}</div>
+          </div>
+          <div class="summary-icon bg-warning-subtle text-warning">
+            <i class="bi bi-calendar-event"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form class="card p-3 mb-3 filter-card" method="get">
+    <div class="row g-3 align-items-end">
       <div class="col-lg-4">
         <label class="form-label small">Pesquisa</label>
-        <input class="form-control" type="text" name="q" placeholder="Numero ou fatura" value="{{ query }}">
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Numero ou fatura" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <label class="form-label small">Periodo</label>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="col-lg-3">
-        <label class="form-label small">De</label>
-        <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
-      </div>
-      <div class="col-lg-3">
-        <label class="form-label small">Ate</label>
-        <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
-      </div>
-      <div class="col-lg-2">
-        <button class="btn btn-outline-secondary w-100" type="submit">
-          <i class="bi bi-funnel"></i>
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
         </button>
       </div>
     </div>
@@ -31,7 +128,7 @@
 
   <div class="card">
     <div class="table-responsive">
-      <table class="table mb-0 align-middle">
+      <table class="table mb-0 align-middle receipt-table">
         <thead class="table-light">
           <tr>
             <th>Numero</th>
@@ -82,9 +179,12 @@
         </tbody>
       </table>
     </div>
-    {% if page.paginator.num_pages > 1 %}
-      <div class="card-footer bg-white border-0">
-        <nav class="d-flex justify-content-end">
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+      <span class="text-muted small">
+        Mostrando {{ page.start_index }} a {{ page.end_index }} de {{ page.paginator.count }} registos
+      </span>
+      {% if page.paginator.num_pages > 1 %}
+        <nav>
           <ul class="pagination mb-0">
             {% if page.has_previous %}
               <li class="page-item">
@@ -99,8 +199,8 @@
             {% endif %}
           </ul>
         </nav>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
   <div id="receipt-modal-container"></div>
 {% endblock %}

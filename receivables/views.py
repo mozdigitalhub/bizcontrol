@@ -1,7 +1,11 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
+from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from receivables.forms import PaymentForm
 from receivables.models import Receivable
@@ -23,6 +27,10 @@ def receivable_list(request):
     customer_id = request.GET.get("customer", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     receivables = Receivable.objects.filter(business=request.business).select_related("customer")
     if query:
         receivables = receivables.filter(customer__name__icontains=query)
@@ -34,6 +42,13 @@ def receivable_list(request):
         receivables = receivables.filter(created_at__date__lte=date_to)
     if status in [Receivable.STATUS_OPEN, Receivable.STATUS_SETTLED]:
         receivables = receivables.filter(status=status)
+    totals = receivables.aggregate(
+        total_amount=Sum("original_amount"),
+        total_paid_amount=Sum("total_paid"),
+    )
+    total_amount = totals["total_amount"] or 0
+    total_paid_amount = totals["total_paid_amount"] or 0
+    total_balance = total_amount - total_paid_amount
     paginator = Paginator(receivables.order_by("-created_at"), 20)
     page = paginator.get_page(request.GET.get("page"))
     return render(
@@ -47,6 +62,9 @@ def receivable_list(request):
             "date_from": date_from,
             "date_to": date_to,
             "customers": request.business.customers.order_by("name"),
+            "total_amount": total_amount,
+            "total_paid": total_paid_amount,
+            "total_balance": total_balance,
         },
     )
 

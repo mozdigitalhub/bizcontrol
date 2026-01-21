@@ -16,4 +16,5 @@ urlpatterns = [
     path("<int:pk>/cancel/", views.quotation_cancel, name="cancel"),
     path("<int:pk>/duplicate/", views.quotation_duplicate, name="duplicate"),
     path("<int:pk>/pdf/", views.quotation_pdf_view, name="pdf_view"),
+    path("<int:pk>/email/", views.quotation_email_modal, name="email"),
 ]

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
@@ -7,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 import json
 from itertools import groupby
 from decimal import Decimal, InvalidOperation
@@ -14,6 +17,9 @@ from decimal import Decimal, InvalidOperation
 from deliveries.models import DeliveryGuide, DeliveryGuideItem
 from deliveries.services import cancel_delivery, get_deposit_limits, register_delivery
 from sales.models import Sale
+from bizcontrol.emailing import build_pdf_attachment, send_resend_email
+from bizcontrol.pdf_utils import build_logo_src
+from tenants.forms import EmailSendForm
 from tenants.decorators import business_required
 
 try:
@@ -70,6 +76,10 @@ def guide_list(request):
     customer_id = request.GET.get("customer", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
 
     guides = DeliveryGuide.objects.filter(business=request.business).select_related(
         "customer", "sale"
@@ -91,6 +101,12 @@ def guide_list(request):
     if date_to:
         guides = guides.filter(issued_at__date__lte=date_to)
 
+    total_guides = guides.count()
+    delivered_count = guides.filter(status=DeliveryGuide.STATUS_DELIVERED).count()
+    pending_count = guides.filter(
+        status__in=[DeliveryGuide.STATUS_ISSUED, DeliveryGuide.STATUS_PARTIAL]
+    ).count()
+
     paginator = Paginator(guides.order_by("-issued_at"), 20)
     page = paginator.get_page(request.GET.get("page"))
     grouped_guides = []
@@ -110,6 +126,9 @@ def guide_list(request):
             "date_to": date_to,
             "status_choices": DeliveryGuide.STATUS_CHOICES,
             "customers": request.business.customers.order_by("name"),
+            "total_guides": total_guides,
+            "delivered_count": delivered_count,
+            "pending_count": pending_count,
         },
     )
 
@@ -182,12 +201,16 @@ def guide_create(request, sale_id):
         )
         transport_responsible = request.POST.get("transport_responsible", "").strip()
         transport_cost_raw = request.POST.get("transport_cost", "").strip()
+        auto_transport = request.POST.get("auto_transport", "").strip() == "1"
         transport_cost = None
         if transport_cost_raw:
             try:
                 transport_cost = Decimal(transport_cost_raw.replace(",", "."))
             except InvalidOperation:
                 transport_cost = None
+        if auto_transport:
+            transport_responsible = transport_responsible or "Auto-levantamento"
+            transport_cost = transport_cost if transport_cost is not None else Decimal("0")
         try:
             register_delivery(
                 sale_id=sale.id,
@@ -273,10 +296,11 @@ def guide_cancel(request, pk):
     return redirect("deliveries:guide_detail", pk=guide.id)
 
 
-def _render_guide_pdf(guide, request, download=False):
+def _build_guide_pdf_bytes(guide, request):
     if HTML is None:
-        return HttpResponse("WeasyPrint nao instalado.", status=500)
+        raise ValueError("WeasyPrint nao instalado.")
     summary = _build_sale_item_summary(guide.sale)
+    logo_url = build_logo_src(guide.business, request)
     html = render_to_string(
         "deliveries/guide_pdf.html",
         {
@@ -284,9 +308,17 @@ def _render_guide_pdf(guide, request, download=False):
             "business": guide.business,
             "items": guide.items.select_related("product"),
             "summary_items": summary,
+            "logo_url": logo_url,
         },
     )
-    pdf = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+
+
+def _render_guide_pdf(guide, request, download=False):
+    try:
+        pdf = _build_guide_pdf_bytes(guide, request)
+    except ValueError as exc:
+        return HttpResponse(str(exc), status=500)
     response = HttpResponse(pdf, content_type="application/pdf")
     if download:
         response["Content-Disposition"] = (
@@ -309,3 +341,56 @@ def guide_pdf_view(request, pk):
 def guide_pdf_download(request, pk):
     guide = get_object_or_404(DeliveryGuide, pk=pk, business=request.business)
     return _render_guide_pdf(guide, request, download=True)
+
+
+@login_required
+@business_required
+@permission_required("deliveries.view_deliveryguide", raise_exception=True)
+def guide_email_modal(request, pk):
+    guide = get_object_or_404(DeliveryGuide, pk=pk, business=request.business)
+    initial_email = guide.customer.email if guide.customer and guide.customer.email else ""
+    form = EmailSendForm(initial={"email": initial_email})
+    success = False
+    if request.method == "POST":
+        form = EmailSendForm(request.POST)
+        if form.is_valid():
+            try:
+                pdf_bytes = _build_guide_pdf_bytes(guide, request)
+            except ValueError as exc:
+                form.add_error(None, str(exc))
+            else:
+                attachment = build_pdf_attachment(
+                    f"guia-{guide.code or guide.guide_number}.pdf",
+                    pdf_bytes,
+                )
+                subject = f"Guia de entrega {guide.code or guide.guide_number} - {request.business.name}"
+                html = render_to_string(
+                    "emails/document_email.html",
+                    {
+                        "recipient_name": guide.customer.name if guide.customer else "Cliente",
+                        "document_label": "a guia de entrega",
+                        "document_code": guide.code or guide.guide_number,
+                        "business": request.business,
+                        "message": form.cleaned_data.get("message", ""),
+                    },
+                )
+                reply_to = request.business.email or None
+                ok, error = send_resend_email(
+                    to_email=form.cleaned_data["email"],
+                    subject=subject,
+                    html=html,
+                    attachments=[attachment],
+                    reply_to=reply_to,
+                )
+                if ok:
+                    success = True
+                    messages.success(request, "Email enviado com sucesso.")
+                else:
+                    form.add_error(None, error)
+        else:
+            messages.error(request, "Revise os campos antes de enviar.")
+    return render(
+        request,
+        "deliveries/partials/guide_email_modal.html",
+        {"guide": guide, "form": form, "success": success},
+    )

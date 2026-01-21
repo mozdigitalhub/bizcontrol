@@ -1,0 +1,140 @@
+﻿{% extends "base.html" %}
+{% block title %}Dados para pagamento - BizControl{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h4 class="mb-1">Dados para pagamento</h4>
+      <div class="text-muted small">Informacoes exibidas nas faturas e cotacoes.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Carteiras moveis</h6>
+            {% if is_owner %}
+              <button
+                class="btn btn-sm btn-outline-primary"
+                type="button"
+                hx-get="{% url 'tenants:wallet_create' %}"
+                hx-target="#tenant-payment-modal-container"
+                hx-swap="innerHTML"
+              >
+                <i class="bi bi-plus-circle"></i>
+                Adicionar
+              </button>
+            {% endif %}
+          </div>
+          {% for wallet in wallets %}
+            <div class="border rounded-3 p-2 mb-2">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-semibold">{{ wallet.get_wallet_type_display }}</div>
+                  <div class="text-muted small">{{ wallet.phone_number }} · {{ wallet.holder_name }}</div>
+                </div>
+                <div class="text-end">
+                  {% if wallet.is_active %}
+                    <span class="badge text-bg-success">Ativa</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Inativa</span>
+                  {% endif %}
+                  {% if is_owner %}
+                    <div class="d-flex gap-1 mt-2">
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        hx-get="{% url 'tenants:wallet_edit' wallet.id %}"
+                        hx-target="#tenant-payment-modal-container"
+                        hx-swap="innerHTML"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <form method="post" action="{% url 'tenants:payment_delete' 'wallet' wallet.id %}" data-swal-confirm="true" data-swal-title="Remover?" data-swal-text="Deseja remover esta carteira?" data-swal-confirm-text="Remover" data-swal-cancel-text="Voltar">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-muted small">Sem carteiras registadas.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Contas bancarias</h6>
+            {% if is_owner %}
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                type="button"
+                hx-get="{% url 'tenants:bank_create' %}"
+                hx-target="#tenant-payment-modal-container"
+                hx-swap="innerHTML"
+              >
+                <i class="bi bi-plus-circle"></i>
+                Adicionar
+              </button>
+            {% endif %}
+          </div>
+          {% for bank in banks %}
+            <div class="border rounded-3 p-2 mb-2">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-semibold">{{ bank.bank_name }}</div>
+                  <div class="text-muted small">Conta {{ bank.account_number }} · NIB {{ bank.nib }}</div>
+                  {% if bank.holder_name %}
+                    <div class="text-muted small">{{ bank.holder_name }}</div>
+                  {% endif %}
+                </div>
+                <div class="text-end">
+                  {% if bank.is_active %}
+                    <span class="badge text-bg-success">Ativo</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">Inativo</span>
+                  {% endif %}
+                  {% if is_owner %}
+                    <div class="d-flex gap-1 mt-2">
+                      <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        hx-get="{% url 'tenants:bank_edit' bank.id %}"
+                        hx-target="#tenant-payment-modal-container"
+                        hx-swap="innerHTML"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <form method="post" action="{% url 'tenants:payment_delete' 'bank' bank.id %}" data-swal-confirm="true" data-swal-title="Remover?" data-swal-text="Deseja remover esta conta?" data-swal-confirm-text="Remover" data-swal-cancel-text="Voltar">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-muted small">Sem contas registadas.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="tenant-payment-modal-container"></div>
+</div>
+{% endblock %}

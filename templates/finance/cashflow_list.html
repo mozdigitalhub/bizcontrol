@@ -2,6 +2,48 @@
 
 {% block title %}Fluxo de caixa - BizControl{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .filter-card {
+      background: #f7f9fc;
+      border: 1px solid #e3e9f2;
+    }
+
+    .summary-card {
+      border-radius: 16px;
+      border: 1px solid #e3e9f2;
+      box-shadow: 0 10px 18px rgba(31, 60, 76, 0.06);
+    }
+
+    .summary-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .filter-group .input-group-text {
+      background: #ffffff;
+      border-right: 0;
+      color: #60707c;
+    }
+
+    .filter-group .form-control,
+    .filter-group .form-select {
+      border-left: 0;
+    }
+
+    .cashflow-table th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6d7b86;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
@@ -10,43 +52,58 @@
     </div>
   </div>
 
-  <form class="card p-3 mb-3" method="get">
-    <div class="row g-2 align-items-end">
+  <form class="card p-3 mb-3 filter-card" method="get">
+    <div class="row g-3 align-items-end">
       <div class="col-lg-4 col-sm-12">
         <label class="form-label small">Pesquisar</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input class="form-control" type="text" name="q" placeholder="Notas ou referencia" value="{{ query }}">
         </div>
       </div>
-      <div class="col-lg-2 col-sm-6">
+      <div class="col-lg-3 col-sm-6">
         <label class="form-label small">Tipo</label>
-        <select class="form-select tom-select" name="movement_type" data-placeholder="Tipo...">
-          <option value="">Todos</option>
-          {% for value, label in movement_choices %}
-            <option value="{{ value }}"{% if movement_type == value %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-arrow-left-right"></i></span>
+          <select class="form-select tom-select" name="movement_type" data-placeholder="Tipo...">
+            <option value="">Todos</option>
+            {% for value, label in movement_choices %}
+              <option value="{{ value }}"{% if movement_type == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="col-lg-2 col-sm-6">
+      <div class="col-lg-3 col-sm-6">
         <label class="form-label small">Metodo</label>
-        <select class="form-select tom-select" name="method" data-placeholder="Metodo...">
-          <option value="">Todos</option>
-          {% for value, label in method_choices %}
-            <option value="{{ value }}"{% if method == value %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-credit-card"></i></span>
+          <select class="form-select tom-select" name="method" data-placeholder="Metodo...">
+            <option value="">Todos</option>
+            {% for value, label in method_choices %}
+              <option value="{{ value }}"{% if method == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="col-lg-2 col-sm-6">
-        <label class="form-label small">De</label>
-        <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
-      </div>
-      <div class="col-lg-2 col-sm-6">
-        <label class="form-label small">Ate</label>
-        <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+      <div class="col-lg-4 col-sm-6">
+        <label class="form-label small">Periodo</label>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="input-group filter-group">
+              <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+              <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="col-lg-2 col-sm-6 mt-lg-0 mt-2">
-        <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
+        <button class="btn btn-primary w-100" type="submit">
           <i class="bi bi-filter me-1"></i>
           Filtrar
         </button>
@@ -57,15 +114,22 @@
   <div class="row g-3 mb-3">
     {% for category in category_totals %}
       <div class="col-lg-4">
-        <div class="card p-3">
+        <div class="card p-3 summary-card">
           <div class="d-flex align-items-center justify-content-between">
             <div>
               <div class="text-muted small">{{ category.label }}</div>
               <div class="fw-semibold">{{ category.net_total|floatformat:2 }} MZN</div>
-            </div>
-            <div class="text-end">
               <div class="small text-success">+ {{ category.total_in|floatformat:2 }} MZN</div>
               <div class="small text-danger">- {{ category.total_out|floatformat:2 }} MZN</div>
+            </div>
+            <div class="summary-icon bg-primary-subtle text-primary">
+              {% if category.key == "cash" %}
+                <i class="bi bi-cash-coin"></i>
+              {% elif category.key == "bank" %}
+                <i class="bi bi-bank"></i>
+              {% else %}
+                <i class="bi bi-phone"></i>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -75,7 +139,7 @@
 
   <div class="card">
     <div class="table-responsive">
-      <table class="table mb-0 table-hover align-middle">
+      <table class="table mb-0 table-hover align-middle cashflow-table">
         <thead class="table-light">
           <tr>
             <th>Data</th>
@@ -171,42 +235,68 @@
 
   <div class="row g-3 mt-3">
     <div class="col-lg-4">
-      <div class="card p-3">
-        <div class="text-muted small">Entradas</div>
-        <div class="fw-semibold text-success">{{ total_in|floatformat:2 }} MZN</div>
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Entradas</div>
+            <div class="fw-semibold text-success">{{ total_in|floatformat:2 }} MZN</div>
+          </div>
+          <div class="summary-icon bg-success-subtle text-success">
+            <i class="bi bi-arrow-down-left-circle"></i>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-4">
-      <div class="card p-3">
-        <div class="text-muted small">Saidas</div>
-        <div class="fw-semibold text-danger">{{ total_out|floatformat:2 }} MZN</div>
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Saidas</div>
+            <div class="fw-semibold text-danger">{{ total_out|floatformat:2 }} MZN</div>
+          </div>
+          <div class="summary-icon bg-danger-subtle text-danger">
+            <i class="bi bi-arrow-up-right-circle"></i>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-4">
-      <div class="card p-3">
-        <div class="text-muted small">Saldo</div>
-        <div class="fw-semibold">{{ net_total|floatformat:2 }} MZN</div>
+      <div class="card p-3 summary-card">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small">Saldo</div>
+            <div class="fw-semibold">{{ net_total|floatformat:2 }} MZN</div>
+          </div>
+          <div class="summary-icon bg-primary-subtle text-primary">
+            <i class="bi bi-wallet2"></i>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  {% if page.has_other_pages %}
-    <nav class="mt-3">
-      <ul class="pagination justify-content-center">
-        {% if page.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.previous_page_number }}">Anterior</a>
-          </li>
-        {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
-        {% if page.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.next_page_number }}">Seguinte</a>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
-  {% endif %}
+  <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+    <span class="text-muted small">
+      Mostrando {{ page.start_index }} a {{ page.end_index }} de {{ page.paginator.count }} registos
+    </span>
+    {% if page.has_other_pages %}
+      <nav>
+        <ul class="pagination mb-0">
+          {% if page.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+          <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+          {% if page.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ query }}&movement_type={{ movement_type }}&method={{ method }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page.next_page_number }}">Seguinte</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
 
   <div id="cashflow-modal-container"></div>
 {% endblock %}

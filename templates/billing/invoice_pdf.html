@@ -3,73 +3,235 @@
   <head>
     <meta charset="utf-8">
     <style>
-      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
-      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
-      .title { font-size: 20px; font-weight: bold; }
-      .muted { color: #666; }
-      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-      th { background: #f3f3f3; }
-      .totals { margin-top: 12px; width: 100%; }
-      .totals td { padding: 4px; }
-      .right { text-align: right; }
-      .footer { margin-top: 24px; font-size: 11px; color: #666; }
+      @page {
+        size: A4;
+        margin: 22mm 18mm;
+      }
+      :root {
+        --accent: #1f6f8b;
+        --accent-dark: #154c61;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #e5e9f0;
+        --panel: #f3f6fb;
+      }
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: var(--text);
+        font-size: 12px;
+      }
+      .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .brand-logo {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #f1f5f9;
+        padding: 6px;
+      }
+      .brand-name {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .brand-meta {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .doc-title {
+        text-align: right;
+      }
+      .doc-title h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+        letter-spacing: 1px;
+      }
+      .doc-code {
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .doc-meta {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .badge-open {
+        background: #e8f1f7;
+        color: #0f4c5c;
+      }
+      .badge-paid {
+        background: #dff6ea;
+        color: #137a4b;
+      }
+      .badge-partial {
+        background: #fff1d6;
+        color: #9a5a00;
+      }
+      .badge-canceled {
+        background: #fde8e8;
+        color: #b42318;
+      }
+      .section-title {
+        margin: 18px 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+      }
+      .panel {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .items th {
+        background: var(--accent);
+        color: #fff;
+        padding: 8px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .items td {
+        padding: 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      .right {
+        text-align: right;
+      }
+      .totals {
+        width: 45%;
+        margin-left: auto;
+        margin-top: 10px;
+      }
+      .totals td {
+        padding: 6px 8px;
+      }
+      .totals .total-row td {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+      }
+      .payment-data {
+        margin-top: 18px;
+      }
+      .payment-data .item {
+        margin-top: 4px;
+        color: var(--muted);
+      }
+      .footer {
+        margin-top: 22px;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+      }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div>
-        <div class="title">Fatura {{ invoice.code|default:invoice.invoice_number }}</div>
-        <div class="muted">Data: {{ invoice.issue_date|date:"d/m/Y" }}</div>
-        {% if invoice.sale and invoice.sale.is_credit %}
-          <div class="muted">Fatura a fiado{% if invoice.due_date %} · Data prevista: {{ invoice.due_date|date:"d/m/Y" }}{% endif %}</div>
+    <div class="doc-header">
+      <div class="brand">
+        {% if logo_url %}
+          <img class="brand-logo" src="{{ logo_url }}" alt="Logo">
+        {% else %}
+          <div class="brand-logo"></div>
         {% endif %}
+        <div>
+          <div class="brand-name">{{ business.name }}</div>
+          <div class="brand-meta">
+            {% if business.address %}{{ business.address }}<br>{% endif %}
+            {% if business.city or business.country %}
+              {{ business.city }}{% if business.city and business.country %}, {% endif %}{{ business.country }}<br>
+            {% endif %}
+            {% if business.phone %}Tel: {{ business.phone }}<br>{% endif %}
+            {% if business.email %}Email: {{ business.email }}{% endif %}
+          </div>
+        </div>
       </div>
-      <div class="right">
-        <div><strong>{{ business.name }}</strong></div>
-        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
-        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
-        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
-        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      <div class="doc-title">
+        <h1>FATURA</h1>
+        <div class="doc-code">Nº: {{ invoice.code|default:invoice.invoice_number }}</div>
+        <div class="doc-meta">Data Emissao: {{ invoice.issue_date|date:"d/m/Y" }}</div>
+        {% if invoice.due_date %}
+          <div class="doc-meta">Vencimento: {{ invoice.due_date|date:"d/m/Y" }}</div>
+        {% endif %}
+        {% if invoice.sale and invoice.sale.is_credit %}
+          <div class="doc-meta">Fatura a fiado{% if invoice.due_date %} - Prevista: {{ invoice.due_date|date:"d/m/Y" }}{% endif %}</div>
+        {% endif %}
+        {% if invoice.status == "paid" %}
+          <span class="badge badge-paid">Paga</span>
+        {% elif invoice.status == "partial" %}
+          <span class="badge badge-partial">Parcial</span>
+        {% elif invoice.status == "canceled" %}
+          <span class="badge badge-canceled">Cancelada</span>
+        {% else %}
+          <span class="badge badge-open">Em aberto</span>
+        {% endif %}
       </div>
     </div>
 
-    <div>
-      <strong>Cliente</strong><br>
+    <div class="section-title">Fatura para</div>
+    <div class="panel">
       {% if invoice.customer %}
-        {{ invoice.customer.name }}<br>
-        {% if invoice.customer.phone %}{{ invoice.customer.phone }}<br>{% endif %}
-        {% if invoice.customer.email %}{{ invoice.customer.email }}<br>{% endif %}
-        {% if invoice.customer.address %}{{ invoice.customer.address }}{% endif %}
+        <div><strong>{{ invoice.customer.name }}</strong></div>
+        {% if invoice.customer.nuit %}<div class="brand-meta">NUIT: {{ invoice.customer.nuit }}</div>{% endif %}
+        {% if invoice.customer.email %}<div class="brand-meta">{{ invoice.customer.email }}</div>{% endif %}
+        {% if invoice.customer.phone %}<div class="brand-meta">{{ invoice.customer.phone }}</div>{% endif %}
+        {% if invoice.customer.address %}<div class="brand-meta">{{ invoice.customer.address }}</div>{% endif %}
       {% else %}
-        Consumidor final
+        <div><strong>Consumidor final</strong></div>
       {% endif %}
     </div>
 
-
-
-    <table>
+    <div class="section-title">Itens</div>
+    <table class="items">
       <thead>
         <tr>
           <th>Produto</th>
           <th>Qtd</th>
-          <th>Preco</th>
-          <th>IVA</th>
-          <th>Total</th>
+          <th class="right">Preco Unit.</th>
+          <th class="right">IVA</th>
+          <th class="right">Total</th>
         </tr>
       </thead>
       <tbody>
         {% for item in items %}
           <tr>
-            <td>{{ item.product.name }}</td>
+            <td>{{ item.product.name|default:"-" }}</td>
             <td>{{ item.quantity }}</td>
-            <td>{{ item.unit_price|floatformat:2 }}</td>
-            <td>{{ item.line_tax|floatformat:2 }}</td>
-            <td>{{ item.line_total|floatformat:2 }}</td>
+            <td class="right">{{ item.unit_price|floatformat:2 }}</td>
+            <td class="right">{{ item.line_tax|floatformat:2 }}</td>
+            <td class="right">{{ item.line_total|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="muted">Sem itens.</td>
+            <td colspan="5" class="brand-meta">Sem itens.</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -78,44 +240,44 @@
     <table class="totals">
       <tr>
         <td class="right">Subtotal:</td>
-        <td class="right">{{ invoice.subtotal|floatformat:2 }} MZN</td>
+        <td class="right">{{ invoice.subtotal|floatformat:2 }} {{ business.currency|default:"MZN" }}</td>
       </tr>
       <tr>
         <td class="right">IVA:</td>
-        <td class="right">{{ invoice.tax_total|floatformat:2 }} MZN</td>
+        <td class="right">{{ invoice.tax_total|floatformat:2 }} {{ business.currency|default:"MZN" }}</td>
       </tr>
       {% if invoice.sale and invoice.sale.discount_total %}
         <tr>
           <td class="right">Desconto:</td>
-          <td class="right">-{{ invoice.sale.discount_total|floatformat:2 }} MZN</td>
+          <td class="right">-{{ invoice.sale.discount_total|floatformat:2 }} {{ business.currency|default:"MZN" }}</td>
         </tr>
       {% endif %}
-      <tr>
-        <td class="right"><strong>Total:</strong></td>
-        <td class="right"><strong>{{ invoice.total|floatformat:2 }} MZN</strong></td>
+      <tr class="total-row">
+        <td class="right">Total a pagar:</td>
+        <td class="right">{{ invoice.total|floatformat:2 }} {{ business.currency|default:"MZN" }}</td>
       </tr>
     </table>
 
     {% if invoice.payment_snapshot %}
-      <div style="margin-top: 10px;">
-        <strong>Dados para pagamento</strong><br>
+      <div class="section-title">Dados para pagamento</div>
+      <div class="panel payment-data">
         {% if invoice.payment_snapshot.wallets %}
           <div><strong>Carteiras moveis</strong></div>
           {% for wallet in invoice.payment_snapshot.wallets %}
-            <div>{{ wallet.label }} - {{ wallet.phone_number }}{% if wallet.holder_name %} ({{ wallet.holder_name }}){% endif %}</div>
+            <div class="item">{{ wallet.label }} - {{ wallet.phone_number }}{% if wallet.holder_name %} ({{ wallet.holder_name }}){% endif %}</div>
           {% endfor %}
         {% endif %}
         {% if invoice.payment_snapshot.banks %}
-          <div style="margin-top: 6px;"><strong>Contas bancarias</strong></div>
+          <div style="margin-top: 8px;"><strong>Contas bancarias</strong></div>
           {% for bank in invoice.payment_snapshot.banks %}
-            <div>{{ bank.bank_name }} - Conta {{ bank.account_number }}{% if bank.nib %} · NIB {{ bank.nib }}{% endif %}{% if bank.holder_name %} ({{ bank.holder_name }}){% endif %}</div>
+            <div class="item">{{ bank.bank_name }} - Conta {{ bank.account_number }}{% if bank.nib %} - NIB {{ bank.nib }}{% endif %}{% if bank.holder_name %} ({{ bank.holder_name }}){% endif %}</div>
           {% endfor %}
         {% endif %}
       </div>
     {% endif %}
 
     <div class="footer">
-      Obrigado pela preferencia.
+      Documento emitido eletronicamente. Obrigado pela sua preferencia.
     </div>
   </body>
 </html>

@@ -36,9 +36,8 @@ class TenantProfileTests(TestCase):
             nuit="222222222",
         )
         response = self.client.post(
-            reverse("tenants:settings"),
+            reverse("tenants:business_profile"),
             {
-                "action": "tenant_profile",
                 "name": "Loja A",
                 "nuit": "222222222",
                 "commercial_registration": "",
@@ -49,15 +48,15 @@ class TenantProfileTests(TestCase):
                 "city": "",
             },
         )
-        form = response.context["profile_form"]
+        form = response.context["form"]
         self.assertTrue(form.errors.get("nuit"))
 
     def test_update_user_profile_without_email_change(self):
         UserProfile.objects.get_or_create(user=self.user)
         response = self.client.post(
-            reverse("tenants:settings"),
+            reverse("tenants:user_profile"),
             {
-                "action": "user_profile",
+                "action": "profile",
                 "first_name": "Novo",
                 "last_name": "Nome",
                 "phone": "841234567",
@@ -72,7 +71,7 @@ class TenantProfileTests(TestCase):
 
     def test_change_password_validation(self):
         response = self.client.post(
-            reverse("tenants:settings"),
+            reverse("tenants:user_profile"),
             {
                 "action": "password",
                 "old_password": "wrong",

@@ -6,7 +6,8 @@ from rest_framework import serializers
 
 from accounts.signals import OWNER_GROUP
 from finance.services import ensure_default_payment_methods
-from tenants.models import Business, BusinessMembership
+from tenants.models import Business, BusinessMembership, TenantRole
+from tenants.rbac import ensure_custom_permissions, ensure_tenant_roles
 
 
 TENANT_TYPE_MAP = {
@@ -136,10 +137,19 @@ class TenantRegisterSerializer(serializers.Serializer):
                 password=validated_data["password"],
             )
             _ensure_owner_group()
+            ensure_custom_permissions()
+            roles = ensure_tenant_roles(business, created_by=owner, force=True)
+            owner_role = next(
+                (role for role in roles if role.code == TenantRole.ROLE_OWNER_ADMIN),
+                None,
+            )
             BusinessMembership.objects.create(
                 business=business,
                 user=owner,
                 role=BusinessMembership.ROLE_OWNER,
+                role_profile=owner_role,
+                created_by=owner,
+                updated_by=owner,
             )
             ensure_default_payment_methods(business)
         return {"business": business, "owner": owner}

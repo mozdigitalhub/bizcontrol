@@ -8,17 +8,125 @@
     rel="stylesheet"
   >
   <style>
-    .sale-hero {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: center;
+    .sale-header-card {
+      border-radius: 20px;
+      border: 1px solid #e6edf2;
+      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 58%);
+      box-shadow: 0 12px 30px rgba(31, 60, 76, 0.08);
     }
 
-    .sale-hero .pill {
-      background: #eef6f9;
-      color: #1f6f8b;
+    .sale-title {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .sale-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .status-badge {
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
       font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+    }
+
+    .status-draft {
+      background: #f4f7f9;
+      color: #5f6f7a;
+      border-color: #dfe6eb;
+    }
+
+    .status-confirmed,
+    .status-paid,
+    .status-delivered {
+      background: #e8f6ef;
+      color: #1f7a4d;
+      border-color: #b8e0c8;
+    }
+
+    .status-canceled {
+      background: #fdecec;
+      color: #b42318;
+      border-color: #f6b6b6;
+    }
+
+    .status-partial,
+    .status-pending {
+      background: #fff5e6;
+      color: #9a5b13;
+      border-color: #ffd9a6;
+    }
+
+    .status-unpaid {
+      background: #eef2ff;
+      color: #3b5bcc;
+      border-color: #c7d2fe;
+    }
+
+    .sale-total-card {
+      background: #0f3a4d;
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      min-width: 220px;
+      box-shadow: 0 12px 24px rgba(15, 58, 77, 0.2);
+    }
+
+    .sale-total-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .sale-total-card .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .sale-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .sale-metric {
+      border-radius: 16px;
+      border: 1px solid #e6edf2;
+      background: #ffffff;
+      padding: 14px 16px;
+      box-shadow: 0 10px 20px rgba(31, 60, 76, 0.06);
+    }
+
+    .sale-metric .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #7a8892;
+    }
+
+    .sale-metric .value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #1f2c34;
+    }
+
+    .sale-metric.highlight {
+      background: #f1f8fb;
+      border-color: #d8eef7;
     }
 
     .sale-card-title {
@@ -70,33 +178,98 @@
 {% endblock %}
 
 {% block content %}
-  <div class="sale-hero justify-content-between mb-3">
-    <div>
-      <h1 class="h4 mb-1">{{ current_business.ui_labels.sale }} {{ sale.code|default:sale.id }}</h1>
-      <div class="text-muted small">Estado: {{ sale.get_status_display }} · Pagamento: {{ sale.get_payment_status_display }}</div>
-      <div class="text-muted small">Entrega: {{ sale.get_delivery_status_display }}</div>
-      <div class="text-muted small">Data: {{ sale.sale_date|date:"d/m/Y H:i" }}</div>
-      {% if sale.sale_type == "deposit" %}
-        <div class="text-muted small">
-          Deposito pago: {{ deposit_paid|default:0|floatformat:2 }} MZN · Em aberto: {{ deposit_balance|default:0|floatformat:2 }} MZN
+  <div class="card sale-header-card mb-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <div class="text-uppercase small text-muted">{{ current_business.ui_labels.sale }}</div>
+        <h1 class="h4 sale-title mb-1">{{ current_business.ui_labels.sale }} {{ sale.code|default:sale.id }}</h1>
+        <div class="sale-badges">
+          <span class="status-badge status-{{ sale.status }}">
+            <i class="bi bi-receipt"></i>
+            {{ sale.get_status_display }}
+          </span>
+          <span class="status-badge status-{{ sale.payment_status }}">
+            <i class="bi bi-cash"></i>
+            {{ sale.get_payment_status_display }}
+          </span>
+          <span class="status-badge status-{{ sale.delivery_status }}">
+            <i class="bi bi-truck"></i>
+            {{ sale.get_delivery_status_display }}
+          </span>
         </div>
-      {% endif %}
-    </div>
-    <div class="d-flex gap-2">
-      <span class="pill">
-        Total:
-        {% if sale.status == "draft" %}
-          {{ draft_totals.total|floatformat:2 }} MZN
-        {% else %}
-          {{ sale.total|floatformat:2 }} MZN
+        <div class="text-muted small mt-2 d-flex flex-wrap gap-3">
+          <span><i class="bi bi-calendar-event me-1"></i>{{ sale.sale_date|date:"d/m/Y H:i" }}</span>
+          <span><i class="bi bi-tag me-1"></i>{{ sale.get_sale_type_display }}</span>
+          <span><i class="bi bi-box-seam me-1"></i>{{ sale.get_delivery_mode_display }}</span>
+        </div>
+        {% if sale.sale_type == "deposit" %}
+          <div class="text-muted small mt-2">
+            Deposito pago: {{ deposit_paid|default:0|floatformat:2 }} MZN | Em aberto: {{ deposit_balance|default:0|floatformat:2 }} MZN
+          </div>
         {% endif %}
-      </span>
-      <a class="btn btn-outline-secondary" href="{% url 'sales:list' %}">
-        <i class="bi bi-arrow-left"></i>
-        Voltar
-      </a>
+      </div>
+      <div class="d-flex flex-column align-items-end gap-2">
+        <div class="sale-total-card">
+          <div class="label">Total da venda</div>
+          <div class="value">
+            {% if sale.status == "draft" %}
+              {{ draft_totals.total|default:0|floatformat:2 }} MZN
+            {% else %}
+              {{ sale.total|floatformat:2 }} MZN
+            {% endif %}
+          </div>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'sales:list' %}">
+          <i class="bi bi-arrow-left"></i>
+          Voltar
+        </a>
+      </div>
     </div>
   </div>
+
+  {% if sale.status == "draft" %}
+    {% with subtotal=draft_totals.subtotal|default:0 tax=draft_totals.tax_total|default:0 discount=draft_totals.discount_total|default:0 total=draft_totals.total|default:0 %}
+      <div class="sale-metrics">
+        <div class="sale-metric">
+          <div class="label">Subtotal</div>
+          <div class="value">{{ subtotal|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric">
+          <div class="label">IVA</div>
+          <div class="value">{{ tax|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric">
+          <div class="label">Desconto</div>
+          <div class="value text-danger">{{ discount|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric highlight">
+          <div class="label">Total</div>
+          <div class="value">{{ total|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+    {% endwith %}
+  {% else %}
+    {% with subtotal=sale.subtotal tax=sale.tax_total discount=sale.discount_total total=sale.total %}
+      <div class="sale-metrics">
+        <div class="sale-metric">
+          <div class="label">Subtotal</div>
+          <div class="value">{{ subtotal|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric">
+          <div class="label">IVA</div>
+          <div class="value">{{ tax|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric">
+          <div class="label">Desconto</div>
+          <div class="value text-danger">{{ discount|floatformat:2 }} MZN</div>
+        </div>
+        <div class="sale-metric highlight">
+          <div class="label">Total</div>
+          <div class="value">{{ total|floatformat:2 }} MZN</div>
+        </div>
+      </div>
+    {% endwith %}
+  {% endif %}
 
   <div class="card mb-4">
     <div class="card-body">

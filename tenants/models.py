@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
@@ -469,6 +470,112 @@ class TenantBankAccount(models.Model):
         return f"{self.bank_name} - {self.account_number}"
 
 
+class TenantRole(models.Model):
+    ROLE_OWNER_ADMIN = "owner_admin"
+    ROLE_MANAGER = "manager"
+    ROLE_CASHIER = "cashier_sales"
+    ROLE_FINANCE = "finance"
+    ROLE_STOCK = "stock_warehouse"
+    ROLE_OPERATIONS = "operations_production"
+    ROLE_SUPPORT = "support_viewer"
+    ROLE_CHOICES = [
+        (ROLE_OWNER_ADMIN, "Admin da empresa"),
+        (ROLE_MANAGER, "Gerente"),
+        (ROLE_CASHIER, "Caixa/Vendas"),
+        (ROLE_FINANCE, "Financeiro"),
+        (ROLE_STOCK, "Stock/Armazem"),
+        (ROLE_OPERATIONS, "Operacional/Producao"),
+        (ROLE_SUPPORT, "Leitura/Suporte"),
+    ]
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="roles"
+    )
+    code = models.CharField(max_length=40, choices=ROLE_CHOICES)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    is_system = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    permissions = models.ManyToManyField(
+        Permission, blank=True, related_name="tenant_roles"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_tenant_roles",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_tenant_roles",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"], name="uniq_tenant_role_code"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.business})"
+
+
+class RoleAuditLog(models.Model):
+    TARGET_ROLE = "role"
+    TARGET_USER = "user"
+    TARGET_CHOICES = [
+        (TARGET_ROLE, "Role"),
+        (TARGET_USER, "Utilizador"),
+    ]
+    ACTION_UPDATE = "update"
+    ACTION_RESET = "reset"
+    ACTION_ASSIGN = "assign"
+    ACTION_CHOICES = [
+        (ACTION_UPDATE, "Atualizar"),
+        (ACTION_RESET, "Reset"),
+        (ACTION_ASSIGN, "Atribuir"),
+    ]
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="role_audits"
+    )
+    target_type = models.CharField(max_length=20, choices=TARGET_CHOICES)
+    role = models.ForeignKey(
+        TenantRole, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    membership = models.ForeignKey(
+        "BusinessMembership",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    payload = models.JSONField(default=dict, blank=True)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="role_audit_logs",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["business", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_action_display()} {self.target_type}"
+
 class BusinessMembership(models.Model):
     ROLE_OWNER = "owner"
     ROLE_STAFF = "staff"
@@ -486,11 +593,67 @@ class BusinessMembership(models.Model):
         related_name="business_memberships",
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_STAFF)
+    role_profile = models.ForeignKey(
+        TenantRole,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="memberships",
+    )
+    extra_permissions = models.ManyToManyField(
+        Permission, blank=True, related_name="membership_extra_permissions"
+    )
+    revoked_permissions = models.ManyToManyField(
+        Permission, blank=True, related_name="membership_revoked_permissions"
+    )
+    department = models.CharField(max_length=120, blank=True)
+    notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_memberships",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_memberships",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("business", "user")
+
+    def get_effective_permission_ids(self):
+        role_perm_ids = set()
+        if self.role_profile_id and self.role_profile_id is not None:
+            role_perm_ids = set(self.role_profile.permissions.values_list("id", flat=True))
+        extra_ids = set(self.extra_permissions.values_list("id", flat=True))
+        revoked_ids = set(self.revoked_permissions.values_list("id", flat=True))
+        return (role_perm_ids | extra_ids) - revoked_ids
+
+    def get_effective_permission_keys(self):
+        perms = Permission.objects.filter(id__in=self.get_effective_permission_ids()).select_related(
+            "content_type"
+        )
+        return {f"{perm.content_type.app_label}.{perm.codename}" for perm in perms}
+
+    def has_permission(self, perm_key):
+        if not perm_key or "." not in perm_key:
+            return False
+        app_label, codename = perm_key.split(".", 1)
+        return (
+            Permission.objects.filter(
+                id__in=self.get_effective_permission_ids(),
+                content_type__app_label=app_label,
+                codename=codename,
+            ).exists()
+        )
 
     def __str__(self):
         return f"{self.user} - {self.business} ({self.role})"

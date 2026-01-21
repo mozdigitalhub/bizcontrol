@@ -3,37 +3,204 @@
   <head>
     <meta charset="utf-8">
     <style>
-      body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
-      .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
-      .title { font-size: 20px; font-weight: bold; }
-      .muted { color: #666; }
-      .box { border: 1px solid #ddd; padding: 12px; }
+      @page {
+        size: A4;
+        margin: 22mm 18mm;
+      }
+      :root {
+        --accent: #1f6f8b;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #e5e9f0;
+        --panel: #f3f6fb;
+      }
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: var(--text);
+        font-size: 12px;
+      }
+      .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .brand-logo {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #f1f5f9;
+        padding: 6px;
+      }
+      .brand-name {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .brand-meta {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .doc-title {
+        text-align: right;
+      }
+      .doc-title h1 {
+        font-size: 22px;
+        margin: 0 0 6px;
+        letter-spacing: 1px;
+      }
+      .doc-code {
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .doc-meta {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-weight: 700;
+        margin-top: 8px;
+        background: #dff6ea;
+        color: #137a4b;
+      }
+      .section-title {
+        margin: 18px 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+      }
+      .panel {
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .receipt-grid {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .receipt-grid .panel {
+        flex: 1;
+      }
+      .total-box {
+        margin-top: 12px;
+        background: #e8f1f7;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-weight: 700;
+        color: var(--accent);
+        text-align: right;
+      }
+      .footer {
+        margin-top: 22px;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+      }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div>
-        <div class="title">Recibo {{ receipt.code|default:receipt.receipt_number }}</div>
-        <div class="muted">Data: {{ receipt.issue_date|date:"d/m/Y" }}</div>
+    <div class="doc-header">
+      <div class="brand">
+        {% if logo_url %}
+          <img class="brand-logo" src="{{ logo_url }}" alt="Logo">
+        {% else %}
+          <div class="brand-logo"></div>
+        {% endif %}
+        <div>
+          <div class="brand-name">{{ business.name }}</div>
+          <div class="brand-meta">
+            {% if business.address %}{{ business.address }}<br>{% endif %}
+            {% if business.city or business.country %}
+              {{ business.city }}{% if business.city and business.country %}, {% endif %}{{ business.country }}<br>
+            {% endif %}
+            {% if business.phone %}Tel: {{ business.phone }}<br>{% endif %}
+            {% if business.email %}Email: {{ business.email }}{% endif %}
+          </div>
+        </div>
       </div>
-      <div class="right">
-        <div><strong>{{ business.name }}</strong></div>
-        {% if business.nuit %}<div class="muted">NUIT: {{ business.nuit }}</div>{% endif %}
-        {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
-        {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
-        {% if business.address %}<div class="muted">{{ business.address }}</div>{% endif %}
+      <div class="doc-title">
+        <h1>RECIBO DE PAGAMENTO</h1>
+        <div class="doc-code">Nº: {{ receipt.code|default:receipt.receipt_number }}</div>
+        <div class="doc-meta">Data Emissao: {{ receipt.issue_date|date:"d/m/Y" }}</div>
+        <span class="badge">Pago</span>
       </div>
     </div>
 
-    <div class="box">
-      <p>Recebemos o valor de <strong>{{ receipt.amount|floatformat:2 }} MZN</strong>.</p>
-      {% if receipt.invoice %}
-        <p>Referente a fatura {{ receipt.invoice.code|default:receipt.invoice.invoice_number }}.</p>
+    <div class="section-title">Recibo para</div>
+    <div class="panel">
+      {% if receipt.invoice and receipt.invoice.customer %}
+        <div><strong>{{ receipt.invoice.customer.name }}</strong></div>
+        {% if receipt.invoice.customer.nuit %}<div class="brand-meta">NUIT: {{ receipt.invoice.customer.nuit }}</div>{% endif %}
+        {% if receipt.invoice.customer.email %}<div class="brand-meta">{{ receipt.invoice.customer.email }}</div>{% endif %}
+        {% if receipt.invoice.customer.phone %}<div class="brand-meta">{{ receipt.invoice.customer.phone }}</div>{% endif %}
+      {% elif receipt.payment and receipt.payment.receivable %}
+        <div><strong>{{ receipt.payment.receivable.customer.name }}</strong></div>
+        {% if receipt.payment.receivable.customer.nuit %}<div class="brand-meta">NUIT: {{ receipt.payment.receivable.customer.nuit }}</div>{% endif %}
+        {% if receipt.payment.receivable.customer.email %}<div class="brand-meta">{{ receipt.payment.receivable.customer.email }}</div>{% endif %}
+        {% if receipt.payment.receivable.customer.phone %}<div class="brand-meta">{{ receipt.payment.receivable.customer.phone }}</div>{% endif %}
+      {% else %}
+        <div><strong>Consumidor final</strong></div>
       {% endif %}
     </div>
 
-    <div class="footer" style="margin-top: 24px; font-size: 11px; color: #666;">
-      Documento gerado automaticamente.
+    <div class="receipt-grid">
+      <div class="panel">
+        <div class="brand-meta">Recebemos de:</div>
+        <div><strong>
+          {% if receipt.invoice and receipt.invoice.customer %}
+            {{ receipt.invoice.customer.name }}
+          {% elif receipt.payment and receipt.payment.receivable %}
+            {{ receipt.payment.receivable.customer.name }}
+          {% else %}
+            Cliente
+          {% endif %}
+        </strong></div>
+        {% if receipt.invoice %}
+          <div class="brand-meta" style="margin-top: 6px;">Referente a fatura: {{ receipt.invoice.code|default:receipt.invoice.invoice_number }}</div>
+        {% endif %}
+      </div>
+      <div class="panel">
+        <div class="brand-meta">Forma de pagamento:</div>
+        <div><strong>
+          {% if receipt.invoice_payment %}
+            {{ receipt.invoice_payment.get_method_display }}
+          {% elif receipt.payment %}
+            {{ receipt.payment.get_method_display }}
+          {% else %}
+            -
+          {% endif %}
+        </strong></div>
+        <div class="brand-meta" style="margin-top: 6px;">Valor pago:</div>
+        <div><strong>{{ receipt.amount|floatformat:2 }} {{ business.currency|default:"MZN" }}</strong></div>
+      </div>
+    </div>
+
+    <div class="total-box">
+      Total recebido: {{ receipt.amount|floatformat:2 }} {{ business.currency|default:"MZN" }}
+    </div>
+
+    <div class="footer">
+      Documento emitido eletronicamente. Nao necessita assinatura.
     </div>
   </body>
 </html>

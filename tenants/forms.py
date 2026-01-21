@@ -1,8 +1,11 @@
 import re
 
 from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 
-from tenants.models import Business, TenantBankAccount, TenantMobileWallet
+from accounts.models import UserProfile
+from tenants.models import Business, TenantBankAccount, TenantMobileWallet, TenantRole
 
 
 PHONE_RE = re.compile(r"^\+?\d{7,15}$")
@@ -111,38 +114,6 @@ class BusinessProfileForm(forms.ModelForm):
 
 
 class BusinessSettingsForm(forms.ModelForm):
-    module_quotations = forms.BooleanField(required=False, label="Ativar cotacoes")
-    module_cashflow = forms.BooleanField(required=False, label="Ativar fluxo de caixa")
-    module_catalog = forms.BooleanField(required=False, label="Ativar catalogo")
-    flag_pay_before_service = forms.BooleanField(
-        required=False, label="Pagamento antes do servico"
-    )
-    flag_use_tables = forms.BooleanField(required=False, label="Usar mesas")
-    flag_use_kitchen_display = forms.BooleanField(
-        required=False, label="Usar painel de cozinha (KDS)"
-    )
-    flag_use_recipes = forms.BooleanField(
-        required=False, label="Baixar ingredientes por receita"
-    )
-    flag_use_variants = forms.BooleanField(
-        required=False, label="Usar variantes (tamanho/cor)"
-    )
-    flag_use_fractional_units = forms.BooleanField(
-        required=False, label="Permitir unidades fracionadas"
-    )
-    flag_allow_credit_sales = forms.BooleanField(
-        required=False, label="Permitir vendas a credito"
-    )
-    flag_enable_delivery = forms.BooleanField(
-        required=False, label="Ativar entregas/delivery"
-    )
-    flag_enable_returns = forms.BooleanField(
-        required=False, label="Permitir devolucoes"
-    )
-    flag_require_age_check = forms.BooleanField(
-        required=False, label="Exigir confirmacao de idade"
-    )
-
     class Meta:
         model = Business
         fields = [
@@ -170,48 +141,6 @@ class BusinessSettingsForm(forms.ModelForm):
         can_edit_settings = kwargs.pop("can_edit_settings", True)
         super().__init__(*args, **kwargs)
         self.can_edit_settings = can_edit_settings
-        if self.instance and self.instance.pk:
-            modules = self.instance.get_module_flags()
-            self.fields["module_quotations"].initial = modules.get(
-                Business.MODULE_QUOTATIONS, False
-            )
-            self.fields["module_cashflow"].initial = modules.get(
-                Business.MODULE_CASHFLOW, False
-            )
-            self.fields["module_catalog"].initial = modules.get(
-                Business.MODULE_CATALOG, False
-            )
-            flags = self.instance.get_feature_flags()
-            self.fields["flag_pay_before_service"].initial = flags.get(
-                Business.FEATURE_PAY_BEFORE_SERVICE, False
-            )
-            self.fields["flag_use_tables"].initial = flags.get(
-                Business.FEATURE_USE_TABLES, False
-            )
-            self.fields["flag_use_kitchen_display"].initial = flags.get(
-                Business.FEATURE_USE_KITCHEN_DISPLAY, False
-            )
-            self.fields["flag_use_recipes"].initial = flags.get(
-                Business.FEATURE_USE_RECIPES, False
-            )
-            self.fields["flag_use_variants"].initial = flags.get(
-                Business.FEATURE_USE_VARIANTS, False
-            )
-            self.fields["flag_use_fractional_units"].initial = flags.get(
-                Business.FEATURE_USE_FRACTIONAL_UNITS, False
-            )
-            self.fields["flag_allow_credit_sales"].initial = flags.get(
-                Business.FEATURE_ALLOW_CREDIT_SALES, False
-            )
-            self.fields["flag_enable_delivery"].initial = flags.get(
-                Business.FEATURE_ENABLE_DELIVERY, False
-            )
-            self.fields["flag_enable_returns"].initial = flags.get(
-                Business.FEATURE_ENABLE_RETURNS, False
-            )
-            self.fields["flag_require_age_check"].initial = flags.get(
-                Business.FEATURE_REQUIRE_AGE_CHECK, False
-            )
         for name, field in self.fields.items():
             if getattr(field.widget, "input_type", None) == "checkbox":
                 field.widget.attrs["class"] = "form-check-input"
@@ -226,64 +155,9 @@ class BusinessSettingsForm(forms.ModelForm):
         if not can_edit_settings:
             for field_name in list(self.fields.keys()):
                 self.fields[field_name].disabled = True
-            for field_name in [
-                "module_quotations",
-                "module_cashflow",
-                "module_catalog",
-                "flag_pay_before_service",
-                "flag_use_tables",
-                "flag_use_kitchen_display",
-                "flag_use_recipes",
-                "flag_use_variants",
-                "flag_use_fractional_units",
-                "flag_allow_credit_sales",
-                "flag_enable_delivery",
-                "flag_enable_returns",
-                "flag_require_age_check",
-            ]:
-                if field_name in self.fields:
-                    self.fields[field_name].disabled = True
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if self.can_edit_settings:
-            instance.modules_enabled = {
-                Business.MODULE_QUOTATIONS: bool(self.cleaned_data.get("module_quotations")),
-                Business.MODULE_CASHFLOW: bool(self.cleaned_data.get("module_cashflow")),
-                Business.MODULE_CATALOG: bool(self.cleaned_data.get("module_catalog")),
-            }
-            instance.feature_flags = {
-                Business.FEATURE_PAY_BEFORE_SERVICE: bool(
-                    self.cleaned_data.get("flag_pay_before_service")
-                ),
-                Business.FEATURE_USE_TABLES: bool(
-                    self.cleaned_data.get("flag_use_tables")
-                ),
-                Business.FEATURE_USE_KITCHEN_DISPLAY: bool(
-                    self.cleaned_data.get("flag_use_kitchen_display")
-                ),
-                Business.FEATURE_USE_RECIPES: bool(
-                    self.cleaned_data.get("flag_use_recipes")
-                ),
-                Business.FEATURE_USE_VARIANTS: bool(
-                    self.cleaned_data.get("flag_use_variants")
-                ),
-                Business.FEATURE_USE_FRACTIONAL_UNITS: bool(
-                    self.cleaned_data.get("flag_use_fractional_units")
-                ),
-                Business.FEATURE_ALLOW_CREDIT_SALES: bool(
-                    self.cleaned_data.get("flag_allow_credit_sales")
-                ),
-                Business.FEATURE_ENABLE_DELIVERY: bool(
-                    self.cleaned_data.get("flag_enable_delivery")
-                ),
-                Business.FEATURE_ENABLE_RETURNS: bool(
-                    self.cleaned_data.get("flag_enable_returns")
-                ),
-                Business.FEATURE_REQUIRE_AGE_CHECK: bool(
-                    self.cleaned_data.get("flag_require_age_check")
-                ),
-            }
         if commit:
             instance.save()
         return instance
@@ -370,8 +244,139 @@ class TenantBankAccountForm(forms.ModelForm):
             raise forms.ValidationError("Informe um numero de conta valido.")
         return value
 
+
+class EmailSendForm(forms.Form):
+    email = forms.EmailField(label="Email", required=True)
+    message = forms.CharField(
+        label="Mensagem",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.is_bound:
+            _ = self.errors
+        self.fields["email"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "email@cliente.com"}
+        )
+        self.fields["message"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "Mensagem (opcional)"}
+        )
+        if "email" in self.errors:
+            self.fields["email"].widget.attrs["class"] += " is-invalid"
+
     def clean_nib(self):
         value = (self.cleaned_data.get("nib") or "").replace(" ", "")
         if not NIB_RE.match(value):
             raise forms.ValidationError("Informe um NIB valido.")
         return value
+
+
+class StaffForm(forms.Form):
+    first_name = forms.CharField(max_length=60, required=True, label="Nome")
+    last_name = forms.CharField(max_length=80, required=False, label="Apelido")
+    email = forms.EmailField(required=False, label="Email")
+    phone = forms.CharField(max_length=30, required=False, label="Contacto")
+    role_profile = forms.ModelChoiceField(
+        queryset=TenantRole.objects.none(),
+        required=True,
+        label="Perfil/Role",
+    )
+    is_active = forms.BooleanField(required=False, label="Ativo")
+    department = forms.CharField(max_length=120, required=False, label="Departamento")
+    notes = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 3}),
+        required=False,
+        label="Notas",
+    )
+    extra_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.none(),
+        required=False,
+        label="Permissoes adicionais",
+    )
+    revoked_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.none(),
+        required=False,
+        label="Permissoes removidas",
+    )
+    password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput,
+        label="Password temporaria",
+    )
+
+    def __init__(self, *args, **kwargs):
+        business = kwargs.pop("business", None)
+        user_instance = kwargs.pop("user_instance", None)
+        membership_instance = kwargs.pop("membership_instance", None)
+        super().__init__(*args, **kwargs)
+        self.user_instance = user_instance
+        if business:
+            self.fields["role_profile"].queryset = TenantRole.objects.filter(
+                business=business, is_active=True
+            ).order_by("name")
+        perms = Permission.objects.all().order_by("content_type__app_label", "codename")
+        self.fields["extra_permissions"].queryset = perms
+        self.fields["revoked_permissions"].queryset = perms
+
+        if user_instance:
+            self.fields["email"].disabled = True
+            self.fields["email"].required = False
+            if user_instance.email:
+                self.initial["email"] = user_instance.email
+        if membership_instance:
+            self.initial["role_profile"] = membership_instance.role_profile
+            self.initial["is_active"] = membership_instance.is_active
+            self.initial["department"] = membership_instance.department
+            self.initial["notes"] = membership_instance.notes
+            self.initial["extra_permissions"] = membership_instance.extra_permissions.all()
+            self.initial["revoked_permissions"] = membership_instance.revoked_permissions.all()
+        else:
+            self.initial["is_active"] = True
+
+        for name, field in self.fields.items():
+            if getattr(field.widget, "input_type", None) == "checkbox":
+                field.widget.attrs["class"] = "form-check-input"
+            elif isinstance(field.widget, forms.SelectMultiple):
+                field.widget.attrs["class"] = "form-select tom-select"
+                field.widget.attrs.setdefault("data-placeholder", "Selecione...")
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs["class"] = "form-select tom-select"
+            else:
+                field.widget.attrs["class"] = "form-control"
+            if field.required:
+                field.widget.attrs["required"] = "required"
+            if name in self.errors:
+                field.widget.attrs["class"] += " is-invalid"
+
+    def clean(self):
+        cleaned = super().clean()
+        email = (cleaned.get("email") or "").strip().lower()
+        phone = (cleaned.get("phone") or "").replace(" ", "")
+        existing_email = ""
+        existing_phone = ""
+        if self.user_instance:
+            existing_email = self.user_instance.email or ""
+            if hasattr(self.user_instance, "profile"):
+                existing_phone = self.user_instance.profile.phone or ""
+        if not email and not phone and not existing_email and not existing_phone:
+            raise forms.ValidationError("Informe um email ou contacto.")
+
+        User = get_user_model()
+        user_instance = getattr(self, "user_instance", None)
+        if email:
+            qs = User.objects.filter(email__iexact=email)
+            if user_instance:
+                qs = qs.exclude(pk=user_instance.pk)
+            if qs.exists():
+                self.add_error("email", "Este email ja esta em uso.")
+        if phone:
+            qs = UserProfile.objects.filter(phone=phone)
+            if user_instance:
+                qs = qs.exclude(user=user_instance)
+            if qs.exists():
+                self.add_error("phone", "Este contacto ja esta em uso.")
+        cleaned["email"] = email
+        cleaned["phone"] = phone
+        return cleaned

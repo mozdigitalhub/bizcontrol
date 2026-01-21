@@ -31,6 +31,9 @@ def product_list(request):
         products = products.filter(is_active=True)
     elif status == "inactive":
         products = products.filter(is_active=False)
+    total_products = products.count()
+    active_count = products.filter(is_active=True).count()
+    inactive_count = products.filter(is_active=False).count()
     paginator = Paginator(products.order_by("name"), 20)
     page = paginator.get_page(request.GET.get("page"))
     for product in page.object_list:
@@ -45,6 +48,9 @@ def product_list(request):
             "category_id": category_id,
             "status": status,
             "categories": categories,
+            "total_products": total_products,
+            "active_count": active_count,
+            "inactive_count": inactive_count,
         },
     )
 

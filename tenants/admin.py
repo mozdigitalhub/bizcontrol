@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from tenants.models import Business, BusinessMembership, TenantBankAccount, TenantMobileWallet
+from tenants.models import (
+    Business,
+    BusinessMembership,
+    TenantBankAccount,
+    TenantMobileWallet,
+    TenantRole,
+)
 
 
 @admin.register(Business)
@@ -34,3 +40,10 @@ class TenantMobileWalletAdmin(admin.ModelAdmin):
 class TenantBankAccountAdmin(admin.ModelAdmin):
     list_display = ("business", "bank_name", "account_number", "is_active")
     list_filter = ("is_active", "business")
+
+
+@admin.register(TenantRole)
+class TenantRoleAdmin(admin.ModelAdmin):
+    list_display = ("name", "business", "code", "is_active")
+    list_filter = ("code", "is_active", "business")
+    search_fields = ("name", "business__name")

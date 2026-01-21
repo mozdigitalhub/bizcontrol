@@ -8,6 +8,8 @@ class BusinessMiddleware:
     def __call__(self, request):
         request.business = None
         request.tenant = None
+        request.membership = None
+        request.tenant_permissions = set()
         if request.user.is_authenticated:
             business_id = request.session.get("business_id")
             if business_id:
@@ -20,6 +22,26 @@ class BusinessMiddleware:
                 ):
                     request.business = business
                     request.tenant = business
+                    if not request.user.is_superuser:
+                        membership = (
+                            BusinessMembership.objects.filter(
+                                business=business,
+                                user=request.user,
+                                is_active=True,
+                            )
+                            .select_related("role_profile")
+                            .prefetch_related(
+                                "role_profile__permissions",
+                                "extra_permissions",
+                                "revoked_permissions",
+                            )
+                            .first()
+                        )
+                        request.membership = membership
+                        if membership:
+                            request.tenant_permissions = membership.get_effective_permission_keys()
+                    else:
+                        request.tenant_permissions = {"*"}
                 else:
                     request.session.pop("business_id", None)
         return self.get_response(request)

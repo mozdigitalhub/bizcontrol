@@ -419,9 +419,13 @@
     <div class="app-shell">
       <aside class="app-sidebar">
         <div class="profile">
-          <div class="avatar">
-            {{ request.user.username|slice:":2"|upper }}
-          </div>
+          {% if current_business and current_business.logo %}
+            <img class="avatar" src="{{ current_business.logo.url }}" alt="Logo" style="object-fit: cover;">
+          {% else %}
+            <div class="avatar">
+              {{ request.user.username|slice:":2"|upper }}
+            </div>
+          {% endif %}
           <div>
             <div class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</div>
             <div class="small">{{ current_business.name }}</div>
@@ -582,35 +586,75 @@
               </div>
             {% endif %}
 
-            {% with tab=request.GET.tab|default:"tenant" %}
+            {% if request.user.is_superuser or 'reports.view_basic' in tenant_permissions or 'reports.view_finance' in tenant_permissions or 'reports.view_stock' in tenant_permissions %}
               <div class="nav-section">
                 <button
-                  class="nav-item nav-toggle{% if ns == 'tenants' and tab != 'system' %} active{% endif %}"
+                  class="nav-item nav-toggle{% if ns in nav_groups.reports and url_name != 'dashboard' %} active{% endif %}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#nav-reports"
+                  aria-expanded="{% if ns in nav_groups.reports and url_name != 'dashboard' %}true{% else %}false{% endif %}"
+                  aria-controls="nav-reports"
+                >
+                  Relatorios
+                  <i class="bi bi-chevron-down nav-chevron"></i>
+                </button>
+                <div class="collapse{% if ns in nav_groups.reports and url_name != 'dashboard' %} show{% endif %}" id="nav-reports">
+                  <div class="nav-sub">
+                    {% if request.user.is_superuser or 'reports.view_basic' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'overview' %} active{% endif %}" href="{% url 'reports:overview' %}">
+                        Visao geral
+                      </a>
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'sales' %} active{% endif %}" href="{% url 'reports:sales' %}">
+                        Vendas
+                      </a>
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'staff' %} active{% endif %}" href="{% url 'reports:staff' %}">
+                        Staff
+                      </a>
+                    {% endif %}
+                    {% if request.user.is_superuser or 'reports.view_finance' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'payments' %} active{% endif %}" href="{% url 'reports:payments' %}">
+                        Metodos de pagamento
+                      </a>
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'cashflow' %} active{% endif %}" href="{% url 'reports:cashflow' %}">
+                        Fluxo de caixa
+                      </a>
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'receivables' %} active{% endif %}" href="{% url 'reports:receivables' %}">
+                        Contas a receber
+                      </a>
+                    {% endif %}
+                    {% if request.user.is_superuser or 'reports.view_stock' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'stock' %} active{% endif %}" href="{% url 'reports:stock' %}">
+                        Stock
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns == 'tenants' and url_name == 'business_profile' or ns == 'tenants' and url_name == 'payment_data' or ns == 'tenants' and url_name == 'user_profile' %} active{% endif %}"
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#nav-profile"
-                  aria-expanded="{% if ns == 'tenants' and tab != 'system' %}true{% else %}false{% endif %}"
+                  aria-expanded="{% if ns == 'tenants' and url_name == 'business_profile' or ns == 'tenants' and url_name == 'payment_data' or ns == 'tenants' and url_name == 'user_profile' %}true{% else %}false{% endif %}"
                   aria-controls="nav-profile"
                 >
                   Perfil
                   <i class="bi bi-chevron-down nav-chevron"></i>
                 </button>
-                <div class="collapse{% if ns == 'tenants' and tab != 'system' %} show{% endif %}" id="nav-profile">
+                <div class="collapse{% if ns == 'tenants' and url_name == 'business_profile' or ns == 'tenants' and url_name == 'payment_data' or ns == 'tenants' and url_name == 'user_profile' %} show{% endif %}" id="nav-profile">
                   <div class="nav-sub">
-                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'tenant' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=tenant">
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'business_profile' %} active{% endif %}" href="{% url 'tenants:business_profile' %}">
                       Perfil do negocio
                     </a>
-                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'payments' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=payments">
-                        Dados para pagamento
-                      </a>
-                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'user' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=user">
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'payment_data' %} active{% endif %}" href="{% url 'tenants:payment_data' %}">
+                      Dados para pagamento
+                    </a>
+                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'user_profile' %} active{% endif %}" href="{% url 'tenants:user_profile' %}">
                       Meu perfil
-                    </a>
-                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'security' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=security">
-                      Seguranca
-                    </a>
-                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'select_business' %} active{% endif %}" href="{% url 'tenants:select_business' %}">
-                      Trocar negocio
                     </a>
                   </div>
                 </div>
@@ -618,21 +662,33 @@
 
               <div class="nav-section">
                 <button
-                  class="nav-item nav-toggle{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %} active{% endif %}"
+                  class="nav-item nav-toggle{% if ns == 'tenants' and url_name == 'system_settings' or '/admin/' in current_path %} active{% endif %}"
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#nav-settings"
-                  aria-expanded="{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %}true{% else %}false{% endif %}"
+                  aria-expanded="{% if ns == 'tenants' and url_name == 'system_settings' or '/admin/' in current_path %}true{% else %}false{% endif %}"
                   aria-controls="nav-settings"
                 >
                   Configuracoes
                   <i class="bi bi-chevron-down nav-chevron"></i>
                 </button>
-                <div class="collapse{% if ns == 'tenants' and tab == 'system' or '/admin/' in current_path %} show{% endif %}" id="nav-settings">
+                <div class="collapse{% if ns == 'tenants' and url_name == 'system_settings' or '/admin/' in current_path %} show{% endif %}" id="nav-settings">
                   <div class="nav-sub">
-                    <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'settings' and tab == 'system' %} active{% endif %}" href="{% url 'tenants:settings' %}?tab=system">
-                      Configuracoes do sistema
-                    </a>
+                    {% if request.user.is_superuser or 'tenants.manage_tax' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'system_settings' %} active{% endif %}" href="{% url 'tenants:system_settings' %}">
+                        Configuracoes do sistema
+                      </a>
+                    {% endif %}
+                    {% if request.user.is_superuser or 'tenants.manage_staff' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'staff_list' %} active{% endif %}" href="{% url 'tenants:staff_list' %}">
+                        Colaboradores
+                      </a>
+                    {% endif %}
+                    {% if request.user.is_superuser or 'tenants.manage_roles' in tenant_permissions %}
+                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'roles' %} active{% endif %}" href="{% url 'tenants:roles' %}">
+                        Roles & Permissoes
+                      </a>
+                    {% endif %}
                     {% if request.user.is_staff or request.user.is_superuser %}
                       <a class="nav-sub-item{% if '/admin/' in current_path %} active{% endif %}" href="/admin/">
                         Administracao
@@ -641,7 +697,6 @@
                   </div>
                 </div>
               </div>
-            {% endwith %}
           </nav>
         {% endwith %}
         <form class="logout" method="post" action="{% url 'logout' %}">
@@ -686,47 +741,44 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
       (function () {
-        var initTomSelect = function (root) {
-          if (!root || !window.TomSelect) {
-            return;
-          }
-          var selects = root.querySelectorAll("select.tom-select");
-          selects.forEach(function (select) {
-            if (select.tomselect) {
+          var initTomSelect = function (root) {
+            if (!root || !window.TomSelect) {
               return;
             }
-            var modalRoot = select.closest(".modal");
-            var modalBody = select.closest(".modal-body");
-            var modalContent = select.closest(".modal-content");
-            if (modalRoot && !modalRoot.classList.contains("show")) {
-              return;
-            }
-            var maxOptions = parseInt(select.dataset.maxOptions || "200", 10);
-            var cacheEnabled = select.dataset.cache !== "false";
-            var dropdownParent = select.dataset.dropdownParent;
-            var inTable = select.closest(".table-responsive");
-            if (dropdownParent === "self") {
-              dropdownParent = select.parentElement || select;
-              } else if (dropdownParent === "form") {
-                dropdownParent = select.closest(".card") || select.parentElement || select.closest("form") || document.body;
-            } else if (dropdownParent === "modal") {
-              dropdownParent = modalBody || modalContent || modalRoot || document.body;
-            } else if (modalBody) {
-              dropdownParent = modalBody;
-            } else if (modalContent) {
-              dropdownParent = modalContent;
-            } else if (modalRoot) {
-              dropdownParent = modalRoot;
-            } else if (inTable) {
-              dropdownParent = document.body;
-            } else {
-              dropdownParent = document.body;
-            }
-            var onDropdownOpen = null;
-            if (dropdownParent && dropdownParent !== document.body) {
-              var parentStyle = window.getComputedStyle(dropdownParent);
-              if (parentStyle.position === "static") {
-                dropdownParent.style.position = "relative";
+            var selects = root.querySelectorAll("select.tom-select");
+            selects.forEach(function (select) {
+              if (select.tomselect) {
+                return;
+              }
+              var modalRoot = select.closest(".modal");
+              var modalBody = select.closest(".modal-body");
+              var modalContent = select.closest(".modal-content");
+              if (modalRoot && !modalRoot.classList.contains("show")) {
+                return;
+              }
+              var maxOptions = parseInt(select.dataset.maxOptions || "200", 10);
+              var cacheEnabled = select.dataset.cache !== "false";
+              var dropdownParentMode = select.dataset.dropdownParent || "";
+              var inTable = select.closest(".table-responsive");
+              var dropdownParent = null;
+              if (dropdownParentMode === "self") {
+                dropdownParent = select.parentElement || select;
+              } else if (dropdownParentMode === "modal") {
+                dropdownParent = modalBody || modalContent || modalRoot || document.body;
+              } else if (modalBody || modalContent || modalRoot) {
+                dropdownParent = modalBody || modalContent || modalRoot;
+              } else if (dropdownParentMode === "form") {
+                dropdownParent = document.body;
+              } else if (inTable) {
+                dropdownParent = document.body;
+              } else {
+                dropdownParent = document.body;
+              }
+              var onDropdownOpen = null;
+              if (dropdownParent && dropdownParent !== document.body) {
+                var parentStyle = window.getComputedStyle(dropdownParent);
+                if (parentStyle.position === "static") {
+                  dropdownParent.style.position = "relative";
               }
               onDropdownOpen = function () {
                 var control = this.control;

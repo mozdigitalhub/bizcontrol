@@ -1,0 +1,98 @@
+﻿{% extends "base.html" %}
+{% block title %}Colaboradores - BizControl{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h4 class="mb-1">Colaboradores</h4>
+      <div class="text-muted small">Gestao de utilizadores do negocio.</div>
+    </div>
+    <a class="btn btn-primary" href="{% url 'tenants:staff_create' %}">
+      <i class="bi bi-plus-circle me-1"></i>Novo colaborador
+    </a>
+  </div>
+
+  <form class="row g-3 align-items-end mb-4" method="get">
+    <div class="col-lg-4">
+      <label class="form-label">Pesquisar</label>
+      <input class="form-control" name="q" placeholder="Nome ou email" value="{{ filters.q }}">
+    </div>
+    <div class="col-lg-3">
+      <label class="form-label">Perfil</label>
+      <select class="form-select tom-select" name="role" data-dropdown-parent="form">
+        <option value="">Todos</option>
+        {% for role in roles %}
+          <option value="{{ role.id }}" {% if filters.role == role.id|stringformat:'s' %}selected{% endif %}>{{ role.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2">
+      <label class="form-label">Estado</label>
+      <select class="form-select" name="status">
+        <option value="">Todos</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Ativo</option>
+        <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inativo</option>
+      </select>
+    </div>
+    <div class="col-lg-2">
+      <button class="btn btn-outline-secondary w-100" type="submit">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Colaborador</th>
+          <th>Email</th>
+          <th>Perfil</th>
+          <th>Estado</th>
+          <th>Ultimo acesso</th>
+          <th class="text-end">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for membership in memberships %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ membership.user.get_full_name|default:membership.user.username }}</div>
+              <div class="small text-muted">{{ membership.department|default:"Sem departamento" }}</div>
+            </td>
+            <td>{{ membership.user.email|default:"-" }}</td>
+            <td>{{ membership.role_profile.name|default:"Sem perfil" }}</td>
+            <td>
+              {% if membership.is_active %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+              {% endif %}
+            </td>
+            <td>{{ membership.user.last_login|date:"d/m/Y H:i"|default:"-" }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'tenants:staff_edit' membership.id %}">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form class="d-inline" method="post" action="{% url 'tenants:staff_toggle' membership.id %}" data-swal-confirm="true" data-swal-title="Alterar estado?" data-swal-text="Deseja atualizar o estado deste colaborador?">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" type="submit">
+                  {% if membership.is_active %}
+                    <i class="bi bi-person-x"></i>
+                  {% else %}
+                    <i class="bi bi-person-check"></i>
+                  {% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">Sem colaboradores registados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

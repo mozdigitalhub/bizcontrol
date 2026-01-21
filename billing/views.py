@@ -1,18 +1,23 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from itertools import groupby
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 from billing.forms import InvoicePaymentForm
 from billing.models import Invoice, InvoicePayment, Receipt
 from receivables.models import Payment as ReceivablePayment, Receivable
 from billing.services import generate_invoice, register_invoice_payment
+from bizcontrol.emailing import build_pdf_attachment, send_resend_email
+from bizcontrol.pdf_utils import build_logo_src
+from tenants.forms import EmailSendForm
 from tenants.decorators import business_required
 
 try:
@@ -32,6 +37,10 @@ def invoice_list(request):
     date_to = request.GET.get("date_to", "").strip()
     min_total = request.GET.get("min_total", "").strip()
     max_total = request.GET.get("max_total", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     invoices = Invoice.objects.filter(business=request.business).select_related("customer")
     if query:
         invoices = invoices.filter(
@@ -57,6 +66,11 @@ def invoice_list(request):
             invoices = invoices.filter(total__lte=Decimal(max_total.replace(",", ".")))
         except Exception:
             pass
+    total_amount = invoices.aggregate(total=Sum("total")).get("total") or 0
+    paid_count = invoices.filter(status=Invoice.STATUS_PAID).count()
+    open_count = invoices.filter(
+        status__in=[Invoice.STATUS_ISSUED, Invoice.STATUS_PARTIAL]
+    ).count()
     paginator = Paginator(invoices.order_by("-issue_date"), 20)
     page = paginator.get_page(request.GET.get("page"))
     return render(
@@ -73,6 +87,9 @@ def invoice_list(request):
             "max_total": max_total,
             "status_choices": Invoice.STATUS_CHOICES,
             "customers": request.business.customers.order_by("name"),
+            "total_amount": total_amount,
+            "paid_count": paid_count,
+            "open_count": open_count,
         },
     )
 
@@ -141,6 +158,10 @@ def receipt_list(request):
     query = request.GET.get("q", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     receipts = Receipt.objects.filter(business=request.business).select_related(
         "invoice",
         "invoice__sale",
@@ -162,6 +183,8 @@ def receipt_list(request):
         receipts = receipts.filter(issue_date__gte=date_from)
     if date_to:
         receipts = receipts.filter(issue_date__lte=date_to)
+    total_amount = receipts.aggregate(total=Sum("amount")).get("total") or 0
+    receipt_count = receipts.count()
     paginator = Paginator(receipts.order_by("-issue_date"), 20)
     page = paginator.get_page(request.GET.get("page"))
     grouped_receipts = []
@@ -194,6 +217,8 @@ def receipt_list(request):
             "query": query,
             "date_from": date_from,
             "date_to": date_to,
+            "total_amount": total_amount,
+            "receipt_count": receipt_count,
         },
     )
 
@@ -271,33 +296,167 @@ def invoice_payment_create(request, pk):
     return redirect("billing:invoice_detail", pk=invoice.id)
 
 
-def _render_invoice_pdf(invoice, request, download=False):
+def _build_invoice_pdf_bytes(invoice, request):
     if HTML is None:
-        return HttpResponse("WeasyPrint nao instalado.", status=500)
+        raise ValueError("WeasyPrint nao instalado.")
     items = invoice.sale.items.all() if invoice.sale else []
+    logo_url = build_logo_src(invoice.business, request)
     html = render_to_string(
         "billing/invoice_pdf.html",
-        {"invoice": invoice, "business": invoice.business, "items": items},
+        {
+            "invoice": invoice,
+            "business": invoice.business,
+            "items": items,
+            "logo_url": logo_url,
+        },
     )
-    pdf = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+
+
+def _render_invoice_pdf(invoice, request, download=False):
+    try:
+        pdf = _build_invoice_pdf_bytes(invoice, request)
+    except ValueError as exc:
+        return HttpResponse(str(exc), status=500)
     response = HttpResponse(pdf, content_type="application/pdf")
     if download:
         response["Content-Disposition"] = f'attachment; filename="fatura-{invoice.invoice_number}.pdf"'
     return response
 
 
-def _render_receipt_pdf(receipt, request, download=False):
+def _build_receipt_pdf_bytes(receipt, request):
     if HTML is None:
-        return HttpResponse("WeasyPrint nao instalado.", status=500)
+        raise ValueError("WeasyPrint nao instalado.")
+    logo_url = build_logo_src(receipt.business, request)
     html = render_to_string(
         "billing/receipt_pdf.html",
-        {"receipt": receipt, "business": receipt.business},
+        {"receipt": receipt, "business": receipt.business, "logo_url": logo_url},
     )
-    pdf = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+
+
+def _render_receipt_pdf(receipt, request, download=False):
+    try:
+        pdf = _build_receipt_pdf_bytes(receipt, request)
+    except ValueError as exc:
+        return HttpResponse(str(exc), status=500)
     response = HttpResponse(pdf, content_type="application/pdf")
     if download:
         response["Content-Disposition"] = f'attachment; filename="recibo-{receipt.receipt_number}.pdf"'
     return response
+
+
+@login_required
+@business_required
+@permission_required("billing.view_invoice", raise_exception=True)
+def invoice_email_modal(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk, business=request.business)
+    initial_email = invoice.customer.email if invoice.customer and invoice.customer.email else ""
+    form = EmailSendForm(initial={"email": initial_email})
+    success = False
+    if request.method == "POST":
+        form = EmailSendForm(request.POST)
+        if form.is_valid():
+            try:
+                pdf_bytes = _build_invoice_pdf_bytes(invoice, request)
+            except ValueError as exc:
+                form.add_error(None, str(exc))
+            else:
+                attachment = build_pdf_attachment(
+                    f"fatura-{invoice.code or invoice.invoice_number}.pdf",
+                    pdf_bytes,
+                )
+                subject = f"Fatura {invoice.code or invoice.invoice_number} - {request.business.name}"
+                html = render_to_string(
+                    "emails/document_email.html",
+                    {
+                        "recipient_name": invoice.customer.name if invoice.customer else "Cliente",
+                        "document_label": "a fatura",
+                        "document_code": invoice.code or invoice.invoice_number,
+                        "business": request.business,
+                        "message": form.cleaned_data.get("message", ""),
+                    },
+                )
+                reply_to = request.business.email or None
+                ok, error = send_resend_email(
+                    to_email=form.cleaned_data["email"],
+                    subject=subject,
+                    html=html,
+                    attachments=[attachment],
+                    reply_to=reply_to,
+                )
+                if ok:
+                    success = True
+                    messages.success(request, "Email enviado com sucesso.")
+                else:
+                    form.add_error(None, error)
+        else:
+            messages.error(request, "Revise os campos antes de enviar.")
+    return render(
+        request,
+        "billing/partials/invoice_email_modal.html",
+        {"invoice": invoice, "form": form, "success": success},
+    )
+
+
+@login_required
+@business_required
+@permission_required("billing.view_receipt", raise_exception=True)
+def receipt_email_modal(request, pk):
+    receipt = get_object_or_404(Receipt, pk=pk, business=request.business)
+    customer_email = ""
+    customer_name = "Cliente"
+    if receipt.invoice and receipt.invoice.customer:
+        customer_email = receipt.invoice.customer.email or ""
+        customer_name = receipt.invoice.customer.name
+    elif receipt.payment and receipt.payment.receivable:
+        customer_email = receipt.payment.receivable.customer.email or ""
+        customer_name = receipt.payment.receivable.customer.name
+    form = EmailSendForm(initial={"email": customer_email})
+    success = False
+    if request.method == "POST":
+        form = EmailSendForm(request.POST)
+        if form.is_valid():
+            try:
+                pdf_bytes = _build_receipt_pdf_bytes(receipt, request)
+            except ValueError as exc:
+                form.add_error(None, str(exc))
+            else:
+                attachment = build_pdf_attachment(
+                    f"recibo-{receipt.code or receipt.receipt_number}.pdf",
+                    pdf_bytes,
+                )
+                subject = f"Recibo {receipt.code or receipt.receipt_number} - {request.business.name}"
+                html = render_to_string(
+                    "emails/document_email.html",
+                    {
+                        "recipient_name": customer_name,
+                        "document_label": "o recibo de pagamento",
+                        "document_code": receipt.code or receipt.receipt_number,
+                        "business": request.business,
+                        "message": form.cleaned_data.get("message", ""),
+                    },
+                )
+                reply_to = request.business.email or None
+                ok, error = send_resend_email(
+                    to_email=form.cleaned_data["email"],
+                    subject=subject,
+                    html=html,
+                    attachments=[attachment],
+                    reply_to=reply_to,
+                )
+                if ok:
+                    success = True
+                    messages.success(request, "Email enviado com sucesso.")
+                else:
+                    form.add_error(None, error)
+        else:
+            messages.error(request, "Revise os campos antes de enviar.")
+    return render(
+        request,
+        "billing/partials/receipt_email_modal.html",
+        {"receipt": receipt, "form": form, "success": success},
+    )
 
 
 @login_required

@@ -1,11 +1,12 @@
 import json
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -25,6 +26,9 @@ from quotations.services import (
     reject_quotation,
     update_quotation_items,
 )
+from bizcontrol.emailing import build_pdf_attachment, send_resend_email
+from bizcontrol.pdf_utils import build_logo_src
+from tenants.forms import EmailSendForm
 from tenants.decorators import business_required, module_required, owner_required
 from tenants.models import Business
 
@@ -88,6 +92,10 @@ def quotation_list(request):
     customer_id = request.GET.get("customer", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     quotations = Quotation.objects.filter(business=request.business).select_related("customer")
     if query:
         quotations = quotations.filter(
@@ -101,6 +109,12 @@ def quotation_list(request):
         quotations = quotations.filter(issue_date__gte=date_from)
     if date_to:
         quotations = quotations.filter(issue_date__lte=date_to)
+    totals = quotations.aggregate(total=Sum("total"))
+    total_amount = totals["total"] or 0
+    approved_count = quotations.filter(status=Quotation.STATUS_APPROVED).count()
+    open_count = quotations.filter(
+        status__in=[Quotation.STATUS_DRAFT, Quotation.STATUS_SENT]
+    ).count()
     paginator = Paginator(quotations.order_by("-issue_date", "-created_at"), 20)
     page = paginator.get_page(request.GET.get("page"))
     today = timezone.localdate()
@@ -119,6 +133,9 @@ def quotation_list(request):
             "status_choices": Quotation.STATUS_CHOICES,
             "customers": request.business.customers.order_by("name"),
             "editable_statuses": [Quotation.STATUS_DRAFT, Quotation.STATUS_SENT],
+            "total_amount": total_amount,
+            "approved_count": approved_count,
+            "open_count": open_count,
         },
     )
 
@@ -394,18 +411,27 @@ def _product_json(request):
     return json.dumps(data)
 
 
-def _render_quotation_pdf(quotation, request):
+def _build_quotation_pdf_bytes(quotation, request):
     if HTML is None:
-        return HttpResponse("WeasyPrint nao instalado.", status=500)
+        raise ValueError("WeasyPrint nao instalado.")
+    logo_url = build_logo_src(quotation.business, request)
     html = render_to_string(
         "quotations/quotation_pdf.html",
         {
             "quotation": quotation,
             "business": quotation.business,
             "items": quotation.items.select_related("product"),
+            "logo_url": logo_url,
         },
     )
-    pdf = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+
+
+def _render_quotation_pdf(quotation, request):
+    try:
+        pdf = _build_quotation_pdf_bytes(quotation, request)
+    except ValueError as exc:
+        return HttpResponse(str(exc), status=500)
     response = HttpResponse(pdf, content_type="application/pdf")
     return response
 
@@ -417,6 +443,60 @@ def _render_quotation_pdf(quotation, request):
 def quotation_pdf_view(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk, business=request.business)
     return _render_quotation_pdf(quotation, request)
+
+
+@login_required
+@business_required
+@module_required(Business.MODULE_QUOTATIONS, message="Modulo de cotacoes desativado.")
+@permission_required("quotations.view_quotation", raise_exception=True)
+def quotation_email_modal(request, pk):
+    quotation = get_object_or_404(Quotation, pk=pk, business=request.business)
+    initial_email = quotation.customer.email if quotation.customer and quotation.customer.email else ""
+    form = EmailSendForm(initial={"email": initial_email})
+    success = False
+    if request.method == "POST":
+        form = EmailSendForm(request.POST)
+        if form.is_valid():
+            try:
+                pdf_bytes = _build_quotation_pdf_bytes(quotation, request)
+            except ValueError as exc:
+                form.add_error(None, str(exc))
+            else:
+                attachment = build_pdf_attachment(
+                    f"cotacao-{quotation.code or quotation.id}.pdf",
+                    pdf_bytes,
+                )
+                subject = f"Cotacao {quotation.code or quotation.id} - {request.business.name}"
+                html = render_to_string(
+                    "emails/document_email.html",
+                    {
+                        "recipient_name": quotation.customer.name if quotation.customer else "Cliente",
+                        "document_label": "a cotacao",
+                        "document_code": quotation.code or quotation.id,
+                        "business": request.business,
+                        "message": form.cleaned_data.get("message", ""),
+                    },
+                )
+                reply_to = request.business.email or None
+                ok, error = send_resend_email(
+                    to_email=form.cleaned_data["email"],
+                    subject=subject,
+                    html=html,
+                    attachments=[attachment],
+                    reply_to=reply_to,
+                )
+                if ok:
+                    success = True
+                    messages.success(request, "Email enviado com sucesso.")
+                else:
+                    form.add_error(None, error)
+        else:
+            messages.error(request, "Revise os campos antes de enviar.")
+    return render(
+        request,
+        "quotations/partials/quotation_email_modal.html",
+        {"quotation": quotation, "form": form, "success": success},
+    )
 
 
 @login_required

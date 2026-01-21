@@ -30,6 +30,7 @@
           novalidate
         >
           {% csrf_token %}
+          <input type="hidden" name="auto_transport" id="auto-transport-flag" value="0">
           <div class="row g-3 mb-3">
             <div class="col-12">
               <div class="form-check">
@@ -161,6 +162,7 @@
     var costInput = modalEl.querySelector("#transport-cost");
     var dateInput = modalEl.querySelector("#expected-delivery-date");
     var transportFields = modalEl.querySelector("#transport-fields");
+    var autoTransportFlag = modalEl.querySelector("#auto-transport-flag");
     var toggleDeliveryKind = function () {
       var isTotal = totalInput && totalInput.checked;
       qtyInputs.forEach(function (input) {
@@ -186,6 +188,9 @@
     if (customerToggle) {
       customerToggle.addEventListener("change", function () {
         var isCustomer = customerToggle.checked;
+        if (autoTransportFlag) {
+          autoTransportFlag.value = isCustomer ? "1" : "0";
+        }
         if (transportFields) {
           transportFields.classList.toggle("d-none", isCustomer);
         }

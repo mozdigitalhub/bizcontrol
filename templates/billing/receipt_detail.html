@@ -10,6 +10,16 @@
         <i class="bi bi-arrow-left"></i>
         Voltar
       </a>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        hx-get="{% url 'billing:receipt_email' receipt.id %}"
+        hx-target="#receipt-modal-container"
+        hx-swap="innerHTML"
+      >
+        <i class="bi bi-envelope"></i>
+        Enviar email
+      </button>
       <a class="btn btn-outline-primary" href="{% url 'billing:receipt_pdf' receipt.id %}" target="_blank" rel="noopener">
         <i class="bi bi-file-earmark-pdf"></i>
         Ver PDF
@@ -63,4 +73,6 @@
       </div>
     </div>
   </div>
+
+  <div id="receipt-modal-container"></div>
 {% endblock %}

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -7,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import DecimalField, IntegerField, ExpressionWrapper, F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
+from django.utils import timezone
 
 from catalog.models import Product
 from customers.models import Customer
@@ -118,6 +120,10 @@ def sale_list(request):
     delivery_status = request.GET.get("delivery_status", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
+    if not date_from and not date_to:
+        today = timezone.localdate()
+        date_from = (today - timedelta(days=6)).isoformat()
+        date_to = today.isoformat()
     sales = Sale.objects.select_related("customer").filter(business=request.business)
     if query:
         if query.isdigit():

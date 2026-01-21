@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Relatorios - Fluxo de Caixa{% endblock %}
+
+{% block extra_head %}
+  {% include "reports/partials/_report_styles.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="report-header">
+    <div>
+      <h2 class="mb-1">Fluxo de Caixa</h2>
+      <div class="text-muted">Entradas e saidas no periodo.</div>
+    </div>
+    {% if request.user.is_superuser or 'reports.export' in tenant_permissions %}
+      <div class="report-actions export-actions">
+        <a class="btn btn-outline-secondary" href="?{{ request.GET.urlencode }}&export=csv">
+          <i class="bi bi-download me-1"></i>Exportar CSV
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="filter-card mt-3">
+    <form class="filter-grid" method="get">
+      <div>
+        <label class="form-label">De</label>
+        <input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label class="form-label">Ate</label>
+        <input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label class="form-label">Granularidade</label>
+        <select class="form-select" name="granularity">
+          <option value="daily" {% if granularity == 'daily' %}selected{% endif %}>Diaria</option>
+          <option value="monthly" {% if granularity == 'monthly' %}selected{% endif %}>Mensal</option>
+          <option value="yearly" {% if granularity == 'yearly' %}selected{% endif %}>Anual</option>
+        </select>
+      </div>
+      <div class="d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+      </div>
+      <div class="d-flex align-items-end preset-group">
+        <div class="btn-group w-100" role="group">
+          <a class="btn btn-outline-secondary{% if preset == 'today' %} active{% endif %}" href="?preset=today">Hoje</a>
+          <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
+          <a class="btn btn-outline-secondary{% if preset == 'month' %} active{% endif %}" href="?preset=month">Este mes</a>
+          <a class="btn btn-outline-secondary{% if preset == 'year' %} active{% endif %}" href="?preset=year">Ano</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="summary-grid mt-3">
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-arrow-down-left-circle"></i></div>
+      <div>
+        <div class="text-muted small">Entradas</div>
+        <div class="fw-semibold">{{ total_in|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-arrow-up-right-circle"></i></div>
+      <div>
+        <div class="text-muted small">Saidas</div>
+        <div class="fw-semibold">{{ total_out|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-graph-up"></i></div>
+      <div>
+        <div class="text-muted small">Saldo</div>
+        <div class="fw-semibold">{{ net|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card mt-3">
+    <h5 class="mb-3">Movimentos</h5>
+    <div class="chart-wrapper">
+      <canvas id="cashflowChart"></canvas>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {{ labels|json_script:"cashflow-labels" }}
+  {{ values_in|json_script:"cashflow-in" }}
+  {{ values_out|json_script:"cashflow-out" }}
+  <script>
+    (function () {
+      var labels = JSON.parse(document.getElementById("cashflow-labels").textContent);
+      var valuesIn = JSON.parse(document.getElementById("cashflow-in").textContent);
+      var valuesOut = JSON.parse(document.getElementById("cashflow-out").textContent);
+      var ctx = document.getElementById("cashflowChart");
+      if (!ctx) {
+        return;
+      }
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Entradas",
+              data: valuesIn,
+              borderColor: "#1f6f8b",
+              backgroundColor: "rgba(31, 111, 139, 0.12)",
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: "Saidas",
+              data: valuesOut,
+              borderColor: "#ec7c7c",
+              backgroundColor: "rgba(236, 124, 124, 0.15)",
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: { y: { ticks: { callback: (value) => value + " MZN" } } }
+        }
+      });
+    })();
+  </script>
+{% endblock %}

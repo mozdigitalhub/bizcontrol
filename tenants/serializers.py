@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from accounts.signals import OWNER_GROUP
 from finance.services import ensure_default_payment_methods
+from accounts.models import UserProfile
 from tenants.models import Business, BusinessMembership, TenantRole
 from tenants.rbac import ensure_custom_permissions, ensure_tenant_roles
 
@@ -108,6 +109,7 @@ class TenantRegisterSerializer(serializers.Serializer):
         business_type = TENANT_TYPE_MAP[validated_data["tenant_type"]]
         owner_email = validated_data["owner_email"].strip().lower()
         first_name, last_name = _split_name(validated_data["owner_full_name"])
+        registration_ip = (self.context.get("registration_ip") or "").strip()
 
         with transaction.atomic():
             slug = _build_unique_slug(tenant_name)
@@ -116,7 +118,7 @@ class TenantRegisterSerializer(serializers.Serializer):
                 legal_name=validated_data.get("legal_name", "").strip(),
                 slug=slug,
                 business_type=business_type,
-                status=Business.STATUS_ACTIVE,
+                status=Business.STATUS_PENDING,
                 phone=validated_data.get("owner_phone", ""),
                 email=owner_email,
                 nuit=validated_data.get("nuit"),
@@ -128,6 +130,7 @@ class TenantRegisterSerializer(serializers.Serializer):
                 timezone=validated_data.get("timezone") or "Africa/Maputo",
                 modules_enabled=Business.MODULE_DEFAULTS.get(business_type, {}).copy(),
                 feature_flags=Business.FEATURE_DEFAULTS.get(business_type, {}).copy(),
+                registration_ip=registration_ip,
             )
             owner = User.objects.create_user(
                 username=owner_email,
@@ -136,6 +139,7 @@ class TenantRegisterSerializer(serializers.Serializer):
                 last_name=last_name,
                 password=validated_data["password"],
             )
+            UserProfile.objects.get_or_create(user=owner)
             _ensure_owner_group()
             ensure_custom_permissions()
             roles = ensure_tenant_roles(business, created_by=owner, force=True)

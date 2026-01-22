@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Aprovacoes de tenants - BizControl{% endblock %}
+
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <h4 class="mb-1">Aprovacoes pendentes</h4>
+      <div class="text-muted small">Tenants aguardando aprovacao do BizControl.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  {% if entries %}
+    <div class="vstack gap-3">
+      {% for entry in entries %}
+        <div class="border rounded-4 p-3">
+          <div class="row g-3 align-items-start">
+            <div class="col-lg-5">
+              <div class="fw-semibold">{{ entry.business.name }}</div>
+              <div class="text-muted small">
+                Tipo: {{ entry.business.get_business_type_display }} •
+                Registo: {{ entry.business.registered_at|date:"d/m/Y H:i" }}
+              </div>
+              <div class="small mt-2">
+                <span class="text-muted">Owner:</span>
+                {% if entry.owner %}
+                  {{ entry.owner.get_full_name|default:entry.owner.email }}
+                  <span class="text-muted">({{ entry.owner.email }})</span>
+                {% else %}
+                  <span class="text-muted">Nao definido</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-lg-5">
+              <label class="form-label small text-muted" for="note-{{ entry.business.id }}">
+                Nota interna (opcional)
+              </label>
+              <textarea
+                id="note-{{ entry.business.id }}"
+                class="form-control form-control-sm"
+                rows="2"
+                placeholder="Observacoes para auditoria interna..."
+              ></textarea>
+            </div>
+            <div class="col-lg-2 d-flex flex-column gap-2">
+              <form
+                method="post"
+                action="{% url 'tenants:tenant_approve' entry.business.id %}"
+                class="approval-form"
+                data-note-id="note-{{ entry.business.id }}"
+                data-swal-confirm="true"
+                data-swal-title="Aprovar tenant?"
+                data-swal-text="Deseja aprovar este tenant e enviar o acesso?"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="note">
+                <button class="btn btn-success w-100" type="submit">
+                  <i class="bi bi-check-circle me-1"></i>Aprovar
+                </button>
+              </form>
+              <form
+                method="post"
+                action="{% url 'tenants:tenant_reject' entry.business.id %}"
+                class="approval-form"
+                data-note-id="note-{{ entry.business.id }}"
+                data-swal-confirm="true"
+                data-swal-title="Rejeitar tenant?"
+                data-swal-text="Deseja rejeitar este registo?"
+                data-swal-icon="warning"
+                data-swal-confirm-text="Rejeitar"
+              >
+                {% csrf_token %}
+                <input type="hidden" name="note">
+                <button class="btn btn-outline-danger w-100" type="submit">
+                  <i class="bi bi-x-circle me-1"></i>Rejeitar
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <div class="mb-2"><i class="bi bi-check2-circle fs-2"></i></div>
+      Sem tenants pendentes no momento.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      var forms = document.querySelectorAll(".approval-form");
+      forms.forEach(function (form) {
+        form.addEventListener("submit", function () {
+          var noteId = form.dataset.noteId;
+          if (!noteId) {
+            return;
+          }
+          var noteField = document.getElementById(noteId);
+          var hiddenInput = form.querySelector("input[name='note']");
+          if (noteField && hiddenInput) {
+            hiddenInput.value = noteField.value || "";
+          }
+        });
+      });
+    })();
+  </script>
+{% endblock %}

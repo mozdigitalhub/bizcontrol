@@ -16,9 +16,12 @@ class BusinessMiddleware:
                 business = Business.objects.filter(id=business_id).first()
                 if business and (
                     request.user.is_superuser
-                    or BusinessMembership.objects.filter(
-                        business=business, user=request.user, is_active=True
-                    ).exists()
+                    or (
+                        business.status == Business.STATUS_ACTIVE
+                        and BusinessMembership.objects.filter(
+                            business=business, user=request.user, is_active=True
+                        ).exists()
+                    )
                 ):
                     request.business = business
                     request.tenant = business

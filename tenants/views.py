@@ -6,6 +6,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import AllowAny
@@ -37,7 +38,18 @@ from tenants.rbac import (
     get_permission_groups,
     reset_role_permissions,
 )
+from tenants.services import send_approved_email, send_pending_email, send_rejected_email
 from tenants.serializers import TenantRegisterSerializer
+
+
+def _superuser_required(view_func):
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            messages.error(request, "Sem permissao para esta area.")
+            return redirect("reports:dashboard")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
 
 
 @login_required
@@ -49,7 +61,11 @@ def select_business(request):
         businesses = Business.objects.order_by("name")
     else:
         memberships = (
-            BusinessMembership.objects.filter(user=request.user, is_active=True)
+            BusinessMembership.objects.filter(
+                user=request.user,
+                is_active=True,
+                business__status=Business.STATUS_ACTIVE,
+            )
             .select_related("business")
             .order_by("business__name")
         )
@@ -155,6 +171,168 @@ def user_profile(request):
             "membership": membership,
         },
     )
+
+
+@login_required
+def force_password_change(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if not profile.must_change_password:
+        return redirect("reports:dashboard")
+    password_form = UserPasswordForm(user=request.user, data=request.POST or None)
+    if request.method == "POST" and password_form.is_valid():
+        user = password_form.save()
+        update_session_auth_hash(request, user)
+        profile.must_change_password = False
+        profile.temp_password_set_at = None
+        profile.welcome_seen = False
+        profile.onboarding_completed = False
+        profile.save(
+            update_fields=[
+                "must_change_password",
+                "temp_password_set_at",
+                "welcome_seen",
+                "onboarding_completed",
+            ]
+        )
+        messages.success(request, "Password atualizada. Bem-vindo ao BizControl!")
+        return redirect("reports:dashboard")
+    return render(
+        request,
+        "registration/force_password_change.html",
+        {"password_form": password_form},
+    )
+
+
+@login_required
+def onboarding_welcome_seen(request):
+    if request.method != "POST":
+        return redirect("reports:dashboard")
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile.welcome_seen = True
+    profile.save(update_fields=["welcome_seen"])
+    return redirect("reports:dashboard")
+
+
+@login_required
+def onboarding_complete(request):
+    if request.method != "POST":
+        return redirect("reports:dashboard")
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile.onboarding_completed = True
+    profile.save(update_fields=["onboarding_completed"])
+    return redirect("reports:dashboard")
+
+
+@login_required
+@_superuser_required
+def tenant_approvals(request):
+    pending = Business.objects.filter(status=Business.STATUS_PENDING).order_by("created_at")
+    entries = []
+    for business in pending:
+        owner_membership = (
+            BusinessMembership.objects.filter(
+                business=business, role=BusinessMembership.ROLE_OWNER
+            )
+            .select_related("user")
+            .first()
+        )
+        owner = owner_membership.user if owner_membership else None
+        entries.append(
+            {
+                "business": business,
+                "owner": owner,
+            }
+        )
+    return render(request, "tenants/tenant_approvals.html", {"entries": entries})
+
+
+@login_required
+@_superuser_required
+def tenant_approve(request, business_id):
+    if request.method != "POST":
+        return redirect("tenants:tenant_approvals")
+    business = get_object_or_404(Business, id=business_id)
+    note = (request.POST.get("note") or "").strip()
+    owner_membership = BusinessMembership.objects.filter(
+        business=business, role=BusinessMembership.ROLE_OWNER
+    ).select_related("user").first()
+    owner = owner_membership.user if owner_membership else None
+    if not owner:
+        messages.error(request, "Nao foi possivel localizar o utilizador owner.")
+        return redirect("tenants:tenant_approvals")
+    temp_password = get_user_model().objects.make_random_password()
+    owner.set_password(temp_password)
+    owner.save(update_fields=["password"])
+    profile, _ = UserProfile.objects.get_or_create(user=owner)
+    profile.must_change_password = True
+    profile.temp_password_set_at = timezone.now()
+    profile.welcome_seen = False
+    profile.onboarding_completed = False
+    profile.save(
+        update_fields=[
+            "must_change_password",
+            "temp_password_set_at",
+            "welcome_seen",
+            "onboarding_completed",
+        ]
+    )
+
+    business.status = Business.STATUS_ACTIVE
+    business.approval_note = note
+    business.approved_at = timezone.now()
+    business.approved_by = request.user
+    business.rejected_at = None
+    business.rejected_by = None
+    business.save(
+        update_fields=[
+            "status",
+            "approval_note",
+            "approved_at",
+            "approved_by",
+            "rejected_at",
+            "rejected_by",
+            "updated_at",
+        ]
+    )
+
+    login_url = request.build_absolute_uri(reverse("login"))
+    send_approved_email(
+        business=business,
+        owner=owner,
+        temp_password=temp_password,
+        login_url=login_url,
+        approved_by=request.user,
+    )
+    messages.success(request, "Tenant aprovado e email enviado.")
+    return redirect("tenants:tenant_approvals")
+
+
+@login_required
+@_superuser_required
+def tenant_reject(request, business_id):
+    if request.method != "POST":
+        return redirect("tenants:tenant_approvals")
+    business = get_object_or_404(Business, id=business_id)
+    note = (request.POST.get("note") or "").strip()
+    owner_membership = BusinessMembership.objects.filter(
+        business=business, role=BusinessMembership.ROLE_OWNER
+    ).select_related("user").first()
+    owner = owner_membership.user if owner_membership else None
+    business.status = Business.STATUS_REJECTED
+    business.approval_note = note
+    business.rejected_at = timezone.now()
+    business.rejected_by = request.user
+    business.save(
+        update_fields=["status", "approval_note", "rejected_at", "rejected_by", "updated_at"]
+    )
+    if owner:
+        send_rejected_email(
+            business=business,
+            owner=owner,
+            rejected_by=request.user,
+        )
+    messages.success(request, "Tenant rejeitado.")
+    return redirect("tenants:tenant_approvals")
 
 
 @login_required
@@ -318,7 +496,10 @@ class TenantRegisterAPIView(APIView):
 
     def post(self, request):
         try:
-            serializer = TenantRegisterSerializer(data=request.data)
+            serializer = TenantRegisterSerializer(
+                data=request.data,
+                context={"registration_ip": _get_client_ip(request)},
+            )
         except ParseError:
             return Response(
                 {"errors": {"non_field_errors": ["Payload invalido."]}, "detail": "Dados invalidos."},
@@ -344,6 +525,7 @@ class TenantRegisterAPIView(APIView):
         result = serializer.save()
         business = result["business"]
         owner = result["owner"]
+        send_pending_email(business=business, owner=owner, request=request)
         return Response(
             {
                 "tenant": {
@@ -362,6 +544,13 @@ class TenantRegisterAPIView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+def _get_client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "")
 
 
 @login_required

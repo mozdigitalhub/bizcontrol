@@ -3,6 +3,7 @@ from django.contrib import admin
 from tenants.models import (
     Business,
     BusinessMembership,
+    TenantEmailLog,
     TenantBankAccount,
     TenantMobileWallet,
     TenantRole,
@@ -15,12 +16,13 @@ class BusinessAdmin(admin.ModelAdmin):
         "name",
         "slug",
         "business_type",
+        "status",
         "vat_enabled",
         "vat_rate",
         "prices_include_vat",
     )
     search_fields = ("name", "slug", "nuit", "phone", "email")
-    list_filter = ("business_type", "vat_enabled")
+    list_filter = ("business_type", "status", "vat_enabled")
 
 
 @admin.register(BusinessMembership)
@@ -47,3 +49,10 @@ class TenantRoleAdmin(admin.ModelAdmin):
     list_display = ("name", "business", "code", "is_active")
     list_filter = ("code", "is_active", "business")
     search_fields = ("name", "business__name")
+
+
+@admin.register(TenantEmailLog)
+class TenantEmailLogAdmin(admin.ModelAdmin):
+    list_display = ("business", "email_type", "recipient", "status", "created_at")
+    list_filter = ("email_type", "status")
+    search_fields = ("recipient", "business__name")

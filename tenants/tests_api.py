@@ -34,6 +34,7 @@ class TenantRegisterApiTests(APITestCase):
         business = Business.objects.first()
         self.assertEqual(business.name, "Loja Central")
         self.assertEqual(business.business_type, Business.BUSINESS_HARDWARE)
+        self.assertEqual(business.status, Business.STATUS_PENDING)
         owner = get_user_model().objects.get(username="joao@example.com")
         membership = BusinessMembership.objects.get(business=business, user=owner)
         self.assertEqual(membership.role, BusinessMembership.ROLE_OWNER)

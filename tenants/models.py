@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone as dj_timezone
 from django.utils.text import slugify
 
 
@@ -274,11 +275,15 @@ class Business(models.Model):
     business_type = models.CharField(
         max_length=30, choices=BUSINESS_TYPE_CHOICES, default=BUSINESS_GENERAL
     )
+    STATUS_PENDING = "pending"
     STATUS_ACTIVE = "active"
     STATUS_INACTIVE = "inactive"
+    STATUS_REJECTED = "rejected"
     STATUS_CHOICES = [
+        (STATUS_PENDING, "Pendente"),
         (STATUS_ACTIVE, "Ativo"),
         (STATUS_INACTIVE, "Inativo"),
+        (STATUS_REJECTED, "Rejeitado"),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     nuit = models.CharField(max_length=30, blank=True, null=True)
@@ -298,6 +303,25 @@ class Business(models.Model):
     prices_include_vat = models.BooleanField(default=True)
     allow_negative_stock = models.BooleanField(default=False)
     allow_over_delivery_deposit = models.BooleanField(default=False)
+    registered_at = models.DateTimeField(default=dj_timezone.now)
+    registration_ip = models.CharField(max_length=45, blank=True)
+    approval_note = models.TextField(blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_businesses",
+    )
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rejected_businesses",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -468,6 +492,48 @@ class TenantBankAccount(models.Model):
 
     def __str__(self):
         return f"{self.bank_name} - {self.account_number}"
+
+
+class TenantEmailLog(models.Model):
+    TYPE_PENDING = "pending"
+    TYPE_APPROVED = "approved"
+    TYPE_REJECTED = "rejected"
+    TYPE_CHOICES = [
+        (TYPE_PENDING, "Registo pendente"),
+        (TYPE_APPROVED, "Aprovacao"),
+        (TYPE_REJECTED, "Rejeicao"),
+    ]
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [
+        (STATUS_SENT, "Enviado"),
+        (STATUS_FAILED, "Falhou"),
+    ]
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="email_logs"
+    )
+    email_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    recipient = models.EmailField()
+    subject = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    error_message = models.TextField(blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tenant_email_logs",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["business", "email_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_email_type_display()} - {self.recipient}"
 
 
 class TenantRole(models.Model):

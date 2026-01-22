@@ -59,6 +59,23 @@
     border-radius: 999px;
     padding: 6px 12px;
   }
+  .preset-group .btn-group {
+    flex-wrap: wrap;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .preset-group .btn-group .btn {
+    flex: 1 0 90px;
+    border-radius: 0;
+  }
+  .preset-group .btn-group .btn:first-child {
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+  }
+  .preset-group .btn-group .btn:last-child {
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
   .empty-state {
     padding: 40px 16px;
     text-align: center;
@@ -70,5 +87,13 @@
   }
   .export-actions .btn {
     border-radius: 999px;
+  }
+  @media (max-width: 992px) {
+    .filter-grid {
+      grid-template-columns: 1fr;
+    }
+    .preset-group .btn-group .btn {
+      flex: 1 0 120px;
+    }
   }
 </style>

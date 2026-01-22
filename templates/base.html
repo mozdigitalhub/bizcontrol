@@ -366,6 +366,28 @@
         margin-top: 6px;
       }
 
+      .tour-highlight {
+        position: relative;
+        z-index: 1050;
+        box-shadow: 0 0 0 4px rgba(31, 111, 139, 0.25);
+        border-radius: 12px;
+      }
+
+      .onboarding-popover {
+        max-width: 280px;
+      }
+
+      .onboarding-popover .popover-body {
+        font-size: 0.92rem;
+      }
+
+      .onboarding-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
       @media (max-width: 992px) {
         .app-shell {
           flex-direction: column;
@@ -455,11 +477,11 @@
               <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
                 <div class="nav-sub">
                   {% if perms.sales.add_sale %}
-                    <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}">
+                    <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}" data-tour="sales">
                       {{ current_business.ui_labels.new_sale }}
                     </a>
                   {% endif %}
-                  <a class="nav-sub-item{% if ns in nav_groups.sales and url_name != 'new' %} active{% endif %}" href="{% url 'sales:list' %}">
+                  <a class="nav-sub-item{% if ns in nav_groups.sales and url_name != 'new' %} active{% endif %}" href="{% url 'sales:list' %}" data-tour="sales-list">
                     {{ current_business.ui_labels.sales }}
                   </a>
                   {% if current_business and current_business.module_quotations_enabled %}
@@ -521,7 +543,7 @@
                       {{ current_business.ui_labels.products }}
                     </a>
                   {% endif %}
-                  <a class="nav-sub-item{% if ns == 'inventory' %} active{% endif %}" href="{% url 'inventory:stock_list' %}">
+                  <a class="nav-sub-item{% if ns == 'inventory' %} active{% endif %}" href="{% url 'inventory:stock_list' %}" data-tour="stock">
                     Stock
                   </a>
                   {% if perms.inventory.view_goodsreceipt %}
@@ -547,7 +569,7 @@
               </button>
               <div class="collapse{% if ns in nav_groups.billing %} show{% endif %}" id="nav-billing">
                 <div class="nav-sub">
-                  <a class="nav-sub-item{% if ns == 'billing' and '/receipts/' not in current_path %} active{% endif %}" href="{% url 'billing:invoice_list' %}">
+                  <a class="nav-sub-item{% if ns == 'billing' and '/receipts/' not in current_path %} active{% endif %}" href="{% url 'billing:invoice_list' %}" data-tour="billing">
                     Faturas
                   </a>
                   <a class="nav-sub-item{% if '/receipts/' in current_path %} active{% endif %}" href="{% url 'billing:receipt_list' %}">
@@ -602,7 +624,7 @@
                 <div class="collapse{% if ns in nav_groups.reports and url_name != 'dashboard' %} show{% endif %}" id="nav-reports">
                   <div class="nav-sub">
                     {% if request.user.is_superuser or 'reports.view_basic' in tenant_permissions %}
-                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'overview' %} active{% endif %}" href="{% url 'reports:overview' %}">
+                      <a class="nav-sub-item{% if ns == 'reports' and url_name == 'overview' %} active{% endif %}" href="{% url 'reports:overview' %}" data-tour="reports">
                         Visao geral
                       </a>
                       <a class="nav-sub-item{% if ns == 'reports' and url_name == 'sales' %} active{% endif %}" href="{% url 'reports:sales' %}">
@@ -656,6 +678,11 @@
                     <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'user_profile' %} active{% endif %}" href="{% url 'tenants:user_profile' %}">
                       Meu perfil
                     </a>
+                    {% if request.user.is_superuser %}
+                      <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'tenant_approvals' %} active{% endif %}" href="{% url 'tenants:tenant_approvals' %}">
+                        Aprovacoes
+                      </a>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -1645,6 +1672,198 @@
         });
       })();
     </script>
+    {% if user_profile and not user_profile.must_change_password %}
+      <script>
+        window.bizOnboarding = {
+          showWelcome: {{ user_profile.welcome_seen|yesno:"false,true" }},
+          onboardingCompleted: {{ user_profile.onboarding_completed|yesno:"true,false" }}
+        };
+      </script>
+      <script>
+        (function () {
+          var state = window.bizOnboarding || {};
+          if (!window.bootstrap || !window.bootstrap.Popover) {
+            return;
+          }
+
+          var steps = [
+            {
+              key: "sales",
+              title: "Vendas & POS",
+              text: "Registe novas vendas rapidamente e acompanhe os pedidos.",
+              placement: "right",
+            },
+            {
+              key: "billing",
+              title: "Faturacao & Recibos",
+              text: "Emita faturas e recibos sempre que precisar.",
+              placement: "right",
+            },
+            {
+              key: "stock",
+              title: "Stock / Inventario",
+              text: "Controle as entradas e saidas de stock do negocio.",
+              placement: "right",
+            },
+            {
+              key: "reports",
+              title: "Relatorios",
+              text: "Acompanhe a saude do negocio com graficos claros.",
+              placement: "right",
+            },
+          ];
+
+          var highlight = function (key) {
+            document.querySelectorAll("[data-tour]").forEach(function (el) {
+              el.classList.remove("tour-highlight");
+            });
+            var target = document.querySelector("[data-tour='" + key + "']");
+            if (target) {
+              target.classList.add("tour-highlight");
+              target.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            return target;
+          };
+
+          var getCookie = function (name) {
+            var value = null;
+            if (document.cookie && document.cookie !== "") {
+              var cookies = document.cookie.split(";");
+              for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                  value = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+            }
+            return value;
+          };
+
+          var postState = function (url) {
+            var csrftoken = getCookie("csrftoken");
+            return fetch(url, {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": csrftoken,
+                "X-Requested-With": "XMLHttpRequest"
+              },
+            });
+          };
+
+          var currentPopover = null;
+          var currentIndex = 0;
+
+          var cleanup = function () {
+            if (currentPopover) {
+              currentPopover.dispose();
+              currentPopover = null;
+            }
+            document.querySelectorAll("[data-tour]").forEach(function (el) {
+              el.classList.remove("tour-highlight");
+            });
+          };
+
+          var openParentCollapse = function (target) {
+            if (!target) {
+              return;
+            }
+            var collapse = target.closest(".collapse");
+            if (collapse && !collapse.classList.contains("show")) {
+              var instance = bootstrap.Collapse.getOrCreateInstance(collapse);
+              instance.show();
+            }
+          };
+
+          var buildPopoverContent = function (step, isLast, hasPrev) {
+            var actions = [
+              "<button type='button' class='btn btn-sm btn-outline-secondary' data-onboarding-skip>Saltar</button>",
+              "<button type='button' class='btn btn-sm btn-primary' data-onboarding-next>" + (isLast ? "Concluir" : "Seguinte") + "</button>",
+            ];
+            if (hasPrev) {
+              actions.unshift("<button type='button' class='btn btn-sm btn-light' data-onboarding-prev>Voltar</button>");
+            }
+            return (
+              "<div>" + step.text + "</div>" +
+              "<div class='onboarding-actions'>" + actions.join("") + "</div>"
+            );
+          };
+
+          var showStep = function (index) {
+            if (index < 0) {
+              return;
+            }
+            if (index >= steps.length) {
+              finishTour();
+              return;
+            }
+            currentIndex = index;
+            cleanup();
+            var step = steps[index];
+            var target = highlight(step.key);
+            if (!target) {
+              showStep(index + 1);
+              return;
+            }
+            openParentCollapse(target);
+            setTimeout(function () {
+              if (currentPopover) {
+                currentPopover.dispose();
+              }
+              var content = buildPopoverContent(step, index === steps.length - 1, index > 0);
+              currentPopover = new bootstrap.Popover(target, {
+                title: step.title,
+                content: content,
+                html: true,
+                trigger: "manual",
+                placement: step.placement || "right",
+                customClass: "onboarding-popover",
+                sanitize: false,
+              });
+              currentPopover.show();
+            }, 140);
+          };
+
+          var finishTour = function () {
+            cleanup();
+            postState("{% url 'tenants:onboarding_complete' %}");
+          };
+
+          var startTour = function (markWelcome) {
+            if (markWelcome) {
+              postState("{% url 'tenants:onboarding_welcome' %}");
+            }
+            showStep(0);
+          };
+
+          document.addEventListener("click", function (event) {
+            var nextBtn = event.target.closest("[data-onboarding-next]");
+            if (nextBtn) {
+              event.preventDefault();
+              showStep(currentIndex + 1);
+              return;
+            }
+            var prevBtn = event.target.closest("[data-onboarding-prev]");
+            if (prevBtn) {
+              event.preventDefault();
+              showStep(currentIndex - 1);
+              return;
+            }
+            var skipBtn = event.target.closest("[data-onboarding-skip]");
+            if (skipBtn) {
+              event.preventDefault();
+              finishTour();
+            }
+          });
+
+          if (state.showWelcome) {
+            startTour(true);
+          } else if (!state.onboardingCompleted) {
+            startTour(false);
+          }
+        })();
+      </script>
+    {% endif %}
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>

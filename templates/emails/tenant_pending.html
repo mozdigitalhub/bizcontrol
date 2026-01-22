@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registo recebido</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #f4f7f9; margin: 0; padding: 0; }
+      .wrapper { max-width: 600px; margin: 24px auto; background: #ffffff; border-radius: 12px; padding: 24px; }
+      .brand { color: #1f6f8b; font-weight: 700; }
+      .cta { margin-top: 16px; padding: 12px 16px; background: #1f6f8b; color: #fff; border-radius: 8px; display: inline-block; text-decoration: none; }
+      .muted { color: #6d7b86; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="brand">BizControl</div>
+      <h2>Registo recebido com sucesso</h2>
+      <p>O seu registo foi recebido e esta pendente de aprovacao pelo administrador do BizControl.</p>
+      <p class="muted">Negocio: <strong>{{ business.name }}</strong></p>
+      <p class="muted">Entraremos em contacto assim que a conta for aprovada.</p>
+      <p class="muted">Obrigado por confiar no BizControl.</p>
+    </div>
+  </body>
+</html>

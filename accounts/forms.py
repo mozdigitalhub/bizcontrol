@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.core.exceptions import ValidationError
+
+from tenants.models import Business, BusinessMembership
 
 from accounts.models import UserProfile
 
@@ -48,3 +51,39 @@ class UserPasswordForm(PasswordChangeForm):
         self.fields["new_password2"].label = "Confirmar password"
         for name, field in self.fields.items():
             field.widget.attrs["class"] = "form-control"
+
+
+class TenantLoginForm(AuthenticationForm):
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        if user.is_superuser:
+            return
+        memberships = BusinessMembership.objects.filter(
+            user=user, is_active=True
+        ).select_related("business")
+        if not memberships.exists():
+            raise ValidationError("Conta sem negocio associado.", code="no_business")
+        has_active = False
+        has_pending = False
+        has_rejected = False
+        for membership in memberships:
+            status = membership.business.status
+            if status == Business.STATUS_ACTIVE:
+                has_active = True
+            elif status == Business.STATUS_PENDING:
+                has_pending = True
+            elif status == Business.STATUS_REJECTED:
+                has_rejected = True
+        if has_active:
+            return
+        if has_pending:
+            raise ValidationError(
+                "Conta pendente de aprovacao. Aguarde contacto do BizControl.",
+                code="pending",
+            )
+        if has_rejected:
+            raise ValidationError(
+                "Conta rejeitada. Contacte o suporte para mais informacao.",
+                code="rejected",
+            )
+        raise ValidationError("Conta inativa.", code="inactive")

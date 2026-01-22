@@ -1,8 +1,15 @@
+from accounts.models import UserProfile
+
+
 def current_business(request):
+    profile = None
+    if getattr(request, "user", None) and request.user.is_authenticated:
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
     return {
         "current_business": getattr(request, "business", None),
         "current_membership": getattr(request, "membership", None),
         "tenant_permissions": getattr(request, "tenant_permissions", set()),
+        "user_profile": profile,
         "nav_groups": {
             "sales": ["sales", "deliveries", "quotations"],
             "customers": ["customers", "receivables"],

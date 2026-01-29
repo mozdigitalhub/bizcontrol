@@ -296,6 +296,7 @@ class Expense(models.Model):
     business = models.ForeignKey(
         Business, on_delete=models.CASCADE, related_name="expenses"
     )
+    code = models.CharField(max_length=30, null=True, blank=True)
     category = models.ForeignKey(
         ExpenseCategory, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -324,6 +325,15 @@ class Expense(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"],
+                condition=Q(code__isnull=False),
+                name="uniq_expense_code_business",
+            ),
+        ]
 
     def __str__(self):
         return self.title

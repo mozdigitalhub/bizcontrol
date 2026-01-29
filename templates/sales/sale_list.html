@@ -5,13 +5,13 @@
 {% block extra_head %}
   <style>
     .filter-card {
-      background: #f7f9fc;
-      border: 1px solid #e3e9f2;
+      background: #F8FAFC;
+      border: 1px solid #E5E7EB;
     }
 
     .summary-card {
       border-radius: 16px;
-      border: 1px solid #e3e9f2;
+      border: 1px solid #E5E7EB;
       box-shadow: 0 10px 18px rgba(31, 60, 76, 0.06);
     }
 
@@ -28,8 +28,8 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #e9f2f7;
-      color: #2a5d7a;
+      background: #F8FAFC;
+      color: #2563EB;
       display: grid;
       place-items: center;
       font-size: 12px;
@@ -40,24 +40,21 @@
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #6d7b86;
+      color: #475569;
     }
 
     .filter-group .input-group-text {
-      background: #ffffff;
-      border-right: 0;
-      color: #60707c;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
     }
 
     .filter-group .form-control,
-    .filter-group .form-select {
-      border-left: 0;
-    }
-
+    .filter-group .form-select,
     .filter-group .ts-wrapper .ts-control {
-      border-left: 0;
+      border-left: 1px solid var(--border);
     }
-  </style>
+</style>
 {% endblock %}
 
 {% block content %}

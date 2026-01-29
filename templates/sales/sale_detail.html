@@ -10,13 +10,13 @@
   <style>
     .sale-header-card {
       border-radius: 20px;
-      border: 1px solid #e6edf2;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 58%);
-      box-shadow: 0 12px 30px rgba(31, 60, 76, 0.08);
+      border: 1px solid var(--border);
+      background: linear-gradient(120deg, var(--bg) 0%, var(--card) 58%);
+      box-shadow: var(--shadow);
     }
 
     .sale-title {
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: -0.02em;
     }
 
@@ -30,7 +30,7 @@
     .status-badge {
       border-radius: 999px;
       padding: 6px 12px;
-      font-size: 0.72rem;
+      font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -41,52 +41,52 @@
     }
 
     .status-draft {
-      background: #f4f7f9;
-      color: #5f6f7a;
-      border-color: #dfe6eb;
+      background: var(--bg);
+      color: var(--text-muted);
+      border-color: var(--border);
     }
 
     .status-confirmed,
     .status-paid,
     .status-delivered {
-      background: #e8f6ef;
-      color: #1f7a4d;
-      border-color: #b8e0c8;
+      background: var(--success);
+      color: #FFFFFF;
+      border-color: var(--success);
     }
 
     .status-canceled {
-      background: #fdecec;
-      color: #b42318;
-      border-color: #f6b6b6;
+      background: var(--danger);
+      color: #FFFFFF;
+      border-color: var(--danger);
     }
 
     .status-partial,
     .status-pending {
-      background: #fff5e6;
-      color: #9a5b13;
-      border-color: #ffd9a6;
+      background: var(--warning);
+      color: #FFFFFF;
+      border-color: var(--warning);
     }
 
     .status-unpaid {
-      background: #eef2ff;
-      color: #3b5bcc;
-      border-color: #c7d2fe;
+      background: var(--primary-600);
+      color: #FFFFFF;
+      border-color: var(--primary-600);
     }
 
     .sale-total-card {
-      background: #0f3a4d;
-      color: #ffffff;
+      background: var(--primary-700);
+      color: #FFFFFF;
       border-radius: 16px;
       padding: 16px 20px;
       min-width: 220px;
-      box-shadow: 0 12px 24px rgba(15, 58, 77, 0.2);
+      box-shadow: var(--shadow);
     }
 
     .sale-total-card .label {
-      font-size: 0.75rem;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: rgba(255, 255, 255, 0.7);
+      color: #FFFFFF;
     }
 
     .sale-total-card .value {
@@ -104,29 +104,29 @@
 
     .sale-metric {
       border-radius: 16px;
-      border: 1px solid #e6edf2;
-      background: #ffffff;
+      border: 1px solid var(--border);
+      background: var(--card);
       padding: 14px 16px;
-      box-shadow: 0 10px 20px rgba(31, 60, 76, 0.06);
+      box-shadow: var(--shadow);
     }
 
     .sale-metric .label {
-      font-size: 0.72rem;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #7a8892;
+      color: var(--text-muted);
     }
 
     .sale-metric .value {
       font-size: 1.1rem;
       font-weight: 700;
       margin-top: 4px;
-      color: #1f2c34;
+      color: #0F172A;
     }
 
     .sale-metric.highlight {
-      background: #f1f8fb;
-      border-color: #d8eef7;
+      background: #F8FAFC;
+      border-color: #F8FAFC;
     }
 
     .sale-card-title {
@@ -139,29 +139,6 @@
     .sale-form-grid {
       display: grid;
       gap: 16px;
-    }
-
-    .form-icon {
-      position: relative;
-    }
-
-    .form-icon .form-control,
-    .form-icon .form-select {
-      padding-left: 44px;
-    }
-
-    .form-icon .ts-wrapper .ts-control {
-      padding-left: 44px;
-    }
-
-    .form-icon i {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9aa7b2;
-      pointer-events: none;
-      z-index: 3;
     }
 
     .form-switch .form-check-input {
@@ -285,8 +262,8 @@
           <div class="row g-3">
             <div class="col-lg-6">
               <label class="form-label">{{ header_form.customer.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-person"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-person"></i></span>
                 {{ header_form.customer }}
               </div>
               {% if perms.customers.add_customer and sale.status == "draft" %}
@@ -322,8 +299,8 @@
           <div class="row g-3">
             <div class="col-lg-6" data-credit-hide="true" data-deposit-hide="true">
               <label class="form-label">{{ header_form.sale_type.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-bag-check"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-bag-check"></i></span>
                 {{ header_form.sale_type }}
               </div>
             {% if header_form.sale_type.errors %}
@@ -332,8 +309,8 @@
           </div>
             <div class="col-lg-6" data-credit-hide="true">
               <label class="form-label">{{ header_form.delivery_mode.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-truck"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-truck"></i></span>
                 {{ header_form.delivery_mode }}
               </div>
             {% if header_form.delivery_mode.errors %}
@@ -345,8 +322,8 @@
           <div class="row g-3">
             <div class="col-lg-4" data-credit-hide="true">
               <label class="form-label">{{ header_form.payment_method.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-cash-coin"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-cash-coin"></i></span>
                 {{ header_form.payment_method }}
               </div>
             <div class="form-note">Obrigatorio para venda imediata ou entrada.</div>
@@ -357,8 +334,8 @@
           {% if allow_credit %}
             <div class="col-lg-4" data-credit-field="due-date">
               <label class="form-label">{{ header_form.payment_due_date.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-calendar-event"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-calendar-event"></i></span>
                 {{ header_form.payment_due_date }}
               </div>
               {% if header_form.payment_due_date.errors %}
@@ -371,8 +348,8 @@
           <div class="row g-3">
             <div class="col-lg-4" data-credit-hide="true">
               <label class="form-label">{{ header_form.discount_type.label }}</label>
-              <div class="form-icon">
-                <i class="bi bi-percent"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-percent"></i></span>
                 {{ header_form.discount_type }}
               </div>
             {% if header_form.discount_type.errors %}
@@ -381,11 +358,13 @@
           </div>
             <div class="col-lg-4" data-credit-hide="true">
               <label class="form-label">{{ header_form.discount_value.label }}</label>
-              <div class="input-group money-group">
-                <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                {{ header_form.discount_value }}
-              <span class="input-group-text">MZN / %</span>
-            </div>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-tag"></i></span>
+                <div class="input-group money-group">
+                  {{ header_form.discount_value }}
+                  <span class="input-group-text">MZN / %</span>
+                </div>
+              </div>
             <div class="form-note">Use percentagem ou valor fixo.</div>
             {% if header_form.discount_value.errors %}
               <div class="invalid-feedback d-block">{{ header_form.discount_value.errors|striptags }}</div>
@@ -430,15 +409,15 @@
             {% csrf_token %}
             <div class="col-md-6">
               <label class="form-label small">Produto</label>
-              <div class="form-icon">
-                <i class="bi bi-box"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-box"></i></span>
                 {{ item_form.product }}
               </div>
             </div>
             <div class="col-md-3">
               <label class="form-label small">Quantidade</label>
-              <div class="form-icon">
-                <i class="bi bi-123"></i>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-123"></i></span>
                 {{ item_form.quantity }}
               </div>
             </div>

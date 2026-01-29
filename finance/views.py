@@ -23,6 +23,7 @@ from billing.models import InvoicePayment
 from finance.services import cancel_expense, cancel_purchase, confirm_purchase, pay_expense
 from tenants.decorators import business_required, module_required
 from tenants.models import Business
+from tenants.services import generate_document_code
 
 
 def _purchase_error_summary(form, formset):
@@ -167,6 +168,11 @@ def cashflow_list(request):
         for movement in page.object_list
         if movement.reference_type in {"purchase", "purchase_cancel"} and movement.reference_id
     }
+    expense_ids = {
+        movement.reference_id
+        for movement in page.object_list
+        if movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id
+    }
     invoice_payment_map = {
         payment.id: payment
         for payment in InvoicePayment.objects.filter(
@@ -179,12 +185,22 @@ def cashflow_list(request):
             business=request.business, id__in=purchase_ids
         ).only("id", "code")
     }
+    expense_map = {
+        expense.id: expense
+        for expense in Expense.objects.filter(
+            business=request.business, id__in=expense_ids
+        ).select_related("category").only("id", "code", "title", "category__name")
+    }
     for movement in page.object_list:
         movement.reference_label = "-"
         movement.reference_invoice_id = None
         movement.reference_invoice_code = ""
         movement.reference_purchase_id = None
         movement.reference_purchase_code = ""
+        movement.reference_expense_id = None
+        movement.reference_expense_code = ""
+        movement.expense_title = ""
+        movement.expense_category = ""
         movement.notes_label = movement.notes or "-"
         if movement.reference_type == "invoice_payment" and movement.reference_id:
             payment = invoice_payment_map.get(movement.reference_id)
@@ -204,6 +220,16 @@ def cashflow_list(request):
                 movement.reference_purchase_id = purchase.id
                 movement.reference_purchase_code = purchase_code
                 movement.notes_label = purchase_code
+        elif movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id:
+            expense = expense_map.get(movement.reference_id)
+            if expense:
+                expense_code = expense.code or f"D-{expense.id}"
+                movement.reference_label = expense_code
+                movement.reference_expense_id = expense.id
+                movement.reference_expense_code = expense_code
+                movement.expense_title = expense.title or ""
+                movement.expense_category = expense.category.name if expense.category else ""
+                movement.notes_label = expense.title or expense_code
         elif movement.reference_type:
             movement.reference_label = movement.reference_type.replace("_", " ").title()
     return render(
@@ -232,10 +258,15 @@ def cashflow_list(request):
 @permission_required("finance.view_cashmovement", raise_exception=True)
 def cashflow_detail_modal(request, pk):
     movement = get_object_or_404(CashMovement, pk=pk, business=request.business)
+    expense = None
+    if movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id:
+        expense = Expense.objects.filter(
+            business=request.business, id=movement.reference_id
+        ).select_related("category").first()
     return render(
         request,
         "finance/partials/cashmovement_detail_modal.html",
-        {"movement": movement},
+        {"movement": movement, "expense": expense},
     )
 
 
@@ -501,6 +532,13 @@ def expense_create(request):
             expense.business = request.business
             expense.created_by = request.user
             expense.status = Expense.STATUS_DRAFT
+            if not expense.code:
+                expense.code = generate_document_code(
+                    business=request.business,
+                    doc_type="expense",
+                    prefix="D",
+                    date=expense.expense_date,
+                )
             expense.save()
             if action == "confirm":
                 try:

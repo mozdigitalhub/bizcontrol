@@ -32,28 +32,40 @@
           {% endif %}
           <div class="mb-3">
             <label class="form-label required">{{ form.customer_type.label }}</label>
-            {{ form.customer_type }}
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-person-check"></i></span>
+              {{ form.customer_type }}
+            </div>
             {% if form.customer_type.errors %}
               <div class="invalid-feedback d-block">{{ form.customer_type.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="mb-3">
             <label class="form-label required">{{ form.name.label }}</label>
-            {{ form.name }}
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-person"></i></span>
+              {{ form.name }}
+            </div>
             {% if form.name.errors %}
               <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="mb-3">
             <label class="form-label required">{{ form.phone.label }}</label>
-            {{ form.phone }}
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-phone"></i></span>
+              {{ form.phone }}
+            </div>
             {% if form.phone.errors %}
               <div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="mb-3" data-nuit-wrapper>
             <label class="form-label required">{{ form.nuit.label }}</label>
-            {{ form.nuit }}
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-card-text"></i></span>
+              {{ form.nuit }}
+            </div>
             <div class="form-note">Obrigatorio para clientes empresa.</div>
             {% if form.nuit.errors %}
               <div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>

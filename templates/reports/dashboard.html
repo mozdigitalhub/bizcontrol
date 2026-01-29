@@ -44,7 +44,7 @@
       <div class="panel">
         <h4>Fiado em aberto</h4>
         <div class="stat-card" style="box-shadow: none; padding: 0; margin: 0;">
-          <div class="stat-icon" style="background: rgba(243, 181, 98, 0.2); color: #b06b1e;">F</div>
+          <div class="stat-icon" style="background: rgba(243, 181, 98, 0.2); color: #F59E0B;">F</div>
           <div>
             <h3>{{ receivable_open|floatformat:2 }}</h3>
             <p>Saldo em aberto</p>
@@ -91,8 +91,8 @@
     <div class="chart" style="grid-column: span 2;">
       <h4>{{ current_business.ui_labels.sales_vs_payments }}</h4>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-        <polyline fill="none" stroke="#1f6f8b" stroke-width="2.4" points="{{ sales_points }}" />
-        <polyline fill="none" stroke="#f3b562" stroke-width="2.4" points="{{ payment_points }}" />
+        <polyline fill="none" stroke="#2563EB" stroke-width="2.4" points="{{ sales_points }}" />
+        <polyline fill="none" stroke="#0F766E" stroke-width="2.4" points="{{ payment_points }}" />
       </svg>
       <div class="chart-labels">
         {% for label in month_labels %}

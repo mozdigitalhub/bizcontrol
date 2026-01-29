@@ -32,12 +32,28 @@
           </div>
           <div class="col-md-6">
             <div class="text-muted small">Referencia</div>
-            <div class="fw-semibold">{{ movement.reference_type|default:"-" }} {{ movement.reference_id|default:"" }}</div>
+            <div class="fw-semibold">
+              {% if expense %}
+                {{ expense.code|default:"-" }}
+              {% else %}
+                {{ movement.reference_type|default:"-" }} {{ movement.reference_id|default:"" }}
+              {% endif %}
+            </div>
           </div>
           <div class="col-md-6">
             <div class="text-muted small">Utilizador</div>
             <div class="fw-semibold">{{ movement.created_by.get_full_name|default:movement.created_by.username|default:"-" }}</div>
           </div>
+          {% if expense %}
+            <div class="col-md-6">
+              <div class="text-muted small">Despesa</div>
+              <div class="fw-semibold">{{ expense.title }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Categoria</div>
+              <div class="fw-semibold">{{ expense.category.name|default:"-" }}</div>
+            </div>
+          {% endif %}
           <div class="col-12">
             <div class="text-muted small">Notas</div>
             <div class="fw-semibold">{{ movement.notes|default:"-" }}</div>

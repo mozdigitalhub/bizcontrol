@@ -6,15 +6,37 @@
     gap: 16px;
   }
   .filter-card {
-    background: #fff;
+    background: var(--card);
     border-radius: 18px;
     padding: 16px;
-    box-shadow: 0 12px 30px rgba(24, 42, 56, 0.08);
+    box-shadow: var(--shadow);
+  }
+  .report-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
   .filter-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
+  }
+  .filter-actions {
+    display: flex;
+    align-items: flex-end;
+  }
+  .preset-bar {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .preset-bar .btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .preset-bar .btn {
+    border-radius: 999px;
+    padding: 6px 14px;
   }
   .summary-grid {
     display: grid;
@@ -22,10 +44,10 @@
     gap: 14px;
   }
   .summary-card {
-    background: #fff;
+    background: var(--card);
     border-radius: 16px;
     padding: 14px 16px;
-    box-shadow: 0 12px 30px rgba(24, 42, 56, 0.08);
+    box-shadow: var(--shadow);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -34,17 +56,17 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: #e7f3f7;
-    color: #1f6f8b;
+    background: var(--bg);
+    color: var(--primary-600);
     display: grid;
     place-items: center;
     font-size: 18px;
   }
   .chart-card {
-    background: #fff;
+    background: var(--card);
     border-radius: 18px;
     padding: 18px;
-    box-shadow: 0 12px 30px rgba(24, 42, 56, 0.08);
+    box-shadow: var(--shadow);
   }
   .chart-wrapper {
     position: relative;
@@ -55,35 +77,14 @@
     align-items: center;
     gap: 10px;
   }
-  .preset-group .btn {
-    border-radius: 999px;
-    padding: 6px 12px;
-  }
-  .preset-group .btn-group {
-    flex-wrap: wrap;
-    border-radius: 14px;
-    overflow: hidden;
-  }
-  .preset-group .btn-group .btn {
-    flex: 1 0 90px;
-    border-radius: 0;
-  }
-  .preset-group .btn-group .btn:first-child {
-    border-top-left-radius: 14px;
-    border-bottom-left-radius: 14px;
-  }
-  .preset-group .btn-group .btn:last-child {
-    border-top-right-radius: 14px;
-    border-bottom-right-radius: 14px;
-  }
   .empty-state {
     padding: 40px 16px;
     text-align: center;
-    color: #6d7b86;
+    color: var(--text-muted);
   }
   .table-responsive {
     border-radius: 16px;
-    box-shadow: 0 12px 30px rgba(24, 42, 56, 0.08);
+    box-shadow: var(--shadow);
   }
   .export-actions .btn {
     border-radius: 999px;
@@ -92,8 +93,14 @@
     .filter-grid {
       grid-template-columns: 1fr;
     }
-    .preset-group .btn-group .btn {
-      flex: 1 0 120px;
+    .filter-actions .btn {
+      width: 100%;
+    }
+    .preset-bar {
+      justify-content: flex-start;
+    }
+    .preset-bar .btn-group {
+      width: 100%;
     }
   }
 </style>

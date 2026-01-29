@@ -35,28 +35,40 @@
             {% endif %}
             <div class="mb-3">
               <label class="form-label required">{{ form.customer_type.label }}</label>
-              {{ form.customer_type }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-person-check"></i></span>
+                {{ form.customer_type }}
+              </div>
               {% if form.customer_type.errors %}
                 <div class="invalid-feedback d-block">{{ form.customer_type.errors|striptags }}</div>
               {% endif %}
             </div>
             <div class="mb-3">
               <label class="form-label required">{{ form.name.label }}</label>
-              {{ form.name }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-person"></i></span>
+                {{ form.name }}
+              </div>
               {% if form.name.errors %}
                 <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
               {% endif %}
             </div>
             <div class="mb-3">
               <label class="form-label required">{{ form.phone.label }}</label>
-              {{ form.phone }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-phone"></i></span>
+                {{ form.phone }}
+              </div>
               {% if form.phone.errors %}
                 <div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>
               {% endif %}
             </div>
             <div class="mb-3">
               <label class="form-label">{{ form.credit_limit.label }}</label>
-              {{ form.credit_limit }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-wallet2"></i></span>
+                {{ form.credit_limit }}
+              </div>
               <div class="form-note">Opcional. Use 0 para sem limite.</div>
               {% if form.credit_limit.errors %}
                 <div class="invalid-feedback d-block">{{ form.credit_limit.errors|striptags }}</div>
@@ -64,7 +76,10 @@
             </div>
             <div class="mb-3" data-nuit-wrapper>
               <label class="form-label required">{{ form.nuit.label }}</label>
-              {{ form.nuit }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-card-text"></i></span>
+                {{ form.nuit }}
+              </div>
               <div class="form-note">Obrigatorio para clientes empresa.</div>
               {% if form.nuit.errors %}
                 <div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>
@@ -72,7 +87,10 @@
             </div>
             <div class="mb-3">
               <label class="form-label">{{ form.email.label }}</label>
-              {{ form.email }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-envelope"></i></span>
+                {{ form.email }}
+              </div>
               <div class="form-note">Opcional</div>
               {% if form.email.errors %}
                 <div class="invalid-feedback d-block">{{ form.email.errors|striptags }}</div>
@@ -80,7 +98,10 @@
             </div>
             <div class="mb-3">
               <label class="form-label">{{ form.address.label }}</label>
-              {{ form.address }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-geo-alt"></i></span>
+                {{ form.address }}
+              </div>
               <div class="form-note">Opcional</div>
               {% if form.address.errors %}
                 <div class="invalid-feedback d-block">{{ form.address.errors|striptags }}</div>
@@ -88,7 +109,10 @@
             </div>
             <div class="mb-3">
               <label class="form-label">{{ form.notes.label }}</label>
-              {{ form.notes }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-journal-text"></i></span>
+                {{ form.notes }}
+              </div>
               <div class="form-note">Opcional</div>
               {% if form.notes.errors %}
                 <div class="invalid-feedback d-block">{{ form.notes.errors|striptags }}</div>

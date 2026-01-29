@@ -199,7 +199,7 @@ class GoodsReceiptItemForm(forms.ModelForm):
                 if name in self.errors:
                     field.widget.attrs["class"] += " is-invalid"
         if "product" in self.fields:
-            self.fields["product"].widget.attrs["data-dropdown-parent"] = "form"
+            self.fields["product"].widget.attrs["data-dropdown-parent"] = "table"
             self.fields["product"].widget.attrs.pop("required", None)
             self.fields["product"].widget.attrs.setdefault(
                 "data-placeholder", "Pesquisar produto..."

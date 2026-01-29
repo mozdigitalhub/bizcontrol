@@ -5,13 +5,13 @@
 {% block extra_head %}
   <style>
     .filter-card {
-      background: #f7f9fc;
-      border: 1px solid #e3e9f2;
+      background: #F8FAFC;
+      border: 1px solid #E5E7EB;
     }
 
     .summary-card {
       border-radius: 16px;
-      border: 1px solid #e3e9f2;
+      border: 1px solid #E5E7EB;
       box-shadow: 0 10px 18px rgba(31, 60, 76, 0.06);
     }
 
@@ -25,21 +25,21 @@
     }
 
     .filter-group .input-group-text {
-      background: #ffffff;
-      border-right: 0;
-      color: #60707c;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
     }
 
     .filter-group .form-control,
     .filter-group .form-select {
-      border-left: 0;
+      border-left: 1px solid var(--border);
     }
 
     .cashflow-table th {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: #6d7b86;
+      color: #475569;
     }
   </style>
 {% endblock %}
@@ -191,6 +191,16 @@
                   >
                     {{ movement.reference_label }}
                   </button>
+                {% elif movement.reference_expense_id %}
+                  <button
+                    class="btn btn-link p-0 align-baseline"
+                    type="button"
+                    hx-get="{% url 'finance:expense_detail' movement.reference_expense_id %}"
+                    hx-target="#cashflow-modal-container"
+                    hx-swap="innerHTML"
+                  >
+                    {{ movement.reference_label }}
+                  </button>
                 {% else %}
                   {{ movement.reference_label }}
                 {% endif %}
@@ -205,6 +215,14 @@
                   <div class="fw-semibold">{{ movement.reference_purchase_code }}</div>
                   {% if movement.notes and movement.notes != movement.reference_purchase_code %}
                     <div class="text-muted small">{{ movement.notes }}</div>
+                  {% endif %}
+                {% elif movement.reference_expense_code %}
+                  <div class="fw-semibold">{{ movement.reference_expense_code }}</div>
+                  {% if movement.expense_title %}
+                    <div class="text-muted small">{{ movement.expense_title }}</div>
+                  {% endif %}
+                  {% if movement.expense_category %}
+                    <div class="text-muted small">Categoria: {{ movement.expense_category }}</div>
                   {% endif %}
                 {% else %}
                   {{ movement.notes_label }}

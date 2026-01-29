@@ -241,9 +241,16 @@ def pay_expense(*, expense_id, business, user):
             raise ValidationError("Informe o valor da despesa.")
         if not expense.payment_method:
             raise ValidationError("Selecione o metodo de pagamento.")
+        if not expense.code:
+            expense.code = generate_document_code(
+                business=expense.business,
+                doc_type="expense",
+                prefix="D",
+                date=expense.expense_date,
+            )
         expense.status = Expense.STATUS_PAID
         expense.updated_by = user
-        expense.save(update_fields=["status", "updated_by"])
+        expense.save(update_fields=["status", "updated_by", "code"])
         _create_cash_out(
             business=expense.business,
             amount=expense.amount,

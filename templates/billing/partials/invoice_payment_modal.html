@@ -33,10 +33,12 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label required">{{ form.amount.label }}</label>
-            <div class="input-group money-group">
-              <span class="input-group-text"><i class="bi bi-cash-coin"></i></span>
-              {{ form.amount }}
-              <span class="input-group-text">MZN</span>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-cash-coin"></i></span>
+              <div class="input-group money-group">
+                {{ form.amount }}
+                <span class="input-group-text">MZN</span>
+              </div>
             </div>
             {% if form.amount.errors %}
               <div class="invalid-feedback d-block">{{ form.amount.errors|striptags }}</div>
@@ -44,8 +46,8 @@
           </div>
           <div class="col-md-6">
             <label class="form-label required">{{ form.method.label }}</label>
-            <div class="form-icon">
-              <i class="bi bi-credit-card"></i>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-credit-card"></i></span>
               {{ form.method }}
             </div>
             {% if form.method.errors %}
@@ -54,7 +56,10 @@
           </div>
           <div class="col-12">
             <label class="form-label">{{ form.notes.label }}</label>
-            {{ form.notes }}
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-journal-text"></i></span>
+              {{ form.notes }}
+            </div>
           </div>
         </div>
         <div class="modal-footer px-0 pb-0">

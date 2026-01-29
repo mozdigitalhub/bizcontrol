@@ -6,33 +6,33 @@
   <style>
     .required::after {
       content: " *";
-      color: #dc3545;
+      color: #DC2626;
       font-weight: 600;
     }
 
     .form-note {
       font-size: 12px;
-      color: #6d7b86;
+      color: #475569;
     }
 
     .helper-card {
-      background: #f6fafc;
-      border: 1px dashed #d7e6ee;
+      background: #F8FAFC;
+      border: 1px dashed #F8FAFC;
       border-radius: 14px;
       padding: 12px 14px;
       font-size: 13px;
-      color: #4b5b66;
+      color: #475569;
     }
 
     .money-group .input-group-text {
-      background: #f0f6f9;
-      border-color: #e2e8ee;
+      background: #F8FAFC;
+      border-color: #E5E7EB;
       border-radius: 12px;
     }
 
     .sku-preview {
       font-size: 12px;
-      color: #51606b;
+      color: #475569;
     }
   </style>
 {% endblock %}
@@ -77,14 +77,20 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label required">{{ form.name.label }}</label>
-                {{ form.name }}
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-box"></i></span>
+                  {{ form.name }}
+                </div>
                 {% if form.name.errors %}
                   <div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>
                 {% endif %}
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">{{ form.sku.label }}</label>
-                {{ form.sku }}
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-tag"></i></span>
+                  {{ form.sku }}
+                </div>
                 <div class="d-flex justify-content-between">
                   <span class="form-note">Opcional</span>
                   <span class="sku-preview" id="sku-preview">Sem SKU</span>
@@ -96,7 +102,10 @@
             </div>
             <div class="mb-3">
               <label class="form-label">{{ form.category.label }}</label>
-              {{ form.category }}
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-tags"></i></span>
+                {{ form.category }}
+              </div>
               <div class="d-flex justify-content-between">
                 <span class="form-note">Opcional</span>
                 <a
@@ -116,9 +125,12 @@
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label class="form-label">{{ form.cost_price.label }}</label>
-                <div class="input-group money-group">
-                  {{ form.cost_price }}
-                  <span class="input-group-text">MZN</span>
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-cash-coin"></i></span>
+                  <div class="input-group money-group">
+                    {{ form.cost_price }}
+                    <span class="input-group-text">MZN</span>
+                  </div>
                 </div>
                 <div class="form-note">Opcional</div>
                 {% if form.cost_price.errors %}
@@ -127,9 +139,12 @@
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">{{ form.sale_price.label }}</label>
-                <div class="input-group money-group">
-                  {{ form.sale_price }}
-                  <span class="input-group-text">MZN</span>
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-cash-stack"></i></span>
+                  <div class="input-group money-group">
+                    {{ form.sale_price }}
+                    <span class="input-group-text">MZN</span>
+                  </div>
                 </div>
                 {% if form.sale_price.errors %}
                   <div class="invalid-feedback d-block">{{ form.sale_price.errors|striptags }}</div>
@@ -137,7 +152,10 @@
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label">{{ form.reorder_level.label }}</label>
-                {{ form.reorder_level }}
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-flag"></i></span>
+                  {{ form.reorder_level }}
+                </div>
                 <div class="form-note">Opcional</div>
                 {% if form.reorder_level.errors %}
                   <div class="invalid-feedback d-block">{{ form.reorder_level.errors|striptags }}</div>
@@ -147,14 +165,20 @@
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label class="form-label required">{{ form.unit_of_measure.label }}</label>
-                {{ form.unit_of_measure }}
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-archive"></i></span>
+                  {{ form.unit_of_measure }}
+                </div>
                 {% if form.unit_of_measure.errors %}
                   <div class="invalid-feedback d-block">{{ form.unit_of_measure.errors|striptags }}</div>
                 {% endif %}
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">{{ form.stock_control_mode.label }}</label>
-                {{ form.stock_control_mode }}
+                <div class="field-with-icon">
+                  <span class="field-icon"><i class="bi bi-box-seam"></i></span>
+                  {{ form.stock_control_mode }}
+                </div>
                 {% if form.stock_control_mode.errors %}
                   <div class="invalid-feedback d-block">{{ form.stock_control_mode.errors|striptags }}</div>
                 {% endif %}

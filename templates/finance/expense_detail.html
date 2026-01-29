@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Despesa #{{ expense.id }} - BizControl{% endblock %}
+{% block title %}Despesa {{ expense.code|default:"D-" }}{% if not expense.code %}{{ expense.id }}{% endif %} - BizControl{% endblock %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-      <h1 class="h4 mb-1">Despesa #{{ expense.id }}</h1>
+      <h1 class="h4 mb-1">
+        Despesa {% if expense.code %}{{ expense.code }}{% else %}D-{{ expense.id }}{% endif %}
+      </h1>
       <div class="text-muted small">Estado: {{ expense.get_status_display }}</div>
     </div>
     <div class="d-flex gap-2">

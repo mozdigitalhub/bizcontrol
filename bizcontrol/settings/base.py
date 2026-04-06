@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "billing",
     "finance",
     "reports",
+    "food",
 ]
 
 MIDDLEWARE = [

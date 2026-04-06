@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Menu - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Menu (Pratos)</h1>
+      <div class="text-muted small">Gerir itens vendidos no balcão.</div>
+    </div>
+    {% if perms.food.add_menuitem %}
+      <a class="btn btn-primary" href="{% url 'food:menu_create' %}">
+        <i class="bi bi-plus-circle me-1"></i>
+        Novo prato
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="card p-3 mb-3 filter-card" method="get">
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-6 col-sm-12">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Pesquisar por nome" value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <label class="form-label small">Categoria</label>
+        <div class="input-group filter-group tomselect-parent">
+          <span class="input-group-text"><i class="bi bi-tags"></i></span>
+          <select class="form-select tom-select" name="category" data-placeholder="Pesquisar categoria..." data-dropdown-parent="self">
+            <option value="">Todas</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}"{% if category_id == category.id|stringformat:"s" %} selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-3 col-sm-6">
+        <label class="form-label small">Tipo</label>
+        <div class="input-group filter-group tomselect-parent">
+          <span class="input-group-text"><i class="bi bi-list"></i></span>
+          <select class="form-select tom-select" name="item_type" data-placeholder="Selecionar tipo..." data-dropdown-parent="self">
+            <option value="">Todos</option>
+            {% for value, label in type_choices %}
+              <option value="{{ value }}"{% if item_type == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-2 col-sm-12">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Prato</th>
+            <th>Categoria</th>
+            <th>Tipo</th>
+            <th>Preco</th>
+            <th>Estado</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in page.object_list %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ item.name }}</div>
+                {% if item.description %}
+                  <div class="text-muted small">{{ item.description }}</div>
+                {% endif %}
+              </td>
+              <td>{{ item.category.name|default:"-" }}</td>
+              <td>{{ item.get_item_type_display }}</td>
+              <td>{{ item.selling_price|floatformat:2 }} MZN</td>
+              <td>
+                {% if item.is_active %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if perms.food.change_menuitem %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'food:menu_edit' item.id %}">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sem pratos cadastrados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

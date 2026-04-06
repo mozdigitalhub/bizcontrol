@@ -602,6 +602,15 @@
         z-index: 1055;
       }
 
+      .tomselect-parent {
+        position: relative;
+        overflow: visible;
+      }
+
+      .tomselect-parent .ts-dropdown {
+        z-index: 1055;
+      }
+
       .input-group .form-control.input-has-leading-icon,
       .input-group .form-select.input-has-leading-icon,
       .input-group textarea.form-control.input-has-leading-icon {
@@ -833,45 +842,67 @@
               </a>
             </div>
 
-            <div class="nav-section">
-              <button
-                class="nav-item nav-toggle{% if ns in nav_groups.sales %} active{% endif %}"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#nav-sales"
-                aria-expanded="{% if ns in nav_groups.sales %}true{% else %}false{% endif %}"
-                aria-controls="nav-sales"
-              >
-                Operacoes
-                <i class="bi bi-chevron-down nav-chevron"></i>
-              </button>
-              <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
-                <div class="nav-sub">
-                  {% if perms.sales.add_sale %}
-                    <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}" data-tour="sales">
-                      {{ current_business.ui_labels.new_sale }}
-                    </a>
-                  {% endif %}
-                  <a class="nav-sub-item{% if ns in nav_groups.sales and url_name != 'new' %} active{% endif %}" href="{% url 'sales:list' %}" data-tour="sales-list">
-                    {{ current_business.ui_labels.sales }}
-                  </a>
-                  {% if current_business and current_business.module_quotations_enabled %}
-                    <a class="nav-sub-item{% if ns == 'quotations' %} active{% endif %}" href="{% url 'quotations:list' %}">
-                      Cotacoes
-                    </a>
-                  {% endif %}
-                  {% if perms.deliveries.view_deliveryguide %}
-                    <a class="nav-sub-item{% if ns == 'deliveries' %} active{% endif %}" href="{% url 'deliveries:guide_list' %}">
-                      Guias de entrega
-                    </a>
-                  {% endif %}
+              {% with business_type=current_business.business_type %}
+              {% with is_burger=business_type %}
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns in nav_groups.sales %} active{% endif %}"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#nav-sales"
+                  aria-expanded="{% if ns in nav_groups.sales %}true{% else %}false{% endif %}"
+                  aria-controls="nav-sales"
+                >
+                  Operacoes
+                  <i class="bi bi-chevron-down nav-chevron"></i>
+                </button>
+                <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
+                  <div class="nav-sub">
+                    {% if is_burger != 'burger' %}
+                      {% if perms.sales.add_sale %}
+                        <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}" data-tour="sales">
+                          {{ current_business.ui_labels.new_sale }}
+                        </a>
+                      {% endif %}
+                      <a class="nav-sub-item{% if ns in nav_groups.sales and url_name != 'new' %} active{% endif %}" href="{% url 'sales:list' %}" data-tour="sales-list">
+                        {{ current_business.ui_labels.sales }}
+                      </a>
+                    {% endif %}
+                    {% if is_burger == 'burger' %}
+                      {% if perms.food.add_order %}
+                        <a class="nav-sub-item{% if ns == 'food' and url_name == 'order_create' %} active{% endif %}" href="{% url 'food:order_create' %}">
+                          Novo pedido
+                        </a>
+                      {% endif %}
+                      {% if perms.food.view_order %}
+                        <a class="nav-sub-item{% if ns == 'food' and url_name == 'order_list' %} active{% endif %}" href="{% url 'food:order_list' %}">
+                          Pedidos
+                        </a>
+                        <a class="nav-sub-item{% if ns == 'food' and url_name == 'kds' %} active{% endif %}" href="{% url 'food:kds' %}">
+                          Cozinha (KDS)
+                        </a>
+                      {% endif %}
+                    {% endif %}
+                    {% if is_burger != 'burger' %}
+                      {% if current_business and current_business.module_quotations_enabled %}
+                        <a class="nav-sub-item{% if ns == 'quotations' %} active{% endif %}" href="{% url 'quotations:list' %}">
+                          Cotacoes
+                        </a>
+                      {% endif %}
+                      {% if perms.deliveries.view_deliveryguide %}
+                        <a class="nav-sub-item{% if ns == 'deliveries' %} active{% endif %}" href="{% url 'deliveries:guide_list' %}">
+                          Guias de entrega
+                        </a>
+                      {% endif %}
+                    {% endif %}
                 </div>
               </div>
             </div>
 
-            <div class="nav-section">
-              <button
-                class="nav-item nav-toggle{% if ns in nav_groups.customers %} active{% endif %}"
+              {% if is_burger != 'burger' %}
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns in nav_groups.customers %} active{% endif %}"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#nav-customers"
@@ -892,43 +923,62 @@
                     </a>
                   {% endif %}
                 </div>
+                </div>
               </div>
-            </div>
+              {% endif %}
 
-            <div class="nav-section">
-              <button
-                class="nav-item nav-toggle{% if ns in nav_groups.products %} active{% endif %}"
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns in nav_groups.products %} active{% endif %}"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#nav-products"
                 aria-expanded="{% if ns in nav_groups.products %}true{% else %}false{% endif %}"
                 aria-controls="nav-products"
               >
-                Produtos & Stock
+                {% if is_burger == 'burger' %}Menu & Ingredientes{% else %}Produtos & Stock{% endif %}
                 <i class="bi bi-chevron-down nav-chevron"></i>
               </button>
               <div class="collapse{% if ns in nav_groups.products %} show{% endif %}" id="nav-products">
                 <div class="nav-sub">
-                  {% if current_business and current_business.module_catalog_enabled %}
-                    <a class="nav-sub-item{% if ns == 'catalog' %} active{% endif %}" href="{% url 'catalog:product_list' %}">
-                      {{ current_business.ui_labels.products }}
+                  {% if is_burger == 'burger' %}
+                    <a class="nav-sub-item{% if ns == 'food' and '/menu/' in current_path %} active{% endif %}" href="{% url 'food:menu_list' %}">
+                      Menu (Pratos)
                     </a>
-                  {% endif %}
-                  <a class="nav-sub-item{% if ns == 'inventory' %} active{% endif %}" href="{% url 'inventory:stock_list' %}" data-tour="stock">
-                    Stock
-                  </a>
-                  {% if perms.inventory.view_goodsreceipt %}
-                    <a class="nav-sub-item{% if ns == 'inventory' and '/receipts/' in current_path %} active{% endif %}" href="{% url 'inventory:receipt_list' %}">
-                      Rececao de mercadoria
+                    <a class="nav-sub-item{% if ns == 'food' and '/ingredients/' in current_path and '/entries/' not in current_path %} active{% endif %}" href="{% url 'food:ingredient_list' %}">
+                      Ingredientes (Stock)
                     </a>
+                    <a class="nav-sub-item{% if ns == 'food' and '/ingredients/entries/' in current_path %} active{% endif %}" href="{% url 'food:ingredient_entry_list' %}">
+                      Entradas de stock
+                    </a>
+                  {% else %}
+                    {% if current_business and current_business.module_catalog_enabled %}
+                      <a class="nav-sub-item{% if ns == 'catalog' %} active{% endif %}" href="{% url 'catalog:product_list' %}">
+                        {{ current_business.ui_labels.products }}
+                      </a>
+                    {% endif %}
+                    <a class="nav-sub-item{% if ns == 'inventory' %} active{% endif %}" href="{% url 'inventory:stock_list' %}" data-tour="stock">
+                      Stock
+                    </a>
+                    {% if perms.inventory.view_goodsreceipt %}
+                      <a class="nav-sub-item{% if ns == 'inventory' and '/receipts/' in current_path %} active{% endif %}" href="{% url 'inventory:receipt_list' %}">
+                        Rececao de mercadoria
+                      </a>
+                    {% endif %}
+                    {% if perms.catalog.add_product %}
+                      <a class="nav-sub-item{% if ns == 'inventory' and '/import/' in current_path %} active{% endif %}" href="{% url 'inventory:stock_import' %}">
+                        Importar Stock (Excel)
+                      </a>
+                    {% endif %}
                   {% endif %}
                 </div>
               </div>
             </div>
 
-            <div class="nav-section">
-              <button
-                class="nav-item nav-toggle{% if ns in nav_groups.billing %} active{% endif %}"
+              {% if is_burger != 'burger' %}
+              <div class="nav-section">
+                <button
+                  class="nav-item nav-toggle{% if ns in nav_groups.billing %} active{% endif %}"
                 type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#nav-billing"
@@ -947,13 +997,13 @@
                     Recibos
                   </a>
                 </div>
+                </div>
               </div>
-            </div>
 
-            {% if current_business and current_business.module_cashflow_enabled %}
-              <div class="nav-section">
-                <button
-                  class="nav-item nav-toggle{% if ns in nav_groups.finance %} active{% endif %}"
+              {% if current_business and current_business.module_cashflow_enabled %}
+                <div class="nav-section">
+                  <button
+                    class="nav-item nav-toggle{% if ns in nav_groups.finance %} active{% endif %}"
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#nav-finance"
@@ -974,10 +1024,11 @@
                     <a class="nav-sub-item{% if ns == 'finance' and '/expenses/' in current_path %} active{% endif %}" href="{% url 'finance:expense_list' %}">
                       Despesas
                     </a>
+                    </div>
                   </div>
                 </div>
-              </div>
-            {% endif %}
+              {% endif %}
+              {% endif %}
 
             {% if request.user.is_superuser or 'reports.view_basic' in tenant_permissions or 'reports.view_finance' in tenant_permissions or 'reports.view_stock' in tenant_permissions %}
               <div class="nav-section">
@@ -1095,8 +1146,10 @@
                   </div>
                 </div>
               </div>
-          </nav>
-        {% endwith %}
+            </nav>
+              {% endwith %}
+              {% endwith %}
+          {% endwith %}
         <form class="logout" method="post" action="{% url 'logout' %}">
           {% csrf_token %}
           <button class="btn btn-light btn-sm w-100" type="submit">Sair</button>
@@ -1177,38 +1230,17 @@
               } else if (modalBody || modalContent || modalRoot) {
                 dropdownParent = modalBody || modalContent || modalRoot;
               } else if (dropdownParentMode === "form") {
-                dropdownParent = document.body;
+                dropdownParent = select.closest("form") || document.body;
               } else if (dropdownParentMode === "table") {
-                dropdownParent = inTable || document.body;
+                dropdownParent = select.closest(".table-responsive") || select.closest("table") || document.body;
               } else if (inTable) {
-                dropdownParent = inTable;
+                dropdownParent = select.closest(".table-responsive") || select.closest("table") || document.body;
               } else {
                 dropdownParent = document.body;
               }
-              if (dropdownParent === inTable && inTable) {
-                inTable.classList.add("tomselect-parent");
+              if ((dropdownParentMode === "self" || dropdownParentMode === "form" || dropdownParentMode === "table") && dropdownParent) {
+                dropdownParent.classList.add("tomselect-parent");
               }
-              var onDropdownOpen = null;
-              if (dropdownParent && dropdownParent !== document.body) {
-                var parentStyle = window.getComputedStyle(dropdownParent);
-                if (parentStyle.position === "static") {
-                  dropdownParent.style.position = "relative";
-              }
-              onDropdownOpen = function () {
-                var control = this.control;
-                if (!control || !this.dropdown) {
-                  return;
-                }
-                var rect = control.getBoundingClientRect();
-                var parentRect = dropdownParent.getBoundingClientRect();
-                var top = rect.bottom - parentRect.top + dropdownParent.scrollTop;
-                var left = rect.left - parentRect.left + dropdownParent.scrollLeft;
-                this.dropdown.style.position = "absolute";
-                this.dropdown.style.top = top + "px";
-                this.dropdown.style.left = left + "px";
-                this.dropdown.style.width = rect.width + "px";
-              };
-            }
             new TomSelect(select, {
               create: false,
               allowEmptyOption: true,
@@ -1217,7 +1249,6 @@
               sortField: { field: "text", direction: "asc" },
               maxOptions: maxOptions,
               dropdownParent: dropdownParent,
-              onDropdownOpen: onDropdownOpen,
               score: function (search) {
                 if (!cacheEnabled) {
                   return this.getScoreFunction(search);

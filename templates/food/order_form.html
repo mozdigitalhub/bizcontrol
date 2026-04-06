@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Novo pedido - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Novo pedido</h1>
+      <div class="text-muted small">Registe pedidos rapidamente e envie para a cozinha.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'food:order_list' %}">
+      <i class="bi bi-arrow-left me-1"></i>
+      Voltar
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post" data-swal-confirm="true" data-swal-title="Submeter pedido?" data-swal-text="Confirmar e enviar para cozinha." data-swal-confirm-text="Confirmar" data-swal-cancel-text="Cancelar" data-products='{{ product_prices|default:"{}"|safe }}' data-pay-before="{{ pay_before_service|yesno:'true,false' }}">
+        {% csrf_token %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <label class="form-label required">Cliente</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-person"></i></span>
+              {{ form.customer }}
+            </div>
+            <div class="mt-1">
+              <button
+                class="btn btn-link p-0 small text-decoration-none"
+                type="button"
+                hx-get="{% url 'customers:quick_create' %}?compact=1"
+                hx-target="#customer-modal-container"
+                hx-swap="innerHTML"
+                onclick="event.preventDefault(); event.stopPropagation();"
+                data-swal-skip="true"
+              >
+                <i class="bi bi-plus-circle me-1"></i>
+                Adicionar cliente
+              </button>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <label class="form-label">Canal</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-bag"></i></span>
+              {{ form.channel }}
+            </div>
+          </div>
+          <div class="col-lg-12">
+            <label class="form-label">Observacoes</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-journal-text"></i></span>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-none">
+          {{ form.payment_method }}
+        </div>
+
+        <div class="row g-3 mt-2" data-delivery-section style="display: none;">
+          <div class="col-md-6">
+            <label class="form-label required">Endereco de entrega</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-geo-alt"></i></span>
+              {{ delivery_form.address }}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label required">Contacto</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-telephone"></i></span>
+              {{ delivery_form.phone }}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Taxa de entrega</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-cash-coin"></i></span>
+              {{ delivery_form.delivery_fee }}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Responsavel</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-person-badge"></i></span>
+              {{ delivery_form.driver_name }}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Observacoes entrega</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-journal-text"></i></span>
+              {{ delivery_form.notes }}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="bi bi-list-check me-1"></i> Itens do pedido</h6>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-add-item>
+              <i class="bi bi-plus-circle me-1"></i>
+              Adicionar linha
+            </button>
+          </div>
+          {{ formset.management_form }}
+          {% with empty=formset.empty_form %}
+            <template data-items-template>
+              <tr class="item-row">
+                <td>{{ empty.menu_item }}</td>
+                <td>{{ empty.quantity }}</td>
+                <td>{{ empty.unit_price }}</td>
+                <td><input class="form-control bg-light" type="text" value="0,00" readonly data-line-total></td>
+                <td class="text-end">
+                  <div class="form-check">
+                    {{ empty.DELETE }}
+                    <label class="form-check-label">Remover</label>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          {% endwith %}
+          <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="min-width: 260px;">Produto</th>
+                  <th style="min-width: 120px;">Qtd</th>
+                  <th style="min-width: 140px;">Preco</th>
+                  <th style="min-width: 120px;">Total</th>
+                  <th style="min-width: 80px;"></th>
+                </tr>
+              </thead>
+              <tbody data-items-body>
+                {% for item_form in formset %}
+                  <tr class="item-row">
+                    <td>{{ item_form.menu_item }}</td>
+                    <td>{{ item_form.quantity }}</td>
+                    <td>{{ item_form.unit_price }}</td>
+                    <td><input class="form-control bg-light" type="text" value="0,00" readonly data-line-total></td>
+                    <td class="text-end">
+                      {% if item_form.DELETE %}
+                        <div class="form-check">
+                          {{ item_form.DELETE }}
+                          <label class="form-check-label">Remover</label>
+                        </div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="form-note mt-2">Adicione pelo menos um item com quantidade.</div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <div class="text-end">
+            <div class="text-muted small">Subtotal</div>
+            <div class="fs-6 fw-semibold" data-order-subtotal>0,00 MZN</div>
+            <div class="text-muted small mt-2">IVA</div>
+            <div class="fs-6 fw-semibold" data-order-tax>0,00 MZN</div>
+            <div class="text-muted small mt-2">Total</div>
+            <div class="fs-5 fw-semibold" data-order-total>0,00 MZN</div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check2-circle me-1"></i>
+            Confirmar pedido
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var form = document.querySelector("form[data-products]");
+      if (!form) {
+        return;
+      }
+      var productPrices = {};
+      try {
+        productPrices = JSON.parse(form.dataset.products || "{}");
+      } catch (err) {
+        productPrices = {};
+      }
+
+      var formatMoney = function (value) {
+        var safe = Number.isFinite(value) ? value : 0;
+        return safe.toFixed(2).replace(".", ",") + " MZN";
+      };
+
+      var channelField = form.querySelector("[name='channel']");
+      var deliverySection = document.querySelector("[data-delivery-section]");
+      var toggleDelivery = function () {
+        if (!deliverySection || !channelField) {
+          return;
+        }
+        deliverySection.style.display = channelField.value === "delivery" ? "" : "none";
+      };
+
+      var recalcTotals = function () {
+        var subtotal = 0;
+        var tax = 0;
+        var total = 0;
+        form.querySelectorAll("tr.item-row").forEach(function (row) {
+          var qtyInput = row.querySelector("[data-order-qty]");
+          var priceInput = row.querySelector("[data-order-price]");
+          var lineOutput = row.querySelector("[data-line-total]");
+          var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+          var qty = parseInt((qtyInput && qtyInput.value || "0").replace(",", "."), 10);
+          var price = parseFloat((priceInput && priceInput.value || "0").replace(",", "."));
+          var base = Number.isFinite(price) ? price : 0;
+          var lineTotal = (Number.isFinite(qty) ? qty : 0) * base;
+          if (lineOutput) {
+            lineOutput.value = lineTotal ? lineTotal.toFixed(2).replace(".", ",") : "0,00";
+          }
+          if (!deleteInput || !deleteInput.checked) {
+            subtotal += lineTotal;
+          }
+        });
+        if (document.querySelector("[data-order-subtotal]")) {
+          document.querySelector("[data-order-subtotal]").textContent = formatMoney(subtotal);
+        }
+        if (document.querySelector("[data-order-tax]")) {
+          document.querySelector("[data-order-tax]").textContent = formatMoney(tax);
+        }
+        if (document.querySelector("[data-order-total]")) {
+          document.querySelector("[data-order-total]").textContent = formatMoney(subtotal + tax);
+        }
+      };
+
+      var bindRow = function (row) {
+        if (!row) {
+          return;
+        }
+        var productSelect = row.querySelector("select");
+        var priceInput = row.querySelector("[data-order-price]");
+        var handleProductChange = function () {
+          if (!productSelect || !priceInput) {
+            return;
+          }
+          var data = productPrices[productSelect.value] || {};
+          if (data.sale !== undefined && data.sale !== null && priceInput.value === "") {
+            priceInput.value = String(data.sale).replace(".", ",");
+          }
+          recalcTotals();
+        };
+        if (productSelect) {
+          productSelect.addEventListener("change", handleProductChange);
+        }
+        row.querySelectorAll("[data-order-qty], [data-order-price]").forEach(function (input) {
+          input.addEventListener("input", recalcTotals);
+        });
+      };
+
+      form.querySelectorAll("tr.item-row").forEach(function (row) {
+        bindRow(row);
+      });
+
+      var addButton = form.querySelector("[data-add-item]");
+      if (addButton) {
+        addButton.addEventListener("click", function () {
+          var totalForms = form.querySelector("input[name='items-TOTAL_FORMS']");
+          var template = form.querySelector("template[data-items-template]");
+          var itemsBody = form.querySelector("[data-items-body]");
+          if (!totalForms || !template || !itemsBody) {
+            return;
+          }
+          var count = parseInt(totalForms.value || "0", 10);
+          var row = document.createElement("tr");
+          row.className = "item-row";
+          row.innerHTML = template.innerHTML.replace(/__prefix__/g, count);
+          itemsBody.appendChild(row);
+          totalForms.value = count + 1;
+          if (window.initTomSelect) {
+            window.initTomSelect(row);
+          }
+          bindRow(row);
+          recalcTotals();
+          var newProductSelect = row.querySelector("select");
+          if (newProductSelect && newProductSelect.tomselect) {
+            newProductSelect.tomselect.focus();
+          } else if (newProductSelect) {
+            newProductSelect.focus();
+          }
+        });
+      }
+
+      if (channelField) {
+        channelField.addEventListener("change", toggleDelivery);
+        toggleDelivery();
+      }
+      var customerSelect = form.querySelector("select[name='customer']");
+      if (customerSelect && customerSelect.tomselect) {
+        customerSelect.tomselect.focus();
+      } else if (customerSelect) {
+        customerSelect.focus();
+      }
+
+      var payBefore = form.dataset.payBefore === "true";
+      var paymentField = form.querySelector("select[name='payment_method']");
+      if (payBefore && paymentField && !paymentField.value) {
+        var firstOption = paymentField.querySelector("option[value]:not([value=''])");
+        if (firstOption) {
+          paymentField.value = firstOption.value;
+        }
+      }
+
+      recalcTotals();
+    })();
+  </script>
+  <div id="customer-modal-container"></div>
+{% endblock %}

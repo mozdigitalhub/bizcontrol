@@ -11,7 +11,7 @@ def current_business(request):
         "tenant_permissions": getattr(request, "tenant_permissions", set()),
         "user_profile": profile,
         "nav_groups": {
-            "sales": ["sales", "deliveries", "quotations"],
+            "sales": ["sales", "deliveries", "quotations", "food"],
             "customers": ["customers", "receivables"],
             "products": ["catalog", "inventory"],
             "billing": ["billing"],

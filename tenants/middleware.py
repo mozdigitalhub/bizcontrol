@@ -47,4 +47,21 @@ class BusinessMiddleware:
                         request.tenant_permissions = {"*"}
                 else:
                     request.session.pop("business_id", None)
+        if request.business and request.business.business_type == Business.BUSINESS_BURGER:
+            path = request.path or "/"
+            allowed_prefixes = (
+                "/",
+                "/food/",
+                "/reports/",
+                "/tenants/",
+                "/accounts/",
+                "/logout",
+                "/login",
+                "/static/",
+                "/media/",
+                "/api/",
+            )
+            if not path.startswith(allowed_prefixes):
+                from django.shortcuts import redirect
+                return redirect("food:order_list")
         return self.get_response(request)

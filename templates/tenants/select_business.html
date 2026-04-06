@@ -27,14 +27,14 @@
                 Nao existe nenhum negocio registado.
               </div>
             {% endif %}
-          {% elif memberships %}
+          {% elif businesses %}
             <form method="post">
               {% csrf_token %}
               <div class="mb-3">
                 <label class="form-label" for="business_id">Negocio</label>
                 <select class="form-select tom-select" id="business_id" name="business_id" required data-placeholder="Pesquisar negocio...">
-                  {% for membership in memberships %}
-                    <option value="{{ membership.business.id }}">{{ membership.business.name }}</option>
+                  {% for business in businesses %}
+                    <option value="{{ business.id }}">{{ business.name }}</option>
                   {% endfor %}
                 </select>
               </div>

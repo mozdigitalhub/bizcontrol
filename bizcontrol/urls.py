@@ -46,6 +46,7 @@ urlpatterns = [
     path("receivables/", include(("receivables.urls", "receivables"), namespace="receivables")),
     path("billing/", include(("billing.urls", "billing"), namespace="billing")),
     path("finance/", include(("finance.urls", "finance"), namespace="finance")),
+    path("food/", include(("food.urls", "food"), namespace="food")),
 ]
 
 if settings.DEBUG:

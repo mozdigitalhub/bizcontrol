@@ -30,16 +30,21 @@
           {% if form.non_field_errors %}
             <div class="alert alert-danger" data-auto-dismiss="4000">{{ form.non_field_errors|striptags }}</div>
           {% endif %}
-          <div class="mb-3">
-            <label class="form-label required">{{ form.customer_type.label }}</label>
-            <div class="field-with-icon">
-              <span class="field-icon"><i class="bi bi-person-check"></i></span>
-              {{ form.customer_type }}
+          {% if request.GET.compact %}
+            <input type="hidden" name="customer_type" value="individual">
+            <input type="hidden" name="nuit" value="">
+          {% else %}
+            <div class="mb-3">
+              <label class="form-label required">{{ form.customer_type.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-person-check"></i></span>
+                {{ form.customer_type }}
+              </div>
+              {% if form.customer_type.errors %}
+                <div class="invalid-feedback d-block">{{ form.customer_type.errors|striptags }}</div>
+              {% endif %}
             </div>
-            {% if form.customer_type.errors %}
-              <div class="invalid-feedback d-block">{{ form.customer_type.errors|striptags }}</div>
-            {% endif %}
-          </div>
+          {% endif %}
           <div class="mb-3">
             <label class="form-label required">{{ form.name.label }}</label>
             <div class="field-with-icon">
@@ -60,17 +65,19 @@
               <div class="invalid-feedback d-block">{{ form.phone.errors|striptags }}</div>
             {% endif %}
           </div>
-          <div class="mb-3" data-nuit-wrapper>
-            <label class="form-label required">{{ form.nuit.label }}</label>
-            <div class="field-with-icon">
-              <span class="field-icon"><i class="bi bi-card-text"></i></span>
-              {{ form.nuit }}
+          {% if not request.GET.compact %}
+            <div class="mb-3" data-nuit-wrapper>
+              <label class="form-label required">{{ form.nuit.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-card-text"></i></span>
+                {{ form.nuit }}
+              </div>
+              <div class="form-note">Obrigatorio para clientes empresa.</div>
+              {% if form.nuit.errors %}
+                <div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>
+              {% endif %}
             </div>
-            <div class="form-note">Obrigatorio para clientes empresa.</div>
-            {% if form.nuit.errors %}
-              <div class="invalid-feedback d-block">{{ form.nuit.errors|striptags }}</div>
-            {% endif %}
-          </div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

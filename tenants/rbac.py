@@ -12,6 +12,7 @@ CUSTOM_PERMISSION_DEFS = [
 
 PERMISSION_CATEGORIES = [
     {"key": "sales", "label": "Vendas", "app_label": "sales"},
+    {"key": "food", "label": "Pedidos/Cozinha", "app_label": "food"},
     {"key": "quotations", "label": "Cotacoes", "app_label": "quotations"},
     {"key": "customers", "label": "Clientes", "app_label": "customers"},
     {"key": "receivables", "label": "Fiado/Recebiveis", "app_label": "receivables"},
@@ -46,6 +47,7 @@ ROLE_BASE_PRESETS = {
         "description": "Gestao operacional e relatatorios.",
         "apps": {
             "sales": "full",
+            "food": "full",
             "quotations": "full",
             "customers": "full",
             "receivables": "full",
@@ -67,6 +69,7 @@ ROLE_BASE_PRESETS = {
         "description": "Registo de vendas e atendimento ao cliente.",
         "apps": {
             "sales": "edit",
+            "food": "edit",
             "customers": "edit",
             "receivables": "edit",
             "billing": "view",
@@ -114,6 +117,7 @@ ROLE_BASE_PRESETS = {
         "description": "Acesso apenas para consulta.",
         "apps": {
             "sales": "view",
+            "food": "view",
             "quotations": "view",
             "customers": "view",
             "receivables": "view",

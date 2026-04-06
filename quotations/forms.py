@@ -28,8 +28,21 @@ class QuotationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["customer"].required = True
+        self.fields["customer"].empty_label = "Selecione um cliente"
+        self.fields["customer"].widget.attrs.update(
+            {
+                "data-placeholder": "Pesquisar cliente...",
+                "data-dropdown-parent": "self",
+            }
+        )
         self.fields["discount_value"].widget.attrs.update(
             {"inputmode": "decimal", "step": "0.01", "min": "0"}
+        )
+        self.fields["discount_type"].widget.attrs.update(
+            {
+                "data-placeholder": "Tipo de desconto...",
+                "data-dropdown-parent": "self",
+            }
         )
         if self.is_bound:
             _ = self.errors
@@ -38,15 +51,13 @@ class QuotationForm(forms.ModelForm):
                 field.widget.attrs["class"] = "form-check-input"
             elif isinstance(field.widget, forms.Select):
                 field.widget.attrs["class"] = "form-select tom-select"
+                field.widget.attrs.setdefault("data-dropdown-parent", "self")
             else:
                 field.widget.attrs["class"] = "form-control"
                 if field.required:
                     field.widget.attrs["required"] = "required"
                 if name in self.errors:
                     field.widget.attrs["class"] += " is-invalid"
-        for select_name in ["customer", "discount_type"]:
-            if select_name in self.fields:
-                self.fields[select_name].widget.attrs["data-dropdown-parent"] = "form"
 
 
 class QuotationItemForm(forms.ModelForm):
@@ -84,7 +95,10 @@ class QuotationItemForm(forms.ModelForm):
                 if name in self.errors:
                     field.widget.attrs["class"] += " is-invalid"
         if "product" in self.fields:
-            self.fields["product"].widget.attrs["data-dropdown-parent"] = "form"
+            self.fields["product"].widget.attrs["data-dropdown-parent"] = "table"
+            self.fields["product"].widget.attrs.setdefault(
+                "data-placeholder", "Pesquisar produto..."
+            )
             self.fields["product"].widget.attrs.pop("required", None)
         if "quantity" in self.fields:
             self.fields["quantity"].widget.attrs.pop("required", None)

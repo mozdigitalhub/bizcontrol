@@ -157,3 +157,16 @@ class QuotationFlowTests(TestCase):
             )
         quotation.refresh_from_db()
         self.assertEqual(quotation.status, Quotation.STATUS_EXPIRED)
+
+    def test_create_form_lists_business_customers_and_quick_create_link(self):
+        other_business = Business.objects.create(name="Loja B", slug="loja-b")
+        Customer.objects.create(business=other_business, name="Cliente Externo")
+        self._login_with_business(self.business)
+
+        response = self.client.get(reverse("quotations:create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cliente A")
+        self.assertNotContains(response, "Cliente Externo")
+        self.assertContains(response, reverse("customers:quick_create"))
+        self.assertContains(response, "Criar cliente rapido")

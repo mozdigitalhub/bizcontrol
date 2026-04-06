@@ -161,17 +161,19 @@ def cashflow_list(request):
     invoice_payment_ids = {
         movement.reference_id
         for movement in page.object_list
-        if movement.reference_type == "invoice_payment" and movement.reference_id
+        if (movement.reference_type or "").lower() == "invoice_payment" and movement.reference_id
     }
     purchase_ids = {
         movement.reference_id
         for movement in page.object_list
-        if movement.reference_type in {"purchase", "purchase_cancel"} and movement.reference_id
+        if (movement.reference_type or "").lower() in {"purchase", "purchase_cancel"}
+        and movement.reference_id
     }
     expense_ids = {
         movement.reference_id
         for movement in page.object_list
-        if movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id
+        if (movement.reference_type or "").lower() in {"expense", "expense_cancel"}
+        and movement.reference_id
     }
     invoice_payment_map = {
         payment.id: payment
@@ -192,6 +194,7 @@ def cashflow_list(request):
         ).select_related("category").only("id", "code", "title", "category__name")
     }
     for movement in page.object_list:
+        ref_type = (movement.reference_type or "").lower()
         movement.reference_label = "-"
         movement.reference_invoice_id = None
         movement.reference_invoice_code = ""
@@ -202,7 +205,7 @@ def cashflow_list(request):
         movement.expense_title = ""
         movement.expense_category = ""
         movement.notes_label = movement.notes or "-"
-        if movement.reference_type == "invoice_payment" and movement.reference_id:
+        if ref_type == "invoice_payment" and movement.reference_id:
             payment = invoice_payment_map.get(movement.reference_id)
             if payment and payment.invoice:
                 invoice_code = payment.invoice.code or str(payment.invoice.invoice_number)
@@ -212,7 +215,7 @@ def cashflow_list(request):
                 movement.notes_label = invoice_code
             else:
                 movement.reference_label = f"Pagamento #{movement.reference_id}"
-        elif movement.reference_type in {"purchase", "purchase_cancel"} and movement.reference_id:
+        elif ref_type in {"purchase", "purchase_cancel"} and movement.reference_id:
             purchase = purchase_map.get(movement.reference_id)
             if purchase:
                 purchase_code = purchase.code or f"C-{purchase.id}"
@@ -220,16 +223,20 @@ def cashflow_list(request):
                 movement.reference_purchase_id = purchase.id
                 movement.reference_purchase_code = purchase_code
                 movement.notes_label = purchase_code
-        elif movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id:
+        elif ref_type in {"expense", "expense_cancel"} and movement.reference_id:
             expense = expense_map.get(movement.reference_id)
+            expense_code = None
             if expense:
                 expense_code = expense.code or f"D-{expense.id}"
-                movement.reference_label = expense_code
-                movement.reference_expense_id = expense.id
-                movement.reference_expense_code = expense_code
                 movement.expense_title = expense.title or ""
                 movement.expense_category = expense.category.name if expense.category else ""
-                movement.notes_label = expense.title or expense_code
+                movement.reference_expense_id = expense.id
+            elif movement.reference_id:
+                expense_code = f"D-{movement.reference_id}"
+            if expense_code:
+                movement.reference_label = expense_code
+                movement.reference_expense_code = expense_code
+                movement.notes_label = movement.expense_title or expense_code
         elif movement.reference_type:
             movement.reference_label = movement.reference_type.replace("_", " ").title()
     return render(
@@ -259,7 +266,7 @@ def cashflow_list(request):
 def cashflow_detail_modal(request, pk):
     movement = get_object_or_404(CashMovement, pk=pk, business=request.business)
     expense = None
-    if movement.reference_type in {"expense", "expense_cancel"} and movement.reference_id:
+    if (movement.reference_type or "").lower() in {"expense", "expense_cancel"} and movement.reference_id:
         expense = Expense.objects.filter(
             business=request.business, id=movement.reference_id
         ).select_related("category").first()

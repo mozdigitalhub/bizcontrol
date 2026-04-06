@@ -1,0 +1,100 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Importar Stock (Excel) - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Importar Stock (Excel)</h1>
+      <div class="text-muted small">Importe produtos a partir de um ficheiro .xlsx.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'inventory:stock_list' %}">
+      <i class="bi bi-arrow-left me-1"></i>
+      Voltar
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label required">Ficheiro Excel</label>
+            <div class="field-with-icon">
+              <span class="field-icon"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              {{ form.file }}
+            </div>
+            {% if form.file.errors %}
+              <div class="invalid-feedback d-block">{{ form.file.errors|striptags }}</div>
+            {% endif %}
+            <div class="form-text">Cada folha representa uma categoria. Cabeçalho obrigatório conforme o modelo.</div>
+          </div>
+          <div class="col-md-6 d-flex align-items-end justify-content-end">
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-upload me-1"></i>
+              Importar ficheiro
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if result %}
+    <div class="row g-3 mt-3">
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="text-muted small">Categorias criadas</div>
+          <div class="fw-semibold">{{ result.categories_created }}</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="text-muted small">Produtos criados</div>
+          <div class="fw-semibold">{{ result.products_created }}</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="text-muted small">Produtos atualizados</div>
+          <div class="fw-semibold">{{ result.products_updated }}</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="text-muted small">Linhas com erro</div>
+          <div class="fw-semibold text-danger">{{ result.rows_failed }}</div>
+        </div>
+      </div>
+    </div>
+
+    {% if result.errors %}
+      <div class="card mt-3">
+        <div class="card-header bg-white">
+          <div class="fw-semibold">Erros encontrados</div>
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Folha</th>
+                <th>Linha</th>
+                <th>Erro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for err in result.errors %}
+                <tr>
+                  <td>{{ err.sheet }}</td>
+                  <td>{{ err.row }}</td>
+                  <td>{{ err.error }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">Pedidos</h1>
+      <div class="text-muted small">Gestao de pedidos da cozinha.</div>
+    </div>
+    <a class="btn btn-primary" href="{% url 'food:order_create' %}">
+      <i class="bi bi-plus-circle me-1"></i>
+      Novo pedido
+    </a>
+  </div>
+
+  <form class="card p-3 mb-3" method="get">
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-4">
+        <label class="form-label small">Pesquisar</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" value="{{ query }}" placeholder="Codigo ou cliente">
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Estado</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lightning"></i></span>
+          <select class="form-select tom-select" name="status" data-placeholder="Estado...">
+            <option value="">Todos</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Canal</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-truck"></i></span>
+          <select class="form-select tom-select" name="channel" data-placeholder="Canal...">
+            <option value="">Todos</option>
+            {% for value, label in channel_choices %}
+              <option value="{{ value }}"{% if channel == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-filter me-1"></i>
+          Filtrar
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Codigo</th>
+            <th>Cliente</th>
+            <th>Canal</th>
+            <th>Estado</th>
+            <th class="text-end">Total</th>
+            <th class="text-end">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in page.object_list %}
+            <tr>
+              <td class="fw-semibold">{{ order.code }}</td>
+              <td>{{ order.customer.name|default:"Cliente final" }}</td>
+              <td>{{ order.get_channel_display }}</td>
+              <td>
+                <span class="badge bg-primary-subtle text-primary">{{ order.get_status_display }}</span>
+              </td>
+              <td class="text-end">{{ order.total|floatformat:2 }} MZN</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'food:kds' %}">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sem pedidos.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination">
+        {% if page.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
+        {% if page.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Proximo</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock %}

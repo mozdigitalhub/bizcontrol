@@ -20,7 +20,13 @@ from django.utils import timezone
 
 from catalog.models import Category, Product
 from deliveries.models import DeliveryGuide, DeliveryGuideItem
-from inventory.forms import GoodsReceiptForm, GoodsReceiptItemFormSet, StockMovementForm
+from inventory.forms import (
+    GoodsReceiptForm,
+    GoodsReceiptItemFormSet,
+    StockMovementForm,
+    StockImportForm,
+)
+from inventory.excel_import import ExcelImportService
 from deliveries.models import DeliveryGuide
 from inventory.models import GoodsReceipt, StockMovement
 from inventory.services import get_product_stock, receive_goods
@@ -564,3 +570,22 @@ def receipt_detail(request, pk):
             "total_cost": total_cost,
         },
     )
+
+
+@login_required
+@business_required
+@permission_required("catalog.add_product", raise_exception=True)
+def stock_import(request):
+    if request.method == "POST":
+        form = StockImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            service = ExcelImportService(business=request.business, user=request.user)
+            result = service.import_workbook(form.cleaned_data["file"])
+            return render(
+                request,
+                "inventory/stock_import.html",
+                {"form": form, "result": result},
+            )
+    else:
+        form = StockImportForm()
+    return render(request, "inventory/stock_import.html", {"form": form})

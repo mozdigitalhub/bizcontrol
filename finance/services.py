@@ -251,6 +251,10 @@ def pay_expense(*, expense_id, business, user):
         expense.status = Expense.STATUS_PAID
         expense.updated_by = user
         expense.save(update_fields=["status", "updated_by", "code"])
+        label_parts = [expense.title] if expense.title else []
+        if expense.category and expense.category.name:
+            label_parts.append(f"Categoria: {expense.category.name}")
+        label = " · ".join(label_parts)
         _create_cash_out(
             business=expense.business,
             amount=expense.amount,
@@ -258,6 +262,7 @@ def pay_expense(*, expense_id, business, user):
             reference_type="expense",
             reference_id=expense.id,
             user=user,
+            notes=label,
         )
         return expense
 
@@ -271,6 +276,12 @@ def cancel_expense(*, expense_id, business, user, notes=""):
         )
         if expense.status != Expense.STATUS_PAID:
             raise ValidationError("A despesa nao esta paga.")
+        label_parts = [expense.title] if expense.title else []
+        if expense.category and expense.category.name:
+            label_parts.append(f"Categoria: {expense.category.name}")
+        label = " · ".join(label_parts)
+        if notes:
+            label = f"{notes} · {label}" if label else notes
         _create_cash_in(
             business=expense.business,
             amount=expense.amount,
@@ -278,7 +289,7 @@ def cancel_expense(*, expense_id, business, user, notes=""):
             reference_type="expense_cancel",
             reference_id=expense.id,
             user=user,
-            notes=notes,
+            notes=label,
         )
         expense.status = Expense.STATUS_CANCELED
         expense.updated_by = user

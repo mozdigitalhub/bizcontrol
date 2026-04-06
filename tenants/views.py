@@ -69,6 +69,15 @@ def select_business(request):
             .select_related("business")
             .order_by("business__name")
         )
+        businesses = (
+            Business.objects.filter(
+                memberships__user=request.user,
+                memberships__is_active=True,
+                status=Business.STATUS_ACTIVE,
+            )
+            .distinct()
+            .order_by("name")
+        )
     if request.method == "POST":
         business_id = request.POST.get("business_id")
         business = None

@@ -13,7 +13,6 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from catalog.models import Product
-from customers.models import Customer
 from quotations.forms import QuotationForm, QuotationItemFormSet
 from quotations.models import Quotation
 from quotations.services import (
@@ -166,7 +165,7 @@ def _quotation_form(request, pk=None):
 
     if request.method == "POST":
         form = QuotationForm(request.POST, instance=quotation)
-        form.fields["customer"].queryset = Customer.objects.filter(business=request.business)
+        form.fields["customer"].queryset = request.business.customers.order_by("name")
         formset = QuotationItemFormSet(request.POST, prefix="items")
         for item_form in formset:
             if "product" in item_form.fields:
@@ -252,7 +251,7 @@ def _quotation_form(request, pk=None):
         return redirect("quotations:detail", pk=quotation.id)
 
     form = QuotationForm(instance=quotation)
-    form.fields["customer"].queryset = Customer.objects.filter(business=request.business)
+    form.fields["customer"].queryset = request.business.customers.order_by("name")
     formset = QuotationItemFormSet(prefix="items")
     if quotation:
         items = quotation.items.all()

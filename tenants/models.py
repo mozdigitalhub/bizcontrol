@@ -727,18 +727,22 @@ class BusinessMembership(models.Model):
 
 class DocumentSequence(models.Model):
     DOC_SALE = "sale"
+    DOC_ORDER = "order"
     DOC_INVOICE = "invoice"
     DOC_RECEIPT = "receipt"
     DOC_DELIVERY = "delivery"
     DOC_PURCHASE = "purchase"
     DOC_QUOTATION = "quotation"
+    DOC_EXPENSE = "expense"
     DOC_CHOICES = [
         (DOC_SALE, "Venda"),
+        (DOC_ORDER, "Pedido"),
         (DOC_INVOICE, "Fatura"),
         (DOC_RECEIPT, "Recibo"),
         (DOC_DELIVERY, "Guia de entrega"),
         (DOC_PURCHASE, "Compra"),
         (DOC_QUOTATION, "Cotacao"),
+        (DOC_EXPENSE, "Despesa"),
     ]
 
     business = models.ForeignKey(

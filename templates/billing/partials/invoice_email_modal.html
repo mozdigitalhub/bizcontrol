@@ -43,7 +43,7 @@
         <div class="modal-footer px-0 pb-0">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           {% if not success %}
-            <button class="btn btn-primary" type="submit">
+            <button class="btn btn-primary" type="submit" data-loading-text="Enviando...">
               <i class="bi bi-send"></i>
               Enviar
             </button>
@@ -61,6 +61,35 @@
       return;
     }
     var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    var formEl = modalEl.querySelector("form");
+    var submitButton = formEl ? formEl.querySelector("button[type='submit']") : null;
+    if (formEl && submitButton) {
+      var originalLabel = submitButton.innerHTML;
+      var loadingLabel = submitButton.getAttribute("data-loading-text") || "Enviando...";
+      var resetButton = function () {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalLabel;
+      };
+      formEl.addEventListener("htmx:beforeRequest", function (event) {
+        if (event.target !== formEl) {
+          return;
+        }
+        submitButton.disabled = true;
+        submitButton.textContent = loadingLabel;
+      });
+      formEl.addEventListener("htmx:responseError", function (event) {
+        if (event.target !== formEl) {
+          return;
+        }
+        resetButton();
+      });
+      formEl.addEventListener("htmx:sendError", function (event) {
+        if (event.target !== formEl) {
+          return;
+        }
+        resetButton();
+      });
+    }
     modal.show();
     {% if success %}
       setTimeout(function () {

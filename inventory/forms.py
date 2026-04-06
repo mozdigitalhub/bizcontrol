@@ -38,6 +38,15 @@ class StockMovementForm(forms.ModelForm):
                     field.widget.attrs["class"] += " is-invalid"
 
 
+class StockImportForm(forms.Form):
+    file = forms.FileField(label="Ficheiro Excel (.xlsx)")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["file"].widget.attrs["class"] = "form-control"
+        self.fields["file"].widget.attrs["accept"] = ".xlsx"
+
+
 class GoodsReceiptForm(forms.ModelForm):
     cash_movement = forms.BooleanField(
         required=False, label="Esta rececao gera movimento de caixa?"

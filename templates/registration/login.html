@@ -17,32 +17,38 @@
       {% endif %}
       <div class="mb-3">
         <label class="form-label" for="{{ form.username.id_for_label }}">Utilizador</label>
-        <input
-          type="text"
-          name="{{ form.username.name }}"
-          id="{{ form.username.id_for_label }}"
-          class="auth-input"
-          placeholder="Utilizador"
-          value="{{ form.username.value|default_if_none:'' }}"
-          autocomplete="username"
-          autofocus
-          required
-        >
+        <div class="auth-field-with-icon">
+          <span class="auth-field-icon" aria-hidden="true"><i data-lucide="user"></i></span>
+          <input
+            type="text"
+            name="{{ form.username.name }}"
+            id="{{ form.username.id_for_label }}"
+            class="auth-input"
+            placeholder="Utilizador"
+            value="{{ form.username.value|default_if_none:'' }}"
+            autocomplete="username"
+            autofocus
+            required
+          >
+        </div>
         {% if form.username.errors %}
           <div class="text-danger small">{{ form.username.errors }}</div>
         {% endif %}
       </div>
       <div class="mb-3">
         <label class="form-label" for="{{ form.password.id_for_label }}">Palavra-passe</label>
-        <input
-          type="password"
-          name="{{ form.password.name }}"
-          id="{{ form.password.id_for_label }}"
-          class="auth-input"
-          placeholder="Palavra-passe"
-          autocomplete="current-password"
-          required
-        >
+        <div class="auth-field-with-icon">
+          <span class="auth-field-icon" aria-hidden="true"><i data-lucide="lock"></i></span>
+          <input
+            type="password"
+            name="{{ form.password.name }}"
+            id="{{ form.password.id_for_label }}"
+            class="auth-input"
+            placeholder="Palavra-passe"
+            autocomplete="current-password"
+            required
+          >
+        </div>
         {% if form.password.errors %}
           <div class="text-danger small">{{ form.password.errors }}</div>
         {% endif %}

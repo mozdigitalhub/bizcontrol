@@ -12,79 +12,276 @@
     >
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <style>
       :root {
         --primary-600: #2563EB;
         --primary-700: #1D4ED8;
-        --secondary-600: #0F766E;
-        --secondary-500: #14B8A6;
+        --secondary-600: #0E7490;
+        --secondary-500: #06B6D4;
         --success: #16A34A;
         --warning: #F59E0B;
         --danger: #DC2626;
         --info: #0284C7;
-        --bg: #F8FAFC;
+        --bg: #F3F6FB;
         --card: #FFFFFF;
         --border: #E5E7EB;
         --text: #0F172A;
         --muted: #475569;
-        --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        --shadow: 0 18px 50px rgba(15, 23, 42, 0.14);
       }
 
       body {
-        font-family: "Inter", system-ui, sans-serif;
+        font-family: "Manrope", system-ui, sans-serif;
         background: var(--bg);
         color: var(--text);
+        min-height: 100vh;
+        margin: 0;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      .auth-page {
         min-height: 100vh;
         display: grid;
         place-items: center;
         padding: 24px;
+        position: relative;
+      }
+
+      .auth-page::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.2), transparent 45%),
+          radial-gradient(circle at 80% 10%, rgba(14, 116, 144, 0.16), transparent 40%),
+          radial-gradient(circle at 90% 90%, rgba(6, 182, 212, 0.16), transparent 40%),
+          linear-gradient(135deg, #F8FAFF 0%, #EEF4FF 45%, #ECFEFF 100%);
+        z-index: -2;
+      }
+
+      .auth-page::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 80%);
+        z-index: -1;
       }
 
       .auth-shell {
         width: 100%;
-        max-width: 980px;
+        max-width: 1140px;
         background: var(--card);
-        border-radius: 16px;
+        border-radius: 24px;
         box-shadow: var(--shadow);
-        display: grid;
-        grid-template-columns: 1.1fr 1fr;
+        display: flex;
+        border: 1px solid rgba(148, 163, 184, 0.25);
         overflow: hidden;
-        border: 1px solid var(--border);
       }
 
       .auth-hero {
-        background: var(--primary-600);
+        width: 56%;
+        background:
+          linear-gradient(155deg, #0F172A 0%, #0B2E5E 42%, #0E7490 100%);
         color: #FFFFFF;
-        padding: 40px;
+        padding: 34px 36px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        gap: 16px;
+        gap: 22px;
+        position: relative;
+      }
+
+      .auth-hero::before {
+        content: "";
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.48), transparent 70%);
+        top: -120px;
+        right: -80px;
+        pointer-events: none;
+      }
+
+      .auth-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto 24px 20px auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        transform: rotate(-8deg);
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        z-index: 1;
+      }
+
+      .hero-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .hero-brand-mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #2563EB, #22D3EE);
+        font-family: "Sora", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .hero-brand-name {
+        font-family: "Sora", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .hero-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.18);
+        border: 1px solid rgba(34, 197, 94, 0.42);
+      }
+
+      .hero-copy {
+        z-index: 1;
       }
 
       .auth-hero h1 {
-        font-size: 26px;
-        margin: 0;
+        font-family: "Sora", sans-serif;
+        font-size: 34px;
+        line-height: 1.15;
+        margin: 0 0 10px;
       }
 
       .auth-hero p {
         margin: 0;
-        opacity: 0.85;
+        color: rgba(241, 245, 249, 0.9);
+      }
+
+      .hero-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        z-index: 1;
+      }
+
+      .hero-kpi {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 10px 12px;
+        backdrop-filter: blur(2px);
+      }
+
+      .hero-kpi-label {
+        font-size: 11px;
+        color: rgba(203, 213, 225, 0.88);
+        margin-bottom: 2px;
+      }
+
+      .hero-kpi-value {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+      }
+
+      .hero-mockup {
+        z-index: 1;
+        margin-top: 4px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.42);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 14px;
+      }
+
+      .mockup-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .mockup-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.38);
+      }
+
+      .mockup-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 10px;
+      }
+
+      .mockup-panel {
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        padding: 10px;
+      }
+
+      .mockup-bars {
+        display: flex;
+        align-items: end;
+        gap: 5px;
+        height: 72px;
+      }
+
+      .mockup-bar {
+        flex: 1;
+        border-radius: 8px 8px 3px 3px;
+        background: linear-gradient(180deg, #22D3EE, #2563EB);
+      }
+
+      .mockup-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .mockup-line {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(226, 232, 240, 0.24);
       }
 
       .auth-card {
-        padding: 40px;
+        width: 44%;
+        padding: 42px 36px;
         display: flex;
         flex-direction: column;
         gap: 12px;
+        justify-content: center;
       }
 
       .auth-input {
         width: 100%;
         border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 10px 12px;
+        border-radius: 12px;
+        padding: 11px 12px;
         background: #FFFFFF;
       }
 
@@ -95,9 +292,9 @@
       }
 
       .form-control {
-        border-radius: 8px;
+        border-radius: 12px;
         border: 1px solid var(--border);
-        height: 40px;
+        height: 44px;
         padding: 10px 12px;
         background: #FFFFFF;
         font-size: 14px;
@@ -131,24 +328,26 @@
       }
 
       .auth-card label {
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 6px;
         font-size: 14px;
       }
 
       .auth-muted {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 13px;
       }
 
       .btn-primary {
-        background: var(--primary-600);
-        border: 1px solid var(--primary-600);
+        background: linear-gradient(135deg, var(--primary-600), #1E40AF);
+        border: 1px solid transparent;
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
       }
 
       .btn-primary:hover {
-        background: var(--primary-700);
-        border-color: var(--primary-700);
+        background: linear-gradient(135deg, var(--primary-700), #1E3A8A);
       }
 
       .toast-container {
@@ -179,33 +378,110 @@
       .bc-toast--warning { border-left-color: var(--warning); }
       .bc-toast--danger { border-left-color: var(--danger); }
 
+      .auth-footer {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #64748B;
+        text-align: center;
+      }
+
       @media (max-width: 900px) {
         .auth-shell {
-          grid-template-columns: 1fr;
+          display: block;
+          max-width: 520px;
         }
         .auth-hero {
+          width: 100%;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+          padding: 24px;
+          gap: 14px;
+        }
+        .auth-hero h1 {
+          font-size: 24px;
+        }
+        .hero-kpis {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .hero-mockup {
           display: none;
+        }
+        .auth-card {
+          width: 100%;
+          padding: 26px 24px 24px;
         }
       }
     </style>
     {% block extra_head %}{% endblock %}
   </head>
   <body>
-    <div class="auth-shell">
-      <section class="auth-hero">
-        <h1>BizControl</h1>
-        <p>Controlo simples do teu negócio com foco em vendas, stock e crédito.</p>
-        <div class="mt-2">
-          <span class="badge text-bg-light text-dark">MZN</span>
-          <span class="badge text-bg-light text-dark">IVA incluido</span>
-          <span class="badge text-bg-light text-dark">Multi-tenant</span>
-        </div>
-      </section>
-      <section class="auth-card">
-        {% include "partials/messages.html" %}
-        {% block content %}{% endblock %}
-      </section>
-    </div>
+    <main class="auth-page">
+      <div class="auth-shell">
+        <section class="auth-hero">
+          <div class="hero-top">
+            <div class="hero-brand">
+              <span class="hero-brand-mark">BC</span>
+              <span class="hero-brand-name">BizControl</span>
+            </div>
+            <span class="hero-status">
+              <i data-lucide="shield-check"></i>
+              SaaS Ativo
+            </span>
+          </div>
+          <div class="hero-copy">
+            <h1>Gestão moderna para negócios com ritmo real.</h1>
+            <p>Vendas, stock, faturação, crédito e operação diária num só painel de controlo.</p>
+          </div>
+          <div class="hero-kpis">
+            <div class="hero-kpi">
+              <div class="hero-kpi-label">Módulos</div>
+              <div class="hero-kpi-value">8+</div>
+            </div>
+            <div class="hero-kpi">
+              <div class="hero-kpi-label">Operações</div>
+              <div class="hero-kpi-value">24/7</div>
+            </div>
+            <div class="hero-kpi">
+              <div class="hero-kpi-label">Moeda</div>
+              <div class="hero-kpi-value">MZN</div>
+            </div>
+          </div>
+          <div class="hero-mockup" aria-hidden="true">
+            <div class="mockup-toolbar">
+              <span class="mockup-dot"></span>
+              <span class="mockup-dot"></span>
+              <span class="mockup-dot"></span>
+            </div>
+            <div class="mockup-grid">
+              <div class="mockup-panel">
+                <div class="small mb-2" style="color: #C7D2FE;">Volume semanal</div>
+                <div class="mockup-bars">
+                  <span class="mockup-bar" style="height: 28%;"></span>
+                  <span class="mockup-bar" style="height: 42%;"></span>
+                  <span class="mockup-bar" style="height: 36%;"></span>
+                  <span class="mockup-bar" style="height: 68%;"></span>
+                  <span class="mockup-bar" style="height: 74%;"></span>
+                  <span class="mockup-bar" style="height: 58%;"></span>
+                </div>
+              </div>
+              <div class="mockup-panel">
+                <div class="small mb-2" style="color: #C7D2FE;">Tarefas de operação</div>
+                <div class="mockup-list">
+                  <div class="mockup-line" style="width: 92%;"></div>
+                  <div class="mockup-line" style="width: 76%;"></div>
+                  <div class="mockup-line" style="width: 84%;"></div>
+                  <div class="mockup-line" style="width: 66%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="auth-card">
+          {% include "partials/messages.html" %}
+          {% block content %}{% endblock %}
+          <div class="auth-footer">BizControl · Plataforma de gestão empresarial</div>
+        </section>
+      </div>
+    </main>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {

@@ -2,13 +2,57 @@
 
 {% block title %}Entrar - BizControl{% endblock %}
 
+{% block extra_head %}
+  <style>
+    .login-header {
+      margin-bottom: 18px;
+    }
+
+    .login-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #EFF6FF;
+      color: #1E3A8A;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .login-title {
+      font-family: "Sora", sans-serif;
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+
+    .login-trust {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      color: #334155;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div>
-    <div class="mb-3">
-      <span class="badge text-bg-light text-dark">BizControl</span>
+    <div class="login-header">
+      <span class="login-kicker">
+        <i data-lucide="sparkles"></i>
+        Painel de Gestão
+      </span>
+      <h1 class="login-title">Entrar no BizControl</h1>
+      <p class="auth-muted mb-0">Acede ao teu negócio e acompanha vendas, stock, faturação e crédito em tempo real.</p>
     </div>
-    <h1 class="h3 mb-2">Entrar</h1>
-    <p class="auth-muted mb-4">Acede ao teu negócio e gere vendas, stock e crédito.</p>
 
     <form method="post">
       {% csrf_token %}
@@ -55,6 +99,11 @@
       </div>
       <button class="btn btn-primary w-100 py-2" type="submit">Entrar</button>
     </form>
+
+    <div class="login-trust">
+      <i data-lucide="shield-check"></i>
+      Sessão protegida com validação de acesso e controlo por permissões.
+    </div>
   </div>
 {% endblock %}
 

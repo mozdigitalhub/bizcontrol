@@ -1,4 +1,4 @@
-<div class="modal fade" id="saleCancelModal" tabindex="-1">
+﻿<div class="modal fade" id="saleCancelModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <form
@@ -9,7 +9,7 @@
         hx-swap="innerHTML"
         data-swal-confirm="true"
         data-swal-title="Cancelar venda?"
-        data-swal-text="Esta acao vai cancelar a venda."
+        data-swal-text="Esta ação vai cancelar a venda."
         data-swal-confirm-text="Cancelar venda"
         data-swal-cancel-text="Voltar"
       >
@@ -38,7 +38,7 @@
               </div>
             {% else %}
               <input type="hidden" name="return_type" value="none">
-              <div class="alert alert-info mb-3">Devolucoes desativadas para este negocio.</div>
+              <div class="alert alert-info mb-3">Devoluções desativadas para este negócio.</div>
             {% endif %}
             <div class="mb-3">
               <label class="form-label">Motivo (opcional)</label>
@@ -102,3 +102,4 @@
     {% endif %}
   })();
 </script>
+

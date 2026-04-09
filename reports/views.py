@@ -289,6 +289,13 @@ def sales_report(request):
         granularity=granularity,
     )
     table_rows = [{"label": label, "value": value} for label, value in zip(labels, values)]
+    period_blocks = _build_sales_period_blocks(
+        date_from=date_from,
+        date_to=date_to,
+        granularity=granularity,
+        labels=labels,
+        values=values,
+    )
 
     if request.GET.get("export") == "csv":
         rows = []
@@ -312,8 +319,54 @@ def sales_report(request):
         "labels": labels,
         "values": values,
         "table_rows": table_rows,
+        "period_blocks": period_blocks,
     }
     return render(request, "reports/sales.html", context)
+
+
+def _build_sales_period_blocks(*, date_from, date_to, granularity, labels, values):
+    rows = [{"label": label, "value": value} for label, value in zip(labels, values)]
+    if granularity != "daily":
+        return [{"label": "Períodos", "rows": rows}]
+
+    blocks = []
+    current_date = date_from
+    for index, value in enumerate(values):
+        if current_date > date_to:
+            break
+        iso = current_date.isocalendar()
+        iso_year = int(iso[0])
+        iso_week = int(iso[1])
+        if not blocks or blocks[-1]["key"] != (iso_year, iso_week):
+            blocks.append(
+                {
+                    "key": (iso_year, iso_week),
+                    "week": iso_week,
+                    "year": iso_year,
+                    "start": current_date,
+                    "end": current_date,
+                    "rows": [],
+                }
+            )
+        blocks[-1]["rows"].append(
+            {
+                "label": labels[index] if index < len(labels) else current_date.strftime("%d/%m"),
+                "value": value,
+            }
+        )
+        blocks[-1]["end"] = current_date
+        current_date += timedelta(days=1)
+
+    return [
+        {
+            "label": (
+                f"Semana {block['week']}/{block['year']} "
+                f"({block['start'].strftime('%d/%m')} - {block['end'].strftime('%d/%m')})"
+            ),
+            "rows": block["rows"],
+        }
+        for block in blocks
+    ]
 
 
 @login_required

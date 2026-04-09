@@ -1,4 +1,4 @@
-{% extends "auth_base.html" %}
+﻿{% extends "auth_base.html" %}
 
 {% block title %}Entrar - BizControl{% endblock %}
 
@@ -8,7 +8,7 @@
       <span class="badge text-bg-light text-dark">BizControl</span>
     </div>
     <h1 class="h3 mb-2">Entrar</h1>
-    <p class="auth-muted mb-4">Acede ao teu negocio e gere vendas, stock e fiado.</p>
+    <p class="auth-muted mb-4">Acede ao teu negócio e gere vendas, stock e crédito.</p>
 
     <form method="post">
       {% csrf_token %}
@@ -57,3 +57,4 @@
     </form>
   </div>
 {% endblock %}
+

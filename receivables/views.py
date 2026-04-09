@@ -18,7 +18,7 @@ from tenants.models import Business
 @business_required
 @feature_required(
     Business.FEATURE_ALLOW_CREDIT_SALES,
-    message="Fiado nao esta ativo para este negocio.",
+    message="Crédito não está ativo para este negócio.",
 )
 @permission_required("receivables.view_receivable", raise_exception=True)
 def receivable_list(request):
@@ -73,7 +73,7 @@ def receivable_list(request):
 @business_required
 @feature_required(
     Business.FEATURE_ALLOW_CREDIT_SALES,
-    message="Fiado nao esta ativo para este negocio.",
+    message="Crédito não está ativo para este negócio.",
 )
 @permission_required("receivables.view_receivable", raise_exception=True)
 def receivable_detail(request, pk):
@@ -90,7 +90,7 @@ def receivable_detail(request, pk):
 @business_required
 @feature_required(
     Business.FEATURE_ALLOW_CREDIT_SALES,
-    message="Fiado nao esta ativo para este negocio.",
+    message="Crédito não está ativo para este negócio.",
 )
 @permission_required("receivables.add_payment", raise_exception=True)
 def payment_modal(request, pk):
@@ -108,7 +108,7 @@ def payment_modal(request, pk):
 @business_required
 @feature_required(
     Business.FEATURE_ALLOW_CREDIT_SALES,
-    message="Fiado nao esta ativo para este negocio.",
+    message="Crédito não está ativo para este negócio.",
 )
 @permission_required("receivables.add_payment", raise_exception=True)
 def payment_create(request, pk):

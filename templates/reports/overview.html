@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Relatorios - Visao geral{% endblock %}
+{% block title %}Relatórios - Visão geral{% endblock %}
 
 {% block extra_head %}
   {% include "reports/partials/_report_styles.html" %}
@@ -9,8 +9,8 @@
 {% block content %}
   <div class="report-header">
     <div>
-      <h2 class="mb-1">Relatorios</h2>
-      <div class="text-muted">Visao geral do negocio.</div>
+      <h2 class="mb-1">Relatórios</h2>
+      <div class="text-muted">Visão geral do negócio.</div>
     </div>
   </div>
 
@@ -32,7 +32,7 @@
         </div>
       </div>
       <div class="preset-bar">
-        <div class="btn-group" role="group" aria-label="Filtros rapidos">
+        <div class="btn-group" role="group" aria-label="Filtros rápidos">
           <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
           <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
           <a class="btn btn-outline-secondary{% if preset == 'year' %} active{% endif %}" href="?preset=year">Anual</a>
@@ -52,7 +52,7 @@
     <div class="summary-card">
       <div class="summary-icon"><i class="bi bi-receipt"></i></div>
       <div>
-        <div class="text-muted small">Transacoes</div>
+        <div class="text-muted small">Transações</div>
         <div class="fw-semibold">{{ summary.count }}</div>
       </div>
     </div>
@@ -76,7 +76,7 @@
     </div>
     <div class="col-lg-4">
       <div class="chart-card h-100">
-        <h5 class="mb-3">Metodos de pagamento</h5>
+        <h5 class="mb-3">Métodos de pagamento</h5>
         <div class="chart-wrapper">
           <canvas id="paymentChart"></canvas>
         </div>
@@ -140,3 +140,4 @@
     })();
   </script>
 {% endblock %}
+

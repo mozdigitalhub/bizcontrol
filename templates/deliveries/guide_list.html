@@ -187,7 +187,7 @@
                   {% endif %}
                 </td>
                 <td>{{ guide.customer.name|default:"-" }}</td>
-                <td>{{ guide.get_origin_type_display }}</td>
+                <td>{% if guide.origin_type == "credit" %}Crédito{% else %}{{ guide.get_origin_type_display }}{% endif %}</td>
                 <td>
                   <div class="fw-semibold">{{ guide.transport_responsible|default:"-" }}</div>
                   {% if guide.transport_cost %}

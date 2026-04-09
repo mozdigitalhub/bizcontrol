@@ -182,7 +182,7 @@
           <div class="doc-meta">Vencimento: {{ invoice.due_date|date:"d/m/Y" }}</div>
         {% endif %}
         {% if invoice.sale and invoice.sale.is_credit %}
-          <div class="doc-meta">Fatura a fiado{% if invoice.due_date %} - Prevista: {{ invoice.due_date|date:"d/m/Y" }}{% endif %}</div>
+          <div class="doc-meta">Fatura a crédito{% if invoice.due_date %} - Prevista: {{ invoice.due_date|date:"d/m/Y" }}{% endif %}</div>
         {% endif %}
         {% if invoice.status == "paid" %}
           <span class="badge badge-paid">Paga</span>

@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from decimal import Decimal
 
@@ -442,7 +443,12 @@ def sale_add_item(request, pk):
         if form.is_valid():
             product = form.cleaned_data["product"]
             quantity = form.cleaned_data["quantity"]
-            if (
+            if Decimal(product.sale_price or 0) <= Decimal("0"):
+                item_error = (
+                    "O produto selecionado não tem preço de venda definido. "
+                    "Atualize o preço para continuar."
+                )
+            elif (
                 product.stock_control_mode == product.STOCK_AUTOMATIC
                 and not request.business.allow_negative_stock
             ):
@@ -563,6 +569,43 @@ def sale_product_stock(request, product_id):
             "available": int(available),
             "allow_negative": request.business.allow_negative_stock,
             "stock_control": product.stock_control_mode,
+            "sale_price": str(product.sale_price or Decimal("0")),
+            "can_update_price": request.user.has_perm("catalog.change_product"),
+        }
+    )
+
+
+@login_required
+@business_required
+@permission_required("catalog.change_product", raise_exception=True)
+def sale_product_price_update(request, product_id):
+    if request.method != "POST":
+        return JsonResponse({"detail": "Método inválido."}, status=405)
+    product = get_object_or_404(
+        Product, pk=product_id, business=request.business, is_active=True
+    )
+    raw_price = request.POST.get("sale_price", "").strip()
+    if not raw_price and request.body:
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+            raw_price = str(payload.get("sale_price", "")).strip()
+        except (ValueError, TypeError, json.JSONDecodeError):
+            raw_price = ""
+    try:
+        value = Decimal(raw_price.replace(",", "."))
+    except Exception:
+        return JsonResponse({"detail": "Preço inválido."}, status=400)
+    if value <= 0:
+        return JsonResponse(
+            {"detail": "O preço de venda deve ser maior que zero."}, status=400
+        )
+    product.sale_price = value.quantize(Decimal("0.01"))
+    product.updated_by = request.user
+    product.save(update_fields=["sale_price", "updated_by", "updated_at"])
+    return JsonResponse(
+        {
+            "detail": "Preço de venda atualizado com sucesso.",
+            "sale_price": str(product.sale_price),
         }
     )
 

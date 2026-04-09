@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Relatorios - Contas a Receber{% endblock %}
+{% block title %}Relatórios - Contas a Receber{% endblock %}
 
 {% block extra_head %}
   {% include "reports/partials/_report_styles.html" %}
@@ -10,7 +10,7 @@
   <div class="report-header">
     <div>
       <h2 class="mb-1">Contas a Receber</h2>
-      <div class="text-muted">Fiado em aberto por idade.</div>
+      <div class="text-muted">Crédito em aberto por idade.</div>
     </div>
     {% if request.user.is_superuser or 'reports.export' in tenant_permissions %}
       <div class="report-actions export-actions">
@@ -22,7 +22,7 @@
   </div>
 
   <div class="chart-card mt-3">
-    <h5 class="mb-3">Aging de fiado</h5>
+    <h5 class="mb-3">Aging de crédito</h5>
     <div class="chart-wrapper">
       <canvas id="agingChart"></canvas>
     </div>

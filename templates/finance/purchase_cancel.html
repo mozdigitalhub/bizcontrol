@@ -8,7 +8,7 @@
       <div class="card">
         <div class="card-body">
           <h1 class="h4 mb-2">Cancelar compra {{ purchase.code|default:purchase.id }}</h1>
-          <p class="text-muted small">Esta acao vai reverter stock e fluxo de caixa.</p>
+          <p class="text-muted small">Esta ação vai reverter stock e fluxo de caixa.</p>
           <form method="post" data-swal-confirm="true" data-swal-title="Cancelar compra?" data-swal-text="Deseja cancelar esta compra?" data-swal-confirm-text="Cancelar" data-swal-cancel-text="Voltar">
             {% csrf_token %}
             <div class="mb-3">

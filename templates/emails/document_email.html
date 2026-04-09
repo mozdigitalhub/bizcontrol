@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt">
   <body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;color:#0f172a;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:24px 12px;">
@@ -39,14 +39,14 @@
                   </tr>
                   <tr>
                     <td style="padding:0 16px 14px;font-size:13px;line-height:1.7;color:#334155;">
-                      {% if business.address %}<div><strong>Endereco:</strong> {{ business.address }}</div>{% endif %}
+                      {% if business.address %}<div><strong>Endereço:</strong> {{ business.address }}</div>{% endif %}
                       {% if business.city or business.country %}
-                        <div><strong>Localizacao:</strong> {{ business.city }}{% if business.city and business.country %}, {% endif %}{{ business.country }}</div>
+                        <div><strong>Localização:</strong> {{ business.city }}{% if business.city and business.country %}, {% endif %}{{ business.country }}</div>
                       {% endif %}
                       {% if business.phone %}<div><strong>Contacto:</strong> <a href="tel:{{ business.phone }}" style="color:#1d4ed8;text-decoration:none;">{{ business.phone }}</a></div>{% endif %}
                       {% if business.contact_email %}<div><strong>Email:</strong> <a href="mailto:{{ business.contact_email }}" style="color:#1d4ed8;text-decoration:none;">{{ business.contact_email }}</a></div>{% endif %}
                       {% if not business.address and not business.city and not business.country and not business.phone and not business.contact_email %}
-                        <div>Os contactos da empresa nao estao definidos no sistema.</div>
+                        <div>Os contactos da empresa não estao definidos no sistema.</div>
                       {% endif %}
                     </td>
                   </tr>
@@ -64,3 +64,4 @@
     </table>
   </body>
 </html>
+

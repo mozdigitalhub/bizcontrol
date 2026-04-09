@@ -38,7 +38,7 @@ def register_payment(*, receivable_id, business, amount, method, user, notes="")
             reference_type="receivable_payment",
             reference_id=payment.id,
             user=user,
-            notes=f"Pagamento fiado #{receivable.id}",
+            notes=f"Pagamento de crédito #{receivable.id}",
         )
 
         receivable.total_paid += amount

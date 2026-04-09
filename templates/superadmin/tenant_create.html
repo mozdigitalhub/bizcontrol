@@ -1,11 +1,11 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
 {% block title %}Criar Tenant - SuperAdmin{% endblock %}
 {% block page_title %}Criar novo tenant{% endblock %}
-{% block page_subtitle %}Registo manual de empresa com owner e entrada no fluxo de aprovacao{% endblock %}
+{% block page_subtitle %}Registo manual de empresa com owner e entrada no fluxo de aprovação{% endblock %}
 
 {% block top_actions %}
-  <a class="btn btn-outline-secondary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">Ver fila de aprovacao</a>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">Ver fila de aprovação</a>
 {% endblock %}
 
 {% block content %}
@@ -14,8 +14,8 @@
       {% csrf_token %}
       <div class="row g-3">
         <div class="col-12">
-          <h5 class="mb-0">Dados do negocio</h5>
-          <div class="small text-muted">O tenant sera criado como pendente e podera ser aprovado na fila de aprovacoes.</div>
+          <h5 class="mb-0">Dados do negócio</h5>
+          <div class="small text-muted">O tenant sera criado como pendente e podera ser aprovado na fila de aprovações.</div>
         </div>
         <div class="col-md-6">
           <label class="form-label mb-1">{{ form.name.label }}</label>
@@ -70,7 +70,7 @@
 
         <div class="col-12 mt-2">
           <h5 class="mb-0">Owner do tenant</h5>
-          <div class="small text-muted">Utilizador principal que vai receber acesso apos aprovacao.</div>
+          <div class="small text-muted">Utilizador principal que vai receber acesso após aprovação.</div>
         </div>
         <div class="col-md-4">
           <label class="form-label mb-1">{{ form.owner_full_name.label }}</label>
@@ -106,3 +106,4 @@
     </form>
   </div>
 {% endblock %}
+

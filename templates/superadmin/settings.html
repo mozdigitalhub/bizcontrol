@@ -1,8 +1,8 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
-{% block title %}Configuracoes Globais - SuperAdmin{% endblock %}
-{% block page_title %}Configuracoes da Plataforma{% endblock %}
-{% block page_subtitle %}Parametros globais, defaults de trial e base para feature flags{% endblock %}
+{% block title %}Configurações Globais - SuperAdmin{% endblock %}
+{% block page_title %}Configurações da Plataforma{% endblock %}
+{% block page_subtitle %}Parâmetros globais, defaults de trial e base para feature flags{% endblock %}
 
 {% block content %}
   <div class="row g-3 mb-3">
@@ -30,7 +30,7 @@
                     {% if item.is_public %}
                       <span class="badge text-bg-success">Sim</span>
                     {% else %}
-                      <span class="badge text-bg-secondary">Nao</span>
+                      <span class="badge text-bg-secondary">Não</span>
                     {% endif %}
                   </td>
                   <td class="small text-muted">{{ item.updated_at|date:"d/m/Y H:i" }}</td>
@@ -39,7 +39,7 @@
                   </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="text-center text-muted py-4">Sem configuracoes globais.</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-4">Sem configurações globais.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -48,7 +48,7 @@
     </div>
     <div class="col-12 col-xl-5">
       <div class="sa-card p-3">
-        <h5 class="mb-3">{% if selected %}Editar configuracao{% else %}Nova configuracao{% endif %}</h5>
+        <h5 class="mb-3">{% if selected %}Editar configuração{% else %}Nova configuração{% endif %}</h5>
         <form method="post">
           {% csrf_token %}
           {% if selected %}
@@ -72,7 +72,7 @@
   </div>
 
   <div class="sa-card p-3">
-    <h5 class="mb-3">Categorias de negocio suportadas</h5>
+    <h5 class="mb-3">Categorias de negócio suportadas</h5>
     <div class="row g-2">
       {% for value,label in business_types %}
         <div class="col-12 col-md-6 col-xl-4">
@@ -85,3 +85,4 @@
     </div>
   </div>
 {% endblock %}
+

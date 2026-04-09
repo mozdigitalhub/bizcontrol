@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Relatorios - Fluxo de Caixa{% endblock %}
+{% block title %}Relatórios - Fluxo de Caixa{% endblock %}
 
 {% block extra_head %}
   {% include "reports/partials/_report_styles.html" %}
@@ -10,7 +10,7 @@
   <div class="report-header">
     <div>
       <h2 class="mb-1">Fluxo de Caixa</h2>
-      <div class="text-muted">Entradas e saidas no periodo.</div>
+      <div class="text-muted">Entradas e saídas no periodo.</div>
     </div>
     {% if request.user.is_superuser or 'reports.export' in tenant_permissions %}
       <div class="report-actions export-actions">
@@ -47,7 +47,7 @@
         </div>
       </div>
       <div class="preset-bar">
-        <div class="btn-group" role="group" aria-label="Filtros rapidos">
+        <div class="btn-group" role="group" aria-label="Filtros rápidos">
           <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
           <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
           <a class="btn btn-outline-secondary{% if preset == 'year' %} active{% endif %}" href="?preset=year">Anual</a>

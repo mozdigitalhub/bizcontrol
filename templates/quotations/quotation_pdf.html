@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt">
   <head>
     <meta charset="utf-8">
@@ -251,7 +251,7 @@
     </table>
 
     {% if quotation.notes %}
-      <div class="section-title">Observacoes</div>
+      <div class="section-title">Observações</div>
       <div class="panel">
         {{ quotation.notes }}
       </div>
@@ -276,7 +276,8 @@
     {% endif %}
 
     <div class="footer">
-      Esta cotacao e valida ate {{ quotation.valid_until|date:"d/m/Y"|default:"-" }}. Valores sujeitos a alteracao.
+      Esta cotação e válida até {{ quotation.valid_until|date:"d/m/Y"|default:"-" }}. Valores sujeitos a alteração.
     </div>
   </body>
 </html>
+

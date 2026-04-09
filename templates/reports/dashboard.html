@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Dashboard - BizControl{% endblock %}
 
@@ -42,7 +42,7 @@
   {% if current_business.allow_credit_sales_enabled %}
     <section class="grid-3">
       <div class="panel">
-        <h4>Fiado em aberto</h4>
+        <h4>Crédito em aberto</h4>
         <div class="stat-card" style="box-shadow: none; padding: 0; margin: 0;">
           <div class="stat-icon" style="background: rgba(243, 181, 98, 0.2); color: #F59E0B;">F</div>
           <div>
@@ -57,7 +57,7 @@
         <div class="donut" style="--slice: {{ receivable_ratio_pct }};">
           <span>{{ receivable_ratio_pct }}%</span>
         </div>
-        <div class="small text-muted mt-2">Pago vs total de fiado</div>
+        <div class="small text-muted mt-2">Pago vs total de crédito</div>
       </div>
       <div class="panel">
         <h4>Top clientes por saldo</h4>
@@ -81,8 +81,8 @@
   {% else %}
     <section class="grid-3">
       <div class="panel" style="grid-column: span 3;">
-        <h4>Fiado desativado</h4>
-        <div class="text-muted small">Ative o fiado nas configuracoes para ver indicadores financeiros.</div>
+        <h4>Crédito desativado</h4>
+        <div class="text-muted small">Ative o crédito nas configurações para ver indicadores financeiros.</div>
       </div>
     </section>
   {% endif %}
@@ -120,3 +120,4 @@
     </div>
   </section>
 {% endblock %}
+

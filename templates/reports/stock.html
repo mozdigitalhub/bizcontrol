@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Relatorios - Stock{% endblock %}
+{% block title %}Relatórios - Stock{% endblock %}
 
 {% block extra_head %}
   {% include "reports/partials/_report_styles.html" %}
@@ -9,7 +9,7 @@
 {% block content %}
   <div class="report-header">
     <div>
-      <h2 class="mb-1">Saude do Stock</h2>
+      <h2 class="mb-1">Saúde do Stock</h2>
       <div class="text-muted">Produtos com stock baixo e valor estimado.</div>
     </div>
     {% if request.user.is_superuser or 'reports.export' in tenant_permissions %}
@@ -119,3 +119,4 @@
     })();
   </script>
 {% endblock %}
+

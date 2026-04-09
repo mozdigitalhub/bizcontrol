@@ -36,7 +36,7 @@ class BusinessProfileForm(forms.ModelForm):
             "commercial_registration": "Registo comercial",
             "phone": "Contacto",
             "email": "Email",
-            "address": "Endereco",
+            "address": "Endereço",
             "country": "Pais",
             "city": "Cidade",
             "logo": "Logotipo",
@@ -66,7 +66,7 @@ class BusinessProfileForm(forms.ModelForm):
         if "email" in self.fields:
             self.fields["email"].widget.attrs.update({"placeholder": "Email"})
         if "address" in self.fields:
-            self.fields["address"].widget.attrs.update({"placeholder": "Endereco"})
+            self.fields["address"].widget.attrs.update({"placeholder": "Endereço"})
         if "nuit" in self.fields:
             self.fields["nuit"].widget.attrs.update({"placeholder": "NUIT"})
         if "commercial_registration" in self.fields:

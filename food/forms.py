@@ -343,7 +343,7 @@ class DeliveryInfoForm(forms.ModelForm):
         model = DeliveryInfo
         fields = ["address", "phone", "delivery_fee", "driver_name", "notes"]
         labels = {
-            "address": "Endereco",
+            "address": "Endereço",
             "phone": "Contacto",
             "delivery_fee": "Taxa de entrega",
             "driver_name": "Responsavel",

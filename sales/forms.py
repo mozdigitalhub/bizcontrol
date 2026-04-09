@@ -22,7 +22,7 @@ class SaleUpdateForm(forms.ModelForm):
             "customer": "Cliente",
             "sale_type": "Tipo de venda",
             "delivery_mode": "Levantamento",
-            "is_credit": "Fiado",
+            "is_credit": "Crédito",
             "discount_type": "Tipo de desconto",
             "discount_value": "Desconto",
             "payment_method": "Metodo de pagamento",
@@ -121,7 +121,7 @@ class SaleUpdateForm(forms.ModelForm):
             discount_type = Sale.DISCOUNT_NONE
             discount_value = Decimal("0")
         if sale_type == Sale.SALE_TYPE_DEPOSIT and is_credit:
-            self.add_error("sale_type", "Deposito nao pode ser fiado.")
+            self.add_error("sale_type", "Depósito não pode ser a crédito.")
         if discount_value < 0:
             self.add_error("discount_value", "O desconto nao pode ser negativo.")
         if discount_type == Sale.DISCOUNT_NONE:

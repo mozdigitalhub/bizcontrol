@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Pedidos - BizControl{% endblock %}
 
@@ -6,7 +6,7 @@
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
       <h1 class="h4 mb-1">Pedidos</h1>
-      <div class="text-muted small">Gestao de pedidos da cozinha.</div>
+      <div class="text-muted small">Gestão de pedidos da cozinha.</div>
     </div>
     <a class="btn btn-primary" href="{% url 'food:order_create' %}">
       <i class="bi bi-plus-circle me-1"></i>
@@ -109,3 +109,4 @@
     </nav>
   {% endif %}
 {% endblock %}
+

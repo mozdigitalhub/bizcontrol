@@ -1,12 +1,12 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
 {% block title %}SuperAdmin Dashboard - BizControl{% endblock %}
 {% block page_title %}Dashboard da Plataforma{% endblock %}
-{% block page_subtitle %}Visao executiva de tenants, receita e operacoes{% endblock %}
+{% block page_subtitle %}Visão executiva de tenants, receita e operações{% endblock %}
 
 {% block top_actions %}
   <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">
-    Aprovacoes {% if kpis.pending_tenants %}<span class="badge text-bg-warning ms-1">{{ kpis.pending_tenants }}</span>{% endif %}
+    Aprovações {% if kpis.pending_tenants %}<span class="badge text-bg-warning ms-1">{{ kpis.pending_tenants }}</span>{% endif %}
   </a>
   <a class="btn btn-success btn-sm" href="{% url 'superadmin:tenant_create' %}">Criar tenant</a>
   <a class="btn btn-primary btn-sm" href="{% url 'superadmin:tenant_list' %}">Gerir tenants</a>
@@ -105,7 +105,7 @@
   <div class="row g-3 mb-3">
     <div class="col-12 col-xl-6">
       <div class="sa-card chart-box">
-        <h5>Tipos de negocio</h5>
+        <h5>Tipos de negócio</h5>
         <div class="sa-chart-wrap sa-chart-wrap-sm">
           <canvas id="typeChart"></canvas>
         </div>
@@ -258,3 +258,4 @@
     }
   </script>
 {% endblock %}
+

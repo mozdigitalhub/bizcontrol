@@ -191,11 +191,11 @@
               </div>
             </div>
             <div class="helper-card mb-3">
-              <strong>Dica rapida:</strong>
+              <strong>Dica rápida:</strong>
               {% if current_business.business_type == "workshop" or current_business.business_type == "restaurant" %}
                 Para servicos, use stock <strong>manual</strong>. Para produtos fisicos, use <strong>automatico</strong>.
               {% elif current_business.business_type == "hardware" or current_business.business_type == "electric" %}
-                Para itens de stock fisico, mantenha <strong>automatico</strong> para controlar entradas e saidas.
+                Para itens de stock fisico, mantenha <strong>automatico</strong> para controlar entradas e saídas.
               {% else %}
                 Escolha <strong>automatico</strong> para produtos com stock e <strong>manual</strong> para servicos.
               {% endif %}

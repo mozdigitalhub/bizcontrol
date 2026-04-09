@@ -15,7 +15,7 @@ PERMISSION_CATEGORIES = [
     {"key": "food", "label": "Pedidos/Cozinha", "app_label": "food"},
     {"key": "quotations", "label": "Cotacoes", "app_label": "quotations"},
     {"key": "customers", "label": "Clientes", "app_label": "customers"},
-    {"key": "receivables", "label": "Fiado/Recebiveis", "app_label": "receivables"},
+    {"key": "receivables", "label": "Crédito/Recebíveis", "app_label": "receivables"},
     {"key": "billing", "label": "Faturacao", "app_label": "billing"},
     {"key": "deliveries", "label": "Guias/Levantamentos", "app_label": "deliveries"},
     {"key": "inventory", "label": "Stock", "app_label": "inventory"},

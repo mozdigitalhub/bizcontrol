@@ -40,7 +40,7 @@
       <div class="row g-3">
         <div class="col-md-4">
           <div class="text-muted small">Origem</div>
-          <div class="fw-semibold">{{ guide.get_origin_type_display }}</div>
+          <div class="fw-semibold">{% if guide.origin_type == "credit" %}Crédito{% else %}{{ guide.get_origin_type_display }}{% endif %}</div>
         </div>
         <div class="col-md-4">
           <div class="text-muted small">Data</div>

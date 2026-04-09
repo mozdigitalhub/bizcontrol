@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}{{ current_business.ui_labels.sale }} {{ sale.code|default:sale.id }} - BizControl{% endblock %}
 
@@ -275,7 +275,7 @@
                     hx-target="#customer-modal-container"
                     hx-swap="innerHTML"
                   >
-                    Criar cliente rapido
+                    Criar cliente rápido
                   </a>
                 </div>
               {% endif %}
@@ -290,7 +290,7 @@
                   <label class="form-check-label">{{ header_form.is_credit.label }}</label>
                 </div>
               {% else %}
-                <div class="text-muted small">Fiado desativado para este negocio.</div>
+                <div class="text-muted small">Crédito desativado para este negócio.</div>
               {% endif %}
             </div>
           </div>
@@ -404,6 +404,7 @@
               hx-swap="innerHTML"
               hx-include="#sale-header-form"
               data-stock-url="{% url 'sales:product_stock' 0 %}"
+              data-price-url="{% url 'sales:product_price_update' 0 %}"
               novalidate
             >
             {% csrf_token %}
@@ -651,7 +652,7 @@
           }
           Swal.fire({
             title: "Confirmar venda?",
-            text: "Esta acao vai confirmar a venda.",
+            text: "Esta ação vai confirmar a venda.",
             icon: "question",
             showCancelButton: true,
             confirmButtonText: "Confirmar",
@@ -680,7 +681,7 @@
               return;
             }
             Swal.fire({
-              title: "Cliente com fiado em aberto",
+              title: "Cliente com crédito em aberto",
               text: "Valor em divida: " + formatMoney(debtAmount),
               icon: "warning",
               showCancelButton: true,
@@ -848,6 +849,19 @@
 
         var itemForm = document.getElementById("sale-item-form");
         if (itemForm && window.htmx) {
+          var getCsrfToken = function () {
+            var tokenInput =
+              itemForm.querySelector("input[name='csrfmiddlewaretoken']") ||
+              document.querySelector("input[name='csrfmiddlewaretoken']");
+            return tokenInput ? tokenInput.value : "";
+          };
+          var normalizeMoneyInput = function (value) {
+            return String(value || "").replace(",", ".").replace(/[^\d.]/g, "");
+          };
+          var parseMoney = function (value) {
+            var parsed = parseFloat(normalizeMoneyInput(value));
+            return Number.isFinite(parsed) ? parsed : 0;
+          };
           itemForm.addEventListener("submit", function (event) {
             if (itemForm.dataset.skipStockCheck === "1") {
               itemForm.dataset.skipStockCheck = "";
@@ -876,12 +890,117 @@
               window.htmx.trigger(itemForm, "manual");
               return;
             }
+            var priceUrlTemplate = itemForm.dataset.priceUrl || "";
             var stockUrl = baseUrl.replace("/0/", "/" + productSelect.value + "/");
             fetch(stockUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } })
               .then(function (response) {
                 return response.json();
               })
               .then(function (data) {
+                var salePrice = parseMoney(data ? data.sale_price : 0);
+                var canUpdatePrice = !!(data && data.can_update_price);
+                if (salePrice <= 0) {
+                  var triggerRetry = function () {
+                    window.htmx.trigger(itemForm, "submit");
+                  };
+                  if (!window.Swal) {
+                    window.alert(
+                      "O produto selecionado não tem preço de venda definido."
+                    );
+                    return;
+                  }
+                  var updateUrl = priceUrlTemplate
+                    ? priceUrlTemplate.replace("/0/", "/" + productSelect.value + "/")
+                    : "";
+                  if (!canUpdatePrice || !updateUrl) {
+                    Swal.fire({
+                      icon: "warning",
+                      title: "Produto sem preço",
+                      text:
+                        "O produto selecionado não tem preço de venda definido. " +
+                        "Peça a um utilizador com permissão para atualizar o produto.",
+                      confirmButtonText: "Entendi",
+                    });
+                    return;
+                  }
+                  Swal.fire({
+                    icon: "warning",
+                    title: "Produto sem preço",
+                    text:
+                      "O produto selecionado não tem preço de venda definido. " +
+                      "Pretende atualizar o preço agora?",
+                    showCancelButton: true,
+                    confirmButtonText: "Atualizar preço",
+                    cancelButtonText: "Cancelar",
+                  }).then(function (decision) {
+                    if (!decision.isConfirmed) {
+                      return;
+                    }
+                    Swal.fire({
+                      title: "Definir preço de venda",
+                      input: "text",
+                      inputValue: "",
+                      inputLabel: "Preço (MZN)",
+                      inputPlaceholder: "Ex.: 250.00",
+                      showCancelButton: true,
+                      confirmButtonText: "Guardar preço",
+                      cancelButtonText: "Voltar",
+                      preConfirm: function (value) {
+                        var parsed = parseMoney(value);
+                        if (!Number.isFinite(parsed) || parsed <= 0) {
+                          Swal.showValidationMessage(
+                            "Informe um preço válido maior que zero."
+                          );
+                          return false;
+                        }
+                        return normalizeMoneyInput(value);
+                      },
+                    }).then(function (result) {
+                      if (!result.isConfirmed) {
+                        return;
+                      }
+                      var csrfToken = getCsrfToken();
+                      fetch(updateUrl, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "X-Requested-With": "XMLHttpRequest",
+                          "X-CSRFToken": csrfToken,
+                        },
+                        body: JSON.stringify({ sale_price: result.value }),
+                      })
+                        .then(function (response) {
+                          return response.json().then(function (payload) {
+                            return { ok: response.ok, payload: payload || {} };
+                          });
+                        })
+                        .then(function (resp) {
+                          if (!resp.ok) {
+                            throw new Error(
+                              resp.payload.detail || "Não foi possível atualizar o preço."
+                            );
+                          }
+                          Swal.fire({
+                            icon: "success",
+                            title: "Preço atualizado",
+                            text:
+                              resp.payload.detail ||
+                              "Preço de venda atualizado com sucesso.",
+                            timer: 1400,
+                            showConfirmButton: false,
+                          }).then(triggerRetry);
+                        })
+                        .catch(function (error) {
+                          Swal.fire({
+                            icon: "error",
+                            title: "Falha ao atualizar preço",
+                            text: error && error.message ? error.message : "Tente novamente.",
+                          });
+                        });
+                    });
+                  });
+                  return;
+                }
                 if (!data || data.stock_control !== "automatic") {
                   itemForm.dataset.skipStockCheck = "1";
                   window.htmx.trigger(itemForm, "manual");
@@ -984,3 +1103,4 @@
       });
     </script>
   {% endblock %}
+

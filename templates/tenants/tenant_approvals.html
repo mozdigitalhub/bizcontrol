@@ -1,13 +1,13 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Aprovacoes de tenants - BizControl{% endblock %}
+{% block title %}Aprovações de tenants - BizControl{% endblock %}
 
 {% block content %}
 <div class="card p-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
-      <h4 class="mb-1">Aprovacoes pendentes</h4>
-      <div class="text-muted small">Tenants aguardando aprovacao do BizControl.</div>
+      <h4 class="mb-1">Aprovações pendentes</h4>
+      <div class="text-muted small">Tenants a aguardar aprovação do BizControl.</div>
     </div>
     <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">
       <i class="bi bi-arrow-left"></i> Voltar
@@ -31,7 +31,7 @@
                   {{ entry.owner.get_full_name|default:entry.owner.email }}
                   <span class="text-muted">({{ entry.owner.email }})</span>
                 {% else %}
-                  <span class="text-muted">Nao definido</span>
+                  <span class="text-muted">Não definido</span>
                 {% endif %}
               </div>
             </div>
@@ -43,7 +43,7 @@
                 id="note-{{ entry.business.id }}"
                 class="form-control form-control-sm"
                 rows="2"
-                placeholder="Observacoes para auditoria interna..."
+                placeholder="Observações para auditoria interna..."
               ></textarea>
             </div>
             <div class="col-lg-2 d-flex flex-column gap-2">
@@ -113,3 +113,4 @@
     })();
   </script>
 {% endblock %}
+

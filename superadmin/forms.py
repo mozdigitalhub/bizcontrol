@@ -177,7 +177,7 @@ class SuperAdminTenantCreateForm(forms.Form):
     city = forms.CharField(max_length=80, required=False, label="Cidade")
     address = forms.CharField(
         required=False,
-        label="Endereco",
+        label="Endereço",
         widget=forms.Textarea(attrs={"rows": 2}),
     )
     owner_full_name = forms.CharField(max_length=150, label="Nome do owner")

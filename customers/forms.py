@@ -37,7 +37,7 @@ class CustomerForm(forms.ModelForm):
             {"placeholder": "Limite de credito (opcional)", "inputmode": "decimal", "step": "0.01", "min": "0"}
         )
         self.fields["email"].widget.attrs.update({"placeholder": "Email (opcional)"})
-        self.fields["address"].widget.attrs.update({"placeholder": "Endereco (opcional)"})
+        self.fields["address"].widget.attrs.update({"placeholder": "Endereço (opcional)"})
         self.fields["notes"].widget.attrs.update({"placeholder": "Notas (opcional)"})
         for name, field in self.fields.items():
             if getattr(field.widget, "input_type", None) == "checkbox":

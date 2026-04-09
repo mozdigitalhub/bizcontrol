@@ -1,8 +1,8 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
 {% block title %}Utilizadores Globais - SuperAdmin{% endblock %}
 {% block page_title %}Utilizadores da Plataforma{% endblock %}
-{% block page_subtitle %}Visao global de acessos, roles e atividade de utilizadores{% endblock %}
+{% block page_subtitle %}Visão global de acessos, roles e atividade de utilizadores{% endblock %}
 
 {% block content %}
   <div class="row g-3 mb-3">
@@ -55,7 +55,7 @@
         <select class="form-select" name="active">
           <option value="">Todos</option>
           <option value="yes" {% if active == "yes" %}selected{% endif %}>Sim</option>
-          <option value="no" {% if active == "no" %}selected{% endif %}>Nao</option>
+          <option value="no" {% if active == "no" %}selected{% endif %}>Não</option>
         </select>
       </div>
       <div class="col-6 col-md-2">
@@ -133,3 +133,4 @@
     </div>
   </div>
 {% endblock %}
+

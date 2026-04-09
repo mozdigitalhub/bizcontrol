@@ -17,7 +17,7 @@ class SupplierForm(forms.ModelForm):
             "name": "Fornecedor",
             "phone": "Telefone",
             "email": "Email",
-            "address": "Endereco",
+            "address": "Endereço",
             "notes": "Notas",
             "is_active": "Ativo",
         }

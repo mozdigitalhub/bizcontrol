@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt">
   <head>
     <meta charset="utf-8">
@@ -875,7 +875,7 @@
                   aria-expanded="{% if ns in nav_groups.sales %}true{% else %}false{% endif %}"
                   aria-controls="nav-sales"
                 >
-                  Operacoes
+                  Operações
                   <i class="bi bi-chevron-down nav-chevron"></i>
                 </button>
                 <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
@@ -908,7 +908,7 @@
                     {% if is_burger != 'burger' %}
                       {% if current_business and current_business.module_quotations_enabled %}
                         <a class="nav-sub-item{% if ns == 'quotations' %} active{% endif %}" href="{% url 'quotations:list' %}">
-                          Cotacoes
+                          Cotações
                         </a>
                       {% endif %}
                       {% if perms.deliveries.view_deliveryguide %}
@@ -931,7 +931,7 @@
                 aria-expanded="{% if ns in nav_groups.customers %}true{% else %}false{% endif %}"
                 aria-controls="nav-customers"
               >
-                Clientes & Fiado
+                Clientes & Crédito
                 <i class="bi bi-chevron-down nav-chevron"></i>
               </button>
               <div class="collapse{% if ns in nav_groups.customers %} show{% endif %}" id="nav-customers">
@@ -1007,7 +1007,7 @@
                 aria-expanded="{% if ns in nav_groups.billing %}true{% else %}false{% endif %}"
                 aria-controls="nav-billing"
               >
-                Faturacao
+                Faturação
                 <i class="bi bi-chevron-down nav-chevron"></i>
               </button>
               <div class="collapse{% if ns in nav_groups.billing %} show{% endif %}" id="nav-billing">
@@ -1062,14 +1062,14 @@
                   aria-expanded="{% if ns in nav_groups.reports and url_name != 'dashboard' %}true{% else %}false{% endif %}"
                   aria-controls="nav-reports"
                 >
-                  Relatorios
+                  Relatórios
                   <i class="bi bi-chevron-down nav-chevron"></i>
                 </button>
                 <div class="collapse{% if ns in nav_groups.reports and url_name != 'dashboard' %} show{% endif %}" id="nav-reports">
                   <div class="nav-sub">
                     {% if request.user.is_superuser or 'reports.view_basic' in tenant_permissions %}
                       <a class="nav-sub-item{% if ns == 'reports' and url_name == 'overview' %} active{% endif %}" href="{% url 'reports:overview' %}" data-tour="reports">
-                        Visao geral
+                        Visão geral
                       </a>
                       <a class="nav-sub-item{% if ns == 'reports' and url_name == 'sales' %} active{% endif %}" href="{% url 'reports:sales' %}">
                         Vendas
@@ -1080,7 +1080,7 @@
                     {% endif %}
                     {% if request.user.is_superuser or 'reports.view_finance' in tenant_permissions %}
                       <a class="nav-sub-item{% if ns == 'reports' and url_name == 'payments' %} active{% endif %}" href="{% url 'reports:payments' %}">
-                        Metodos de pagamento
+                        Métodos de pagamento
                       </a>
                       <a class="nav-sub-item{% if ns == 'reports' and url_name == 'cashflow' %} active{% endif %}" href="{% url 'reports:cashflow' %}">
                         Fluxo de caixa
@@ -1114,7 +1114,7 @@
                 <div class="collapse{% if ns == 'tenants' and url_name == 'business_profile' or ns == 'tenants' and url_name == 'payment_data' or ns == 'tenants' and url_name == 'user_profile' %} show{% endif %}" id="nav-profile">
                   <div class="nav-sub">
                     <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'business_profile' %} active{% endif %}" href="{% url 'tenants:business_profile' %}">
-                      Perfil do negocio
+                      Perfil do negócio
                     </a>
                     <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'payment_data' %} active{% endif %}" href="{% url 'tenants:payment_data' %}">
                       Dados para pagamento
@@ -1124,7 +1124,7 @@
                     </a>
                     {% if request.user.is_superuser %}
                       <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'tenant_approvals' %} active{% endif %}" href="{% url 'tenants:tenant_approvals' %}">
-                        Aprovacoes
+                        Aprovações
                       </a>
                     {% endif %}
                   </div>
@@ -1140,14 +1140,14 @@
                   aria-expanded="{% if ns == 'tenants' and url_name == 'system_settings' or '/admin/' in current_path %}true{% else %}false{% endif %}"
                   aria-controls="nav-settings"
                 >
-                  Configuracoes
+                  Configurações
                   <i class="bi bi-chevron-down nav-chevron"></i>
                 </button>
                 <div class="collapse{% if ns == 'tenants' and url_name == 'system_settings' or '/admin/' in current_path %} show{% endif %}" id="nav-settings">
                   <div class="nav-sub">
                     {% if request.user.is_superuser or 'tenants.manage_tax' in tenant_permissions %}
                       <a class="nav-sub-item{% if ns == 'tenants' and url_name == 'system_settings' %} active{% endif %}" href="{% url 'tenants:system_settings' %}">
-                        Configuracoes do sistema
+                        Configurações do sistema
                       </a>
                     {% endif %}
                     {% if request.user.is_superuser or 'tenants.manage_staff' in tenant_permissions %}
@@ -1162,7 +1162,7 @@
                     {% endif %}
                     {% if request.user.is_staff or request.user.is_superuser %}
                       <a class="nav-sub-item{% if '/admin/' in current_path %} active{% endif %}" href="/admin/">
-                        Administracao
+                        Administração
                       </a>
                     {% endif %}
                   </div>
@@ -1212,7 +1212,7 @@
                   type="button"
                   data-start-tour
                 >
-                  Guia rapido
+                  Guia rápido
                 </button>
               {% endif %}
             {% endblock %}
@@ -1303,7 +1303,7 @@
 
         window.initTomSelect = initTomSelect;
 
-        var normalizeTextareas = function (root) {
+        var normalizeTextáreas = function (root) {
           if (!root) {
             return;
           }
@@ -1479,7 +1479,7 @@
             }
             return "paperclip";
           }
-          if (/(password|senha|pass)/.test(hint)) {
+          if (/(password|palavra-passe|pass)/.test(hint)) {
             return "lock";
           }
           if (/(email|mail)/.test(hint)) {
@@ -1491,7 +1491,7 @@
           if (/(nome|name|apelido|surname|utilizador|username|owner|cliente|customer|staff|user)/.test(hint)) {
             return "user";
           }
-          if (/(cidade|city|address|endereco|morada|local)/.test(hint)) {
+          if (/(cidade|city|address|endereço|morada|local)/.test(hint)) {
             return "map-pin";
           }
           if (/(country|pais)/.test(hint)) {
@@ -1515,10 +1515,10 @@
           if (/(search|pesquisa|procurar|filtro|filter)/.test(hint)) {
             return "search";
           }
-          if (/(logo|foto|imagem|image|ficheiro|arquivo|file|anexo|attach)/.test(hint)) {
+          if (/(logo|foto|imagem|image|ficheiro|file|anexo|attach)/.test(hint)) {
             return "paperclip";
           }
-          if (/(empresa|negocio|business|tenant)/.test(hint)) {
+          if (/(empresa|negócio|business|tenant)/.test(hint)) {
             return "building-2";
           }
           return "file-text";
@@ -2281,7 +2281,7 @@
                 return;
               }
               var stockUrl = form.dataset.stockCheckUrl || "";
-              var confirmTitle = form.dataset.swalTitle || "Aprovar cotacao?";
+              var confirmTitle = form.dataset.swalTitle || "Aprovar cotação?";
               var confirmText = form.dataset.swalText || "Deseja continuar?";
               var confirmButton = form.dataset.swalConfirmText || "Aprovar";
               var cancelButton = form.dataset.swalCancelText || "Voltar";
@@ -2326,7 +2326,7 @@
                     Swal.fire({
                       title: "Stock insuficiente",
                       html:
-                        "<div class='text-start'>Os seguintes produtos nao tem stock suficiente:</div><ul class='mt-2 text-start'>" +
+                        "<div class='text-start'>Os seguintes produtos não tem stock suficiente:</div><ul class='mt-2 text-start'>" +
                         list +
                         "</ul>",
                       icon: "warning",
@@ -2357,7 +2357,7 @@
           if (window.initTomSelect) {
             window.initTomSelect(event.target);
           }
-          normalizeTextareas(event.target);
+          normalizeTextáreas(event.target);
           scheduleDismiss(event.target);
           initIcons(event.target);
         });
@@ -2370,7 +2370,7 @@
         document.addEventListener("DOMContentLoaded", function () {
           scheduleDismiss(document);
           initTomSelect(document);
-          normalizeTextareas(document);
+          normalizeTextáreas(document);
           initIcons(document);
           initSidebarToggle();
           initPurchaseForm(document);
@@ -2382,7 +2382,7 @@
         document.body.addEventListener("htmx:afterSwap", function (event) {
           scheduleDismiss(event.target);
           initTomSelect(event.target);
-          normalizeTextareas(event.target);
+          normalizeTextáreas(event.target);
           initIcons(event.target);
           initPurchaseForm(event.target);
           initReceiptForm(event.target);
@@ -2502,8 +2502,8 @@
               <div class="onboarding-welcome-card">
                 <div class="onboarding-welcome-title">Bem-vindo ao BizControl</div>
                 <p class="mb-2">
-                  Obrigado por escolher a plataforma para gerir o seu negocio.
-                  Vamos fazer um guia rapido para mostrar as areas mais importantes.
+                  Obrigado por escolher a plataforma para gerir o seu negócio.
+                  Vamos fazer um guia rápido para mostrar as áreas mais importantes.
                 </p>
                 <p class="onboarding-welcome-meta mb-0">
                   O guia leva menos de 1 minuto e pode ser repetido a qualquer momento.
@@ -2511,7 +2511,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-light" data-welcome-later>Agora nao</button>
+              <button type="button" class="btn btn-light" data-welcome-later>Agora não</button>
               <button type="button" class="btn btn-primary" data-welcome-start>Iniciar guia</button>
             </div>
           </div>
@@ -2545,7 +2545,7 @@
               key: "billing",
               selectors: ["[data-tour='billing']"],
               collapseId: "nav-billing",
-              title: "Faturacao & Recibos",
+              title: "Faturação & Recibos",
               text: "Emita faturas e recibos sempre que precisar.",
               placement: "right",
             },
@@ -2553,16 +2553,16 @@
               key: "stock",
               selectors: ["[data-tour='stock']"],
               collapseId: "nav-products",
-              title: "Stock / Inventario",
-              text: "Controle as entradas e saidas de stock do negocio.",
+              title: "Stock / Inventário",
+              text: "Controle as entradas e saídas de stock do negócio.",
               placement: "right",
             },
             {
               key: "reports",
               selectors: ["[data-tour='reports']"],
               collapseId: "nav-reports",
-              title: "Relatorios",
-              text: "Acompanhe a saude do negocio com graficos claros.",
+              title: "Relatórios",
+              text: "Acompanhe a saúde do negócio com gráficos claros.",
               placement: "right",
             },
           ];
@@ -2810,3 +2810,5 @@
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>
+
+

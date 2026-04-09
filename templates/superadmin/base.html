@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt">
   <head>
     <meta charset="utf-8">
@@ -194,14 +194,14 @@
           </div>
           <nav class="sa-nav">
             <a class="{% if ns == 'superadmin' and url_name == 'dashboard' %}active{% endif %}" href="{% url 'superadmin:dashboard' %}">Dashboard</a>
-            <a class="{% if ns == 'superadmin' and url_name == 'tenant_approvals' %}active{% endif %}" href="{% url 'superadmin:tenant_approvals' %}">Aprovacoes</a>
+            <a class="{% if ns == 'superadmin' and url_name == 'tenant_approvals' %}active{% endif %}" href="{% url 'superadmin:tenant_approvals' %}">Aprovações</a>
             <a class="{% if ns == 'superadmin' and url_name == 'tenant_list' %}active{% endif %}" href="{% url 'superadmin:tenant_list' %}">Tenants</a>
             <a class="{% if ns == 'superadmin' and url_name == 'subscriptions' %}active{% endif %}" href="{% url 'superadmin:subscriptions' %}">Subscricoes</a>
             <a class="{% if ns == 'superadmin' and url_name == 'plans' %}active{% endif %}" href="{% url 'superadmin:plans' %}">Planos</a>
             <a class="{% if ns == 'superadmin' and url_name == 'users' %}active{% endif %}" href="{% url 'superadmin:users' %}">Utilizadores</a>
             <a class="{% if ns == 'superadmin' and url_name == 'audit_logs' %}active{% endif %}" href="{% url 'superadmin:audit_logs' %}">Atividade</a>
-            <a class="{% if ns == 'superadmin' and url_name == 'settings' %}active{% endif %}" href="{% url 'superadmin:settings' %}">Configuracoes</a>
-            <a class="{% if ns == 'superadmin' and url_name == 'notifications' %}active{% endif %}" href="{% url 'superadmin:notifications' %}">Notificacoes</a>
+            <a class="{% if ns == 'superadmin' and url_name == 'settings' %}active{% endif %}" href="{% url 'superadmin:settings' %}">Configurações</a>
+            <a class="{% if ns == 'superadmin' and url_name == 'notifications' %}active{% endif %}" href="{% url 'superadmin:notifications' %}">Notificações</a>
           </nav>
           <div class="sa-sidebar-footer">
             <a class="btn btn-sm btn-light" href="/admin/">Django Admin</a>
@@ -246,3 +246,4 @@
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>
+

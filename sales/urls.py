@@ -15,6 +15,11 @@ urlpatterns = [
     path("<int:pk>/discount/", views.sale_update_discount, name="discount_update"),
     path("products/<int:product_id>/stock/", views.sale_product_stock, name="product_stock"),
     path(
+        "products/<int:product_id>/price/",
+        views.sale_product_price_update,
+        name="product_price_update",
+    ),
+    path(
         "customers/<int:customer_id>/open-debt/",
         views.customer_open_debt,
         name="customer_open_debt",

@@ -247,13 +247,13 @@ def confirm_sale(*, sale_id, business, user, items_data=None, confirm_open_debt=
             raise ValidationError("Adicione pelo menos um item.")
 
         if sale.is_credit and not business.feature_enabled("allow_credit_sales"):
-            raise ValidationError("Fiado nao esta disponivel para este negocio.")
+            raise ValidationError("Crédito não está disponível para este negócio.")
 
         if sale.is_credit and not sale.customer:
-            raise ValidationError("Selecione um cliente para fiado.")
+            raise ValidationError("Selecione um cliente para crédito.")
 
         if sale.sale_type == Sale.SALE_TYPE_DEPOSIT and sale.is_credit:
-            raise ValidationError("Deposito nao pode ser fiado.")
+            raise ValidationError("Depósito não pode ser a crédito.")
 
         recalculate_sale_totals(sale)
 
@@ -265,7 +265,7 @@ def confirm_sale(*, sale_id, business, user, items_data=None, confirm_open_debt=
             )
             if open_total > 0 and not confirm_open_debt:
                 raise ValidationError(
-                    f"Cliente com fiado em aberto: {open_total:.2f} MZN."
+                    f"Cliente com crédito em aberto: {open_total:.2f} MZN."
                 )
             credit_limit = sale.customer.credit_limit or Decimal("0")
             if credit_limit > 0 and (open_total + sale.total) > credit_limit:

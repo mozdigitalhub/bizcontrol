@@ -1,8 +1,8 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
 {% block title %}Tenant {{ business.name }} - SuperAdmin{% endblock %}
 {% block page_title %}{{ business.name }}{% endblock %}
-{% block page_subtitle %}Operacoes, subscricao, onboarding e historico do tenant{% endblock %}
+{% block page_subtitle %}Operações, subscrição, onboarding e histórico do tenant{% endblock %}
 
 {% block top_actions %}
   <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:users' %}?tenant={{ business.id }}">Ver utilizadores</a>
@@ -49,7 +49,7 @@
         </div>
 
         <hr>
-        <div class="small fw-semibold mb-2">Acoes rapidas</div>
+        <div class="small fw-semibold mb-2">Acoes rápidas</div>
         <div class="d-flex flex-wrap gap-2 mb-2">
           {% if business.status == "pending" %}
             <form method="post" action="{% url 'superadmin:tenant_status_action' business.id %}">
@@ -87,7 +87,7 @@
             {% if business.status == "active" %}
               <button class="btn btn-outline-primary btn-sm" type="submit">Reenviar acesso</button>
             {% elif business.status == "rejected" %}
-              <button class="btn btn-outline-primary btn-sm" type="submit">Reenviar rejeicao</button>
+              <button class="btn btn-outline-primary btn-sm" type="submit">Reenviar rejeição</button>
             {% else %}
               <button class="btn btn-outline-primary btn-sm" type="submit">Reenviar email</button>
             {% endif %}
@@ -106,7 +106,7 @@
             <form method="post" action="{% url 'superadmin:tenant_extend_subscription' business.id %}" class="input-group input-group-sm">
               {% csrf_token %}
               <input type="number" class="form-control" min="1" name="days" value="30">
-              <button class="btn btn-outline-secondary" type="submit">Extender subscricao</button>
+              <button class="btn btn-outline-secondary" type="submit">Extender subscrição</button>
             </form>
           </div>
         </div>
@@ -126,7 +126,7 @@
       <div class="sa-card p-3">
         <h6 class="mb-3">Indicadores do tenant</h6>
         <ul class="list-group list-group-flush">
-          <li class="list-group-item d-flex justify-content-between"><span>Usuarios</span><strong>{{ stats.users }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Utilizadores</span><strong>{{ stats.users }}</strong></li>
           <li class="list-group-item d-flex justify-content-between"><span>Produtos</span><strong>{{ stats.products }}</strong></li>
           <li class="list-group-item d-flex justify-content-between"><span>Clientes</span><strong>{{ stats.customers }}</strong></li>
           <li class="list-group-item d-flex justify-content-between"><span>Vendas</span><strong>{{ stats.sales }}</strong></li>
@@ -154,7 +154,7 @@
               </div>
             {% endfor %}
           </div>
-          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar subscricao</button>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar subscrição</button>
         </form>
 
         <hr>
@@ -234,7 +234,7 @@
                   <td>{{ item.reason|default:"-" }}</td>
                 </tr>
               {% empty %}
-                <tr><td colspan="4" class="text-muted">Sem historico.</td></tr>
+                <tr><td colspan="4" class="text-muted">Sem histórico.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -259,7 +259,7 @@
                 <tr>
                   <td>{{ membership.user.get_full_name|default:membership.user.username }}</td>
                   <td>{{ membership.get_role_display }}</td>
-                  <td>{% if membership.is_active %}<span class="badge text-bg-success">Sim</span>{% else %}<span class="badge text-bg-secondary">Nao</span>{% endif %}</td>
+                  <td>{% if membership.is_active %}<span class="badge text-bg-success">Sim</span>{% else %}<span class="badge text-bg-secondary">Não</span>{% endif %}</td>
                   <td>{% if membership.user.last_login %}{{ membership.user.last_login|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
                 </tr>
               {% empty %}
@@ -272,3 +272,4 @@
     </div>
   </div>
 {% endblock %}
+

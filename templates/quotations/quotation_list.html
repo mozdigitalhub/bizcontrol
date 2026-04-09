@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Cotacoes - BizControl{% endblock %}
+{% block title %}Cotações - BizControl{% endblock %}
 
 {% block extra_head %}
   <style>
@@ -47,13 +47,13 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-      <h1 class="h4 mb-1">Cotacoes</h1>
+      <h1 class="h4 mb-1">Cotações</h1>
       <div class="text-muted small">Orcamentos e propostas por cliente.</div>
     </div>
     {% if perms.quotations.add_quotation %}
       <a class="btn btn-primary" href="{% url 'quotations:create' %}">
         <i class="bi bi-plus-circle me-1"></i>
-        Nova cotacao
+        Nova cotação
       </a>
     {% endif %}
   </div>
@@ -63,7 +63,7 @@
       <div class="card p-3 summary-card">
         <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="text-muted small">Total em cotacoes</div>
+            <div class="text-muted small">Total em cotações</div>
             <div class="fw-semibold">{{ total_amount|floatformat:2 }} MZN</div>
           </div>
           <div class="summary-icon bg-primary-subtle text-primary">
@@ -214,8 +214,8 @@
                     method="post"
                     action="{% url 'quotations:approve' quotation.id %}"
                     data-stock-check-url="{% url 'quotations:stock_check' quotation.id %}"
-                    data-swal-title="Aprovar cotacao?"
-                    data-swal-text="Gerar venda a partir desta cotacao."
+                    data-swal-title="Aprovar cotação?"
+                    data-swal-text="Gerar venda a partir desta cotação."
                     data-swal-confirm-text="Aprovar"
                     data-swal-cancel-text="Voltar"
                   >
@@ -225,7 +225,7 @@
                       <i class="bi bi-check-circle"></i>
                     </button>
                   </form>
-                  <form class="d-inline" method="post" action="{% url 'quotations:reject' quotation.id %}" data-swal-confirm="true" data-swal-title="Rejeitar cotacao?" data-swal-text="Esta cotacao sera marcada como rejeitada." data-swal-confirm-text="Rejeitar" data-swal-cancel-text="Voltar">
+                  <form class="d-inline" method="post" action="{% url 'quotations:reject' quotation.id %}" data-swal-confirm="true" data-swal-title="Rejeitar cotação?" data-swal-text="Esta cotação sera marcada como rejeitada." data-swal-confirm-text="Rejeitar" data-swal-cancel-text="Voltar">
                     {% csrf_token %}
                     <button class="btn btn-sm btn-outline-danger" type="submit">
                       <i class="bi bi-x-circle"></i>
@@ -236,7 +236,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted">Sem cotacoes.</td>
+              <td colspan="7" class="text-center text-muted">Sem cotações.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -267,3 +267,4 @@
     {% endif %}
   </div>
 {% endblock %}
+

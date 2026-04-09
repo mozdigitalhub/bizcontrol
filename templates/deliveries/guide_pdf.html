@@ -145,7 +145,7 @@
         <h1>GUIA DE ENTREGA</h1>
         <div class="doc-code">Nº: {{ guide.code|default:guide.guide_number }}</div>
         <div class="doc-meta">Data: {{ guide.issued_at|date:"d/m/Y H:i" }}</div>
-        <div class="doc-meta">Origem: {{ guide.get_origin_type_display }}</div>
+        <div class="doc-meta">Origem: {% if guide.origin_type == "credit" %}Crédito{% else %}{{ guide.get_origin_type_display }}{% endif %}</div>
         {% if guide.status == "issued" %}
           <span class="badge badge-issued">Emitida</span>
         {% elif guide.status == "partial" %}

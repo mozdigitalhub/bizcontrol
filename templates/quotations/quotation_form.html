@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}{% if quotation %}Editar cotacao{% else %}Nova cotacao{% endif %} - BizControl{% endblock %}
+{% block title %}{% if quotation %}Editar cotação{% else %}Nova cotação{% endif %} - BizControl{% endblock %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
-      <h1 class="h4 mb-1">{% if quotation %}Editar cotacao{% else %}Nova cotacao{% endif %}</h1>
+      <h1 class="h4 mb-1">{% if quotation %}Editar cotação{% else %}Nova cotação{% endif %}</h1>
       <div class="text-muted small">Preencha os dados e adicione itens.</div>
     </div>
     <a class="btn btn-outline-secondary" href="{% url 'quotations:list' %}">
@@ -46,7 +46,7 @@
                   hx-target="#customer-modal-container"
                   hx-swap="innerHTML"
                 >
-                  Criar cliente rapido
+                  Criar cliente rápido
                 </a>
               </div>
             {% endif %}
@@ -89,7 +89,7 @@
     <div class="card mb-3">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="fw-semibold">Itens da cotacao</div>
+          <div class="fw-semibold">Itens da cotação</div>
           <button class="btn btn-outline-secondary btn-sm" type="button" data-add-item>
             <i class="bi bi-plus-circle me-1"></i>
             Adicionar linha
@@ -156,14 +156,14 @@
         <div class="ms-auto d-flex gap-2">
           <a class="btn btn-outline-secondary" href="{% url 'quotations:list' %}">
             <i class="bi bi-x-circle me-1"></i>
-            Cancelar cotacao
+            Cancelar cotação
           </a>
           <button class="btn btn-outline-secondary" type="submit" data-action="draft">
             Guardar rascunho
           </button>
           <button class="btn btn-primary" type="submit" data-action="send">
             <i class="bi bi-check-circle me-1"></i>
-            Submeter cotacao
+            Submeter cotação
           </button>
         </div>
       </div>
@@ -198,8 +198,8 @@
             return;
           }
           Swal.fire({
-            title: "Submeter cotacao?",
-            text: "Deseja submeter esta cotacao para o cliente?",
+            title: "Submeter cotação?",
+            text: "Deseja submeter esta cotação para o cliente?",
             icon: "question",
             showCancelButton: true,
             confirmButtonText: "Submeter",
@@ -214,3 +214,4 @@
     })();
   </script>
 {% endblock %}
+

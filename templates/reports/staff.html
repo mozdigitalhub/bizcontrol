@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Relatorios - Staff{% endblock %}
+{% block title %}Relatórios - Staff{% endblock %}
 
 {% block extra_head %}
   {% include "reports/partials/_report_styles.html" %}
@@ -39,7 +39,7 @@
         </div>
       </div>
       <div class="preset-bar">
-        <div class="btn-group" role="group" aria-label="Filtros rapidos">
+        <div class="btn-group" role="group" aria-label="Filtros rápidos">
           <a class="btn btn-outline-secondary{% if preset == '7d' %} active{% endif %}" href="?preset=7d">7 dias</a>
           <a class="btn btn-outline-secondary{% if preset == '30d' %} active{% endif %}" href="?preset=30d">30 dias</a>
           <a class="btn btn-outline-secondary{% if preset == 'year' %} active{% endif %}" href="?preset=year">Anual</a>
@@ -61,7 +61,7 @@
         <tr>
           <th>Colaborador</th>
           <th>Total</th>
-          <th>Transacoes</th>
+          <th>Transações</th>
         </tr>
       </thead>
       <tbody>

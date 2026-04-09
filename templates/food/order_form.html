@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Novo pedido - BizControl{% endblock %}
 
@@ -54,7 +54,7 @@
             </div>
           </div>
           <div class="col-lg-12">
-            <label class="form-label">Observacoes</label>
+            <label class="form-label">Observações</label>
             <div class="field-with-icon">
               <span class="field-icon"><i class="bi bi-journal-text"></i></span>
               {{ form.notes }}
@@ -68,7 +68,7 @@
 
         <div class="row g-3 mt-2" data-delivery-section style="display: none;">
           <div class="col-md-6">
-            <label class="form-label required">Endereco de entrega</label>
+            <label class="form-label required">Endereço de entrega</label>
             <div class="field-with-icon">
               <span class="field-icon"><i class="bi bi-geo-alt"></i></span>
               {{ delivery_form.address }}
@@ -96,7 +96,7 @@
             </div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Observacoes entrega</label>
+            <label class="form-label">Observações entrega</label>
             <div class="field-with-icon">
               <span class="field-icon"><i class="bi bi-journal-text"></i></span>
               {{ delivery_form.notes }}
@@ -324,3 +324,4 @@
   </script>
   <div id="customer-modal-container"></div>
 {% endblock %}
+

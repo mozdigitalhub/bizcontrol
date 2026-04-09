@@ -8,7 +8,7 @@
       <div class="card">
         <div class="card-body">
           <h1 class="h4 mb-2">Cancelar despesa #{{ expense.id }}</h1>
-          <p class="text-muted small">Esta acao vai reverter o fluxo de caixa.</p>
+          <p class="text-muted small">Esta ação vai reverter o fluxo de caixa.</p>
           <form method="post" data-swal-confirm="true" data-swal-title="Cancelar despesa?" data-swal-text="Deseja cancelar esta despesa?" data-swal-confirm-text="Cancelar" data-swal-cancel-text="Voltar">
             {% csrf_token %}
             <div class="mb-3">

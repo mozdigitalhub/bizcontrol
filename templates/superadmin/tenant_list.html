@@ -1,9 +1,9 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 {% block title %}Tenants - SuperAdmin{% endblock %}
-{% block page_title %}Gestao de Tenants{% endblock %}
+{% block page_title %}Gestão de Tenants{% endblock %}
 {% block page_subtitle %}Pesquisa, filtros e controlo de estado dos negocios registados{% endblock %}
 {% block top_actions %}
-  <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">Fila de aprovacao</a>
+  <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">Fila de aprovação</a>
   <a class="btn btn-success btn-sm" href="{% url 'superadmin:tenant_create' %}">Criar tenant</a>
 {% endblock %}
 
@@ -66,7 +66,7 @@
             <th>Estado</th>
             <th>Subscricao</th>
             <th>Onboarding</th>
-            <th>Usuarios</th>
+            <th>Utilizadores</th>
             <th>Dados operacionais</th>
             <th>Ultimo acesso</th>
             <th></th>
@@ -96,7 +96,7 @@
                   <span class="badge text-bg-info">{{ tenant.subscription.get_status_display }}</span>
                   <div class="small text-muted">{{ tenant.subscription.plan.name|default:"Sem plano" }}</div>
                 {% else %}
-                  <span class="badge text-bg-light">Sem subscricao</span>
+                  <span class="badge text-bg-light">Sem subscrição</span>
                 {% endif %}
               </td>
               <td>
@@ -133,3 +133,4 @@
     {% include "superadmin/partials/pagination.html" with page=page %}
   </div>
 {% endblock %}
+

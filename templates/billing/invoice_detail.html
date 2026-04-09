@@ -10,7 +10,7 @@
       <div class="text-muted small">Estado: {{ invoice.get_status_display }}</div>
       {% if invoice.sale and invoice.sale.is_credit %}
         <div class="mt-1">
-          <span class="badge bg-warning text-dark">Fatura a Fiado</span>
+          <span class="badge bg-warning text-dark">Fatura a Crédito</span>
           {% if invoice.due_date %}
             <span class="text-muted small ms-2">Data prevista: {{ invoice.due_date|date:"d/m/Y" }}</span>
           {% endif %}

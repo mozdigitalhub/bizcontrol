@@ -1,8 +1,8 @@
-{% extends "superadmin/base.html" %}
+﻿{% extends "superadmin/base.html" %}
 
-{% block title %}Notificacoes e Suporte - SuperAdmin{% endblock %}
-{% block page_title %}Notificacoes e Operacoes{% endblock %}
-{% block page_subtitle %}Gestao de alertas de plataforma e tickets de suporte{% endblock %}
+{% block title %}Notificações e Suporte - SuperAdmin{% endblock %}
+{% block page_title %}Notificações e Operações{% endblock %}
+{% block page_subtitle %}Gestão de alertas de plataforma e tickets de suporte{% endblock %}
 
 {% block content %}
   <div class="row g-3 mb-3">
@@ -85,7 +85,7 @@
                     {% endif %}
                   </td>
                   <td>{{ alert.business.name|default:"Global" }}</td>
-                  <td>{% if alert.is_active %}<span class="badge text-bg-success">Sim</span>{% else %}<span class="badge text-bg-secondary">Nao</span>{% endif %}</td>
+                  <td>{% if alert.is_active %}<span class="badge text-bg-success">Sim</span>{% else %}<span class="badge text-bg-secondary">Não</span>{% endif %}</td>
                   <td class="text-end"><a href="?alert={{ alert.id }}" class="btn btn-outline-primary btn-sm">Editar</a></td>
                 </tr>
               {% empty %}
@@ -137,3 +137,4 @@
     </div>
   </div>
 {% endblock %}
+

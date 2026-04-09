@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}{{ current_business.ui_labels.sales }} - BizControl{% endblock %}
 
@@ -247,13 +247,13 @@
                     <span class="badge bg-secondary">Sem devolucao</span>
                   {% endif %}
                 {% elif sale.is_credit %}
-                  <span class="badge bg-info text-dark">Fiado</span>
+                  <span class="badge bg-info text-dark">Crédito</span>
                   {% if sale.payment_status == "paid" %}
                     <span class="badge bg-success">Paga</span>
                   {% elif sale.payment_status == "partial" %}
                     <span class="badge bg-warning text-dark">Parcial</span>
                   {% else %}
-                    <span class="badge bg-secondary">Nao paga</span>
+                    <span class="badge bg-secondary">Não paga</span>
                   {% endif %}
                   {% if sale.payment_due_date %}
                     <div class="small text-muted mt-1">{{ sale.payment_due_date|date:"d/m/Y" }}</div>
@@ -264,7 +264,7 @@
                   {% elif sale.payment_status == "partial" %}
                     <span class="badge bg-warning text-dark">Parcial</span>
                   {% else %}
-                    <span class="badge bg-secondary">Nao paga</span>
+                    <span class="badge bg-secondary">Não paga</span>
                   {% endif %}
                 {% endif %}
               </td>
@@ -319,3 +319,4 @@
 
   <div id="modal-container"></div>
 {% endblock %}
+

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Detalhes do cliente - BizControl{% endblock %}
 
@@ -7,12 +7,12 @@
     .customer-hero {
       padding: 20px;
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(320px, 1fr) minmax(360px, 420px);
       grid-template-areas:
         "main cards"
         "actions cards";
       gap: 16px;
-      align-items: center;
+      align-items: start;
     }
 
     .customer-hero-main {
@@ -33,7 +33,22 @@
       grid-area: actions;
       display: flex;
       gap: 10px;
+      align-items: stretch;
+      justify-self: start;
+      flex-wrap: wrap;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      width: fit-content;
+    }
+
+    .customer-hero-actions .btn {
+      min-width: 120px;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .customer-avatar {
@@ -61,11 +76,25 @@
     .summary-card.success {
       background: linear-gradient(135deg, #16A34A 0%, #16A34A 100%);
       border: 1px solid rgba(21, 145, 99, 0.2);
+      color: #FFFFFF;
     }
 
     .summary-card.danger {
       background: linear-gradient(135deg, #DC2626 0%, #DC2626 100%);
       border: 1px solid rgba(220, 53, 69, 0.2);
+      color: #FFFFFF;
+    }
+
+    .summary-card.success .text-muted,
+    .summary-card.danger .text-muted {
+      color: rgba(255, 255, 255, 0.88) !important;
+    }
+
+    .summary-card.success .summary-icon,
+    .summary-card.danger .summary-icon {
+      background: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      box-shadow: none;
     }
 
     .summary-icon {
@@ -105,17 +134,36 @@
       vertical-align: middle;
     }
 
+    @media (max-width: 1200px) {
+      .customer-hero {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "main"
+          "actions"
+          "cards";
+      }
+    }
+
     @media (max-width: 992px) {
       .customer-hero {
         grid-template-columns: 1fr;
         grid-template-areas:
           "main"
-          "cards"
-          "actions";
+          "actions"
+          "cards";
       }
 
       .customer-hero-cards {
         grid-template-columns: 1fr;
+      }
+
+      .customer-hero-actions {
+        width: 100%;
+      }
+
+      .customer-hero-actions .btn {
+        flex: 1 1 0;
+        min-width: 0;
       }
     }
   </style>
@@ -189,12 +237,12 @@
             <span>{{ customer.nuit|default:"-" }}</span>
           </div>
           <div class="customer-info-row">
-            <span class="text-muted">Endereco</span>
+            <span class="text-muted">Endereço</span>
             <span class="text-end">{{ customer.address|default:"-" }}</span>
           </div>
           {% if customer.notes %}
             <div class="customer-info-row">
-              <span class="text-muted">Observacoes</span>
+              <span class="text-muted">Observações</span>
               <span class="text-end">{{ customer.notes }}</span>
             </div>
           {% endif %}
@@ -214,7 +262,7 @@
             {% if current_business.module_quotations_enabled %}
               <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-quotations" type="button" role="tab">
-                  Cotacoes
+                  Cotações
                 </button>
               </li>
             {% endif %}
@@ -225,7 +273,7 @@
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-credit" type="button" role="tab">
-                Fiado
+                Crédito
               </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -314,7 +362,7 @@
                   <table class="table align-middle mb-0">
                     <thead class="table-light">
                       <tr>
-                        <th>Cotacao</th>
+                        <th>Cotação</th>
                         <th>Data</th>
                         <th>Validade</th>
                         <th>Valor</th>
@@ -357,7 +405,7 @@
                         </tr>
                       {% empty %}
                         <tr>
-                          <td colspan="6" class="text-center text-muted">Sem cotacoes.</td>
+                          <td colspan="6" class="text-center text-muted">Sem cotações.</td>
                         </tr>
                       {% endfor %}
                     </tbody>
@@ -437,7 +485,7 @@
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="5" class="text-center text-muted">Sem fiados.</td>
+                        <td colspan="5" class="text-center text-muted">Sem créditos.</td>
                       </tr>
                     {% endfor %}
                   </tbody>
@@ -511,7 +559,7 @@
                     {% for payment in payments %}
                       <tr>
                         <td>{{ payment.paid_at|date:"d/m/Y H:i" }}</td>
-                        <td>Pagamento de fiado #{{ payment.receivable.id }}</td>
+                        <td>Pagamento de crédito #{{ payment.receivable.id }}</td>
                         <td>{{ payment.amount|floatformat:2 }} MZN</td>
                         <td>{{ payment.get_method_display }}</td>
                       </tr>
@@ -567,7 +615,7 @@
     <div class="col-lg-6">
       <div class="card">
         <div class="card-body">
-          <h3 class="h6 fw-semibold mb-3">Fiado / Dividas</h3>
+          <h3 class="h6 fw-semibold mb-3">Crédito / Dívidas</h3>
           <div class="table-responsive">
             <table class="table mb-0">
               <thead class="table-light">
@@ -581,7 +629,7 @@
                 {% for receivable in receivables|slice:":5" %}
                   <tr>
                     <td>{{ receivable.created_at|date:"d/m/Y" }}</td>
-                    <td>Fiado #{{ receivable.id }}</td>
+                    <td>Crédito #{{ receivable.id }}</td>
                     <td class="text-end">{{ receivable.balance|floatformat:2 }} MZN</td>
                   </tr>
                 {% empty %}
@@ -597,3 +645,4 @@
     </div>
   </div>
 {% endblock %}
+

@@ -25,6 +25,16 @@ def get_env_list(name, default=None):
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def get_env_int(name, default=0):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-unsafe-secret-key")
 DEBUG = get_env_bool("DEBUG", False)
 ALLOWED_HOSTS = get_env_list("ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
@@ -34,9 +44,26 @@ CORS_ALLOWED_ORIGINS = get_env_list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "no-reply@bizcontrol.app")
-RESEND_FROM_NAME = os.environ.get("RESEND_FROM_NAME", "BizControl")
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp-relay.brevo.com")
+EMAIL_PORT = get_env_int("EMAIL_PORT", 587)
+EMAIL_USE_TLS = get_env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = get_env_bool("EMAIL_USE_SSL", False)
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "BizControl <no-reply@bizcontrol.app>",
+)
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+EMAIL_TIMEOUT = get_env_int("EMAIL_TIMEOUT", 20)
+EMAIL_BRAND_LOGO_URL = os.environ.get("EMAIL_BRAND_LOGO_URL", "").strip()
+TENANT_REQUIRE_BUSINESS_SELECTION = get_env_bool(
+    "TENANT_REQUIRE_BUSINESS_SELECTION", False
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -60,6 +87,7 @@ INSTALLED_APPS = [
     "finance",
     "reports",
     "food",
+    "superadmin",
 ]
 
 MIDDLEWARE = [

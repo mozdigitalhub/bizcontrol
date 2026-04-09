@@ -1,0 +1,260 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}SuperAdmin Dashboard - BizControl{% endblock %}
+{% block page_title %}Dashboard da Plataforma{% endblock %}
+{% block page_subtitle %}Visao executiva de tenants, receita e operacoes{% endblock %}
+
+{% block top_actions %}
+  <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">
+    Aprovacoes {% if kpis.pending_tenants %}<span class="badge text-bg-warning ms-1">{{ kpis.pending_tenants }}</span>{% endif %}
+  </a>
+  <a class="btn btn-success btn-sm" href="{% url 'superadmin:tenant_create' %}">Criar tenant</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'superadmin:tenant_list' %}">Gerir tenants</a>
+{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .sa-chart-wrap {
+      position: relative;
+      height: 300px;
+      min-height: 260px;
+      width: 100%;
+    }
+
+    .sa-chart-wrap.sa-chart-wrap-sm {
+      height: 260px;
+      min-height: 220px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Total tenants</small>
+        <h3>{{ kpis.total_tenants }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Ativos</small>
+        <h3>{{ kpis.active_tenants }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Trials</small>
+        <h3>{{ kpis.trial_tenants }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Subscricoes expiradas</small>
+        <h3>{{ kpis.expired_subscriptions }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Utilizadores</small>
+        <h3>{{ kpis.total_users }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>Pagantes</small>
+        <h3>{{ kpis.paying_tenants }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>MRR</small>
+        <h3>{{ kpis.mrr|floatformat:2 }} MZN</h3>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="sa-card sa-kpi">
+        <small>ARR estimado</small>
+        <h3>{{ kpis.arr|floatformat:2 }} MZN</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-xl-8">
+      <div class="sa-card chart-box">
+        <h5>Crescimento de tenants (ultimos meses)</h5>
+        <div class="sa-chart-wrap">
+          <canvas id="tenantGrowthChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-4">
+      <div class="sa-card chart-box">
+        <h5>Distribuicao por estado</h5>
+        <div class="sa-chart-wrap sa-chart-wrap-sm">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-xl-6">
+      <div class="sa-card chart-box">
+        <h5>Tipos de negocio</h5>
+        <div class="sa-chart-wrap sa-chart-wrap-sm">
+          <canvas id="typeChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-6">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">Subscricoes a expirar</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Plano</th>
+                <th>Estado</th>
+                <th>Termino</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for subscription in expiring_subscriptions %}
+                <tr>
+                  <td>
+                    <a href="{% url 'superadmin:tenant_detail' subscription.business_id %}">
+                      {{ subscription.business.name }}
+                    </a>
+                  </td>
+                  <td>{{ subscription.plan.name|default:"Sem plano" }}</td>
+                  <td><span class="badge text-bg-warning">{{ subscription.get_status_display }}</span></td>
+                  <td>{{ subscription.ends_at|date:"d/m/Y" }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-muted">Sem subscricoes a expirar nos proximos 14 dias.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-7">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">Atividade recente</h5>
+        <div class="d-grid gap-2">
+          {% for item in activities %}
+            <div class="border rounded-3 p-2 bg-light-subtle">
+              <div class="fw-semibold">{{ item.label }}</div>
+              <div class="small text-muted">{{ item.when|date:"d/m/Y H:i" }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem atividade recente.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-5">
+      <div class="sa-card p-3 mb-3">
+        <h5 class="mb-3">Alertas ativos</h5>
+        <div class="d-grid gap-2">
+          {% for alert in alerts %}
+            <div class="border rounded-3 p-2">
+              <div class="fw-semibold">{{ alert.title }}</div>
+              <div class="small text-muted">{{ alert.message|truncatechars:100 }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem alertas ativos.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="sa-card p-3">
+        <h5 class="mb-3">Indicadores operacionais</h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between"><span>Tenants suspensos</span><strong>{{ kpis.suspended_tenants }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Churn</span><strong>{{ kpis.churn_tenants }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Tickets abertos</span><strong>{{ kpis.open_tickets }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Utilizadores inativos (30d)</span><strong>{{ kpis.users_inactive_30d }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Total vendas</span><strong>{{ kpis.total_sales }}</strong></li>
+          <li class="list-group-item d-flex justify-content-between"><span>Total faturas</span><strong>{{ kpis.total_invoices }}</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    const monthLabels = {{ month_labels_json|safe }};
+    const tenantGrowth = {{ tenant_growth_json|safe }};
+    const statusLabels = {{ tenant_status_labels_json|safe }};
+    const statusValues = {{ tenant_status_values_json|safe }};
+    const typeLabels = {{ business_type_labels_json|safe }};
+    const typeValues = {{ business_type_values_json|safe }};
+
+    const growthCtx = document.getElementById("tenantGrowthChart");
+    if (growthCtx) {
+      new Chart(growthCtx, {
+        type: "line",
+        data: {
+          labels: monthLabels,
+          datasets: [{
+            label: "Novos tenants",
+            data: tenantGrowth,
+            borderColor: "#1d4ed8",
+            backgroundColor: "rgba(29, 78, 216, 0.15)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    const statusCtx = document.getElementById("statusChart");
+    if (statusCtx) {
+      new Chart(statusCtx, {
+        type: "doughnut",
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: statusValues,
+            backgroundColor: ["#1d4ed8", "#16a34a", "#f59e0b", "#dc2626"]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    const typeCtx = document.getElementById("typeChart");
+    if (typeCtx) {
+      new Chart(typeCtx, {
+        type: "bar",
+        data: {
+          labels: typeLabels,
+          datasets: [{
+            label: "Tenants",
+            data: typeValues,
+            backgroundColor: "#1d4ed8"
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+  </script>
+{% endblock %}

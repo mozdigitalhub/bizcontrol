@@ -1,0 +1,69 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Atividade da Plataforma - SuperAdmin{% endblock %}
+{% block page_title %}Audit Trail{% endblock %}
+{% block page_subtitle %}Historico de acoes executadas na area SuperAdmin{% endblock %}
+
+{% block content %}
+  <div class="sa-card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1">Pesquisar</label>
+        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="acao, alvo, utilizador...">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Acao</label>
+        <select class="form-select" name="action">
+          <option value="">Todas</option>
+          {% for item in actions %}
+            <option value="{{ item }}" {% if action == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Tenant</label>
+        <select class="form-select" name="business">
+          <option value="">Todos</option>
+          {% for tenant in tenants %}
+            <option value="{{ tenant.id }}" {% if business_id == tenant.id|stringformat:'s' %}selected{% endif %}>{{ tenant.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-3">
+        <button class="btn btn-primary btn-sm w-100" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sa-card p-3">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Utilizador</th>
+            <th>Acao</th>
+            <th>Tenant</th>
+            <th>Alvo</th>
+            <th>Metadata</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in page.object_list %}
+            <tr>
+              <td>{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
+              <td>{{ log.actor|default:"sistema" }}</td>
+              <td><code>{{ log.action }}</code></td>
+              <td>{{ log.business.name|default:"global" }}</td>
+              <td>{{ log.target_type }} #{{ log.target_id|default:"-" }}</td>
+              <td><small class="text-muted">{{ log.metadata }}</small></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Sem eventos de auditoria.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "superadmin/partials/pagination.html" with page=page %}
+  </div>
+{% endblock %}

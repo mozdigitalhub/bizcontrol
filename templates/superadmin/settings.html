@@ -1,0 +1,87 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Configuracoes Globais - SuperAdmin{% endblock %}
+{% block page_title %}Configuracoes da Plataforma{% endblock %}
+{% block page_subtitle %}Parametros globais, defaults de trial e base para feature flags{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-xl-7">
+      <div class="sa-card p-3 h-100">
+        <h5 class="mb-3">Definicoes guardadas</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Chave</th>
+                <th>Publico</th>
+                <th>Atualizado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in settings %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ item.key }}</div>
+                    <div class="small text-muted">{{ item.description|truncatechars:80 }}</div>
+                  </td>
+                  <td>
+                    {% if item.is_public %}
+                      <span class="badge text-bg-success">Sim</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Nao</span>
+                    {% endif %}
+                  </td>
+                  <td class="small text-muted">{{ item.updated_at|date:"d/m/Y H:i" }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-outline-primary btn-sm" href="?setting={{ item.id }}">Editar</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Sem configuracoes globais.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-5">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">{% if selected %}Editar configuracao{% else %}Nova configuracao{% endif %}</h5>
+        <form method="post">
+          {% csrf_token %}
+          {% if selected %}
+            <input type="hidden" name="setting_id" value="{{ selected.id }}">
+          {% endif %}
+          <div class="row g-2">
+            {% for field in form %}
+              <div class="col-12">
+                <label class="form-label mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <div class="text-danger small">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="sa-card p-3">
+    <h5 class="mb-3">Categorias de negocio suportadas</h5>
+    <div class="row g-2">
+      {% for value,label in business_types %}
+        <div class="col-12 col-md-6 col-xl-4">
+          <div class="border rounded-3 px-3 py-2 bg-light-subtle">
+            <div class="fw-semibold">{{ label }}</div>
+            <small class="text-muted">{{ value }}</small>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

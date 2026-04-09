@@ -44,8 +44,15 @@ class BusinessProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         can_edit_legal = kwargs.pop("can_edit_legal", True)
+        owner_email = (kwargs.pop("owner_email", "") or "").strip().lower()
         super().__init__(*args, **kwargs)
         self.can_edit_legal = can_edit_legal
+        if (
+            not self.is_bound
+            and owner_email
+            and (self.instance.email or "").strip().lower() == owner_email
+        ):
+            self.initial["email"] = ""
         if self.is_bound:
             _ = self.errors
         if "name" in self.fields:

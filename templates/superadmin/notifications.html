@@ -1,0 +1,139 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Notificacoes e Suporte - SuperAdmin{% endblock %}
+{% block page_title %}Notificacoes e Operacoes{% endblock %}
+{% block page_subtitle %}Gestao de alertas de plataforma e tickets de suporte{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-xl-6">
+      <div class="sa-card p-3 h-100">
+        <h5 class="mb-3">{% if selected_alert %}Editar alerta{% else %}Novo alerta{% endif %}</h5>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="alert">
+          {% if selected_alert %}
+            <input type="hidden" name="alert_id" value="{{ selected_alert.id }}">
+          {% endif %}
+          <div class="row g-2">
+            {% for field in alert_form %}
+              <div class="col-12">
+                <label class="form-label mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <div class="text-danger small">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar alerta</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-12 col-xl-6">
+      <div class="sa-card p-3 h-100">
+        <h5 class="mb-3">{% if selected_ticket %}Editar ticket{% else %}Novo ticket{% endif %}</h5>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="ticket">
+          {% if selected_ticket %}
+            <input type="hidden" name="ticket_id" value="{{ selected_ticket.id }}">
+          {% endif %}
+          <div class="row g-2">
+            {% for field in ticket_form %}
+              <div class="col-12">
+                <label class="form-label mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <div class="text-danger small">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar ticket</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-6">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">Alertas recentes</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Titulo</th>
+                <th>Nivel</th>
+                <th>Tenant</th>
+                <th>Ativo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for alert in alerts %}
+                <tr>
+                  <td>{{ alert.title }}</td>
+                  <td>
+                    {% if alert.level == "critical" %}
+                      <span class="badge text-bg-danger">Critico</span>
+                    {% elif alert.level == "warning" %}
+                      <span class="badge text-bg-warning">Aviso</span>
+                    {% else %}
+                      <span class="badge text-bg-info">Info</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ alert.business.name|default:"Global" }}</td>
+                  <td>{% if alert.is_active %}<span class="badge text-bg-success">Sim</span>{% else %}<span class="badge text-bg-secondary">Nao</span>{% endif %}</td>
+                  <td class="text-end"><a href="?alert={{ alert.id }}" class="btn btn-outline-primary btn-sm">Editar</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-muted">Sem alertas.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-6">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">Tickets recentes</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Assunto</th>
+                <th>Status</th>
+                <th>Tenant</th>
+                <th>Responsavel</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ticket in tickets %}
+                <tr>
+                  <td>{{ ticket.subject }}</td>
+                  <td>
+                    {% if ticket.status == "resolved" %}
+                      <span class="badge text-bg-success">Resolvido</span>
+                    {% elif ticket.status == "in_progress" %}
+                      <span class="badge text-bg-warning">Em progresso</span>
+                    {% else %}
+                      <span class="badge text-bg-info">Aberto</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ ticket.business.name|default:"Global" }}</td>
+                  <td>{{ ticket.assigned_to|default:"-" }}</td>
+                  <td class="text-end"><a href="?ticket={{ ticket.id }}" class="btn btn-outline-primary btn-sm">Editar</a></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-muted">Sem tickets.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

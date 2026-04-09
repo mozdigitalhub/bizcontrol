@@ -56,7 +56,7 @@ class UserPasswordForm(PasswordChangeForm):
 class TenantLoginForm(AuthenticationForm):
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
-        if user.is_superuser:
+        if user.is_superuser or user.groups.filter(name="SuperAdmin").exists():
             return
         memberships = BusinessMembership.objects.filter(
             user=user, is_active=True

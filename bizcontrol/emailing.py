@@ -1,54 +1,94 @@
-import base64
 import logging
+import base64
+from email.utils import formataddr, parseaddr
 
-import requests
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import strip_tags
 
 
 logger = logging.getLogger(__name__)
 
-RESEND_API_URL = "https://api.resend.com/emails"
+
+def _resolve_base_sender_address():
+    _, default_addr = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))
+    if default_addr:
+        return default_addr
+    _, server_addr = parseaddr(getattr(settings, "SERVER_EMAIL", ""))
+    if server_addr:
+        return server_addr
+    return "no-reply@bizcontrol.app"
+
+
+def get_system_sender_email():
+    configured = (getattr(settings, "DEFAULT_FROM_EMAIL", "") or "").strip()
+    if configured:
+        return configured
+    return formataddr(("BizControl", _resolve_base_sender_address()))
+
+
+def get_tenant_sender_email(business_name):
+    name = (business_name or "").strip()
+    if not name:
+        name = parseaddr(get_system_sender_email())[0] or "BizControl"
+    return formataddr((name, _resolve_base_sender_address()))
 
 
 def build_pdf_attachment(filename, content_bytes):
-    return {
-        "filename": filename,
-        "content": base64.b64encode(content_bytes).decode("ascii"),
-        "content_type": "application/pdf",
-    }
+    return (filename, content_bytes, "application/pdf")
 
 
-def send_resend_email(*, to_email, subject, html, attachments=None, reply_to=None):
-    api_key = settings.RESEND_API_KEY
-    if not api_key:
-        return False, "Envio de email nao configurado."
+def send_transactional_email(
+    *,
+    to_email,
+    subject,
+    html="",
+    text="",
+    attachments=None,
+    reply_to=None,
+    from_email=None,
+    fail_silently=False,
+):
+    if not to_email:
+        return False, "Destino do email nao informado."
+    if not subject:
+        return False, "Assunto do email nao informado."
 
-    from_email = settings.RESEND_FROM_EMAIL
-    from_name = settings.RESEND_FROM_NAME or "BizControl"
-    payload = {
-        "from": f"{from_name} <{from_email}>",
-        "to": [to_email],
-        "subject": subject,
-        "html": html,
-    }
-    if reply_to:
-        payload["reply_to"] = reply_to
-    if attachments:
-        payload["attachments"] = attachments
+    html_body = html or ""
+    text_body = text or strip_tags(html_body)
+    if not text_body and not html_body:
+        return False, "Conteudo do email nao informado."
+
+    message = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=(from_email or get_system_sender_email()),
+        to=[to_email],
+        reply_to=[reply_to] if reply_to else None,
+    )
+    if html_body:
+        message.attach_alternative(html_body, "text/html")
+
+    for attachment in attachments or []:
+        if isinstance(attachment, tuple) and len(attachment) == 3:
+            filename, content, content_type = attachment
+            message.attach(filename, content, content_type)
+            continue
+        if isinstance(attachment, dict):
+            filename = attachment.get("filename") or "attachment.bin"
+            content = attachment.get("content", b"")
+            content_type = attachment.get("content_type", "application/octet-stream")
+            if isinstance(content, str):
+                try:
+                    content = base64.b64decode(content, validate=True)
+                except Exception:
+                    content = content.encode("utf-8")
+            message.attach(filename, content, content_type)
 
     try:
-        response = requests.post(
-            RESEND_API_URL,
-            json=payload,
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=20,
-        )
-    except requests.RequestException:
-        logger.exception("Erro ao enviar email via Resend.")
+        message.send(fail_silently=fail_silently)
+    except Exception:
+        logger.exception("Erro ao enviar email transacional via SMTP.")
         return False, "Nao foi possivel enviar o email."
 
-    if 200 <= response.status_code < 300:
-        return True, ""
-
-    logger.error("Erro Resend (%s): %s", response.status_code, response.text)
-    return False, "Nao foi possivel enviar o email."
+    return True, ""

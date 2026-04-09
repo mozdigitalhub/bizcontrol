@@ -55,6 +55,7 @@ class TenantRegisterSerializer(serializers.Serializer):
     tenant_type = serializers.ChoiceField(choices=tuple(TENANT_TYPE_MAP.keys()))
     owner_full_name = serializers.CharField(max_length=150)
     owner_email = serializers.EmailField()
+    tenant_email = serializers.EmailField(required=False, allow_blank=True)
     owner_phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
@@ -108,6 +109,7 @@ class TenantRegisterSerializer(serializers.Serializer):
         tenant_name = validated_data["tenant_name"].strip()
         business_type = TENANT_TYPE_MAP[validated_data["tenant_type"]]
         owner_email = validated_data["owner_email"].strip().lower()
+        tenant_email = (validated_data.get("tenant_email") or "").strip().lower()
         first_name, last_name = _split_name(validated_data["owner_full_name"])
         registration_ip = (self.context.get("registration_ip") or "").strip()
 
@@ -120,7 +122,7 @@ class TenantRegisterSerializer(serializers.Serializer):
                 business_type=business_type,
                 status=Business.STATUS_PENDING,
                 phone=validated_data.get("owner_phone", ""),
-                email=owner_email,
+                email=tenant_email,
                 nuit=validated_data.get("nuit"),
                 commercial_registration=validated_data.get("commercial_registration", "").strip(),
                 address=validated_data.get("address", ""),

@@ -25,7 +25,11 @@ from quotations.services import (
     reject_quotation,
     update_quotation_items,
 )
-from bizcontrol.emailing import build_pdf_attachment, send_resend_email
+from bizcontrol.emailing import (
+    build_pdf_attachment,
+    get_tenant_sender_email,
+    send_transactional_email,
+)
 from bizcontrol.pdf_utils import build_logo_src
 from tenants.forms import EmailSendForm
 from tenants.decorators import business_required, module_required, owner_required
@@ -476,13 +480,14 @@ def quotation_email_modal(request, pk):
                         "message": form.cleaned_data.get("message", ""),
                     },
                 )
-                reply_to = request.business.email or None
-                ok, error = send_resend_email(
+                reply_to = request.business.contact_email or None
+                ok, error = send_transactional_email(
                     to_email=form.cleaned_data["email"],
                     subject=subject,
                     html=html,
                     attachments=[attachment],
                     reply_to=reply_to,
+                    from_email=get_tenant_sender_email(request.business.name),
                 )
                 if ok:
                     success = True

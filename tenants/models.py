@@ -381,6 +381,31 @@ class Business(models.Model):
         return self.get_module_flags().get(self.MODULE_CATALOG, False)
 
     @property
+    def contact_email(self):
+        cached = getattr(self, "_cached_contact_email", None)
+        if cached is not None:
+            return cached
+        raw_email = (self.email or "").strip()
+        if not raw_email or not self.pk:
+            self._cached_contact_email = raw_email
+            return raw_email
+        owner_email = (
+            BusinessMembership.objects.filter(
+                business=self,
+                role=BusinessMembership.ROLE_OWNER,
+                is_active=True,
+            )
+            .values_list("user__email", flat=True)
+            .first()
+            or ""
+        ).strip()
+        if owner_email and raw_email.lower() == owner_email.lower():
+            self._cached_contact_email = ""
+            return ""
+        self._cached_contact_email = raw_email
+        return raw_email
+
+    @property
     def allow_credit_sales_enabled(self):
         return self.feature_enabled(self.FEATURE_ALLOW_CREDIT_SALES)
 

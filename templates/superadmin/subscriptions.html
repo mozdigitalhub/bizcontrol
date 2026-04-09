@@ -1,0 +1,87 @@
+{% extends "superadmin/base.html" %}
+{% block title %}Subscricoes - SuperAdmin{% endblock %}
+{% block page_title %}Subscricoes e Billing{% endblock %}
+{% block page_subtitle %}Supervisao de planos, renovacoes, comprovativos e receita recorrente{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>Ativas</small><h3>{{ cards.active }}</h3></div></div>
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>Trial</small><h3>{{ cards.trial }}</h3></div></div>
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>Expiradas</small><h3>{{ cards.expired }}</h3></div></div>
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>Suspensas</small><h3>{{ cards.suspended }}</h3></div></div>
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>MRR</small><h3>{{ cards.mrr|floatformat:2 }}</h3></div></div>
+    <div class="col-6 col-xl-2"><div class="sa-card sa-kpi"><small>ARR</small><h3>{{ cards.arr|floatformat:2 }}</h3></div></div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <label class="form-label mb-1">Pesquisar</label>
+        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Tenant, slug, referencia...">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Estado</label>
+        <select class="form-select" name="status">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Comprovativo</label>
+        <select class="form-select" name="proof">
+          <option value="">Todos</option>
+          {% for value,label in proof_choices %}
+            <option value="{{ value }}" {% if proof == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-1">
+        <button class="btn btn-primary btn-sm w-100" type="submit">OK</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sa-card p-3">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Plano</th>
+            <th>Estado</th>
+            <th>Trial ate</th>
+            <th>Expira em</th>
+            <th>Proxima renovacao</th>
+            <th>Comprovativo</th>
+            <th>Referencia</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sub in page.object_list %}
+            <tr>
+              <td>{{ sub.business.name }}</td>
+              <td>{{ sub.plan.name|default:"Sem plano" }}</td>
+              <td><span class="badge text-bg-info">{{ sub.get_status_display }}</span></td>
+              <td>{% if sub.trial_ends_at %}{{ sub.trial_ends_at|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td>{% if sub.ends_at %}{{ sub.ends_at|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td>{% if sub.next_renewal_at %}{{ sub.next_renewal_at|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+              <td><span class="badge text-bg-secondary">{{ sub.get_payment_proof_status_display }}</span></td>
+              <td>{{ sub.payment_reference|default:"-" }}</td>
+              <td class="text-end">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_detail' sub.business_id %}">Gerir</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">Sem subscricoes.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "superadmin/partials/pagination.html" with page=page %}
+  </div>
+{% endblock %}

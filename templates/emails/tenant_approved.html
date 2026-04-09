@@ -4,26 +4,97 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Conta aprovada</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #F8FAFC; margin: 0; padding: 0; }
-      .wrapper { max-width: 600px; margin: 24px auto; background: #FFFFFF; border-radius: 12px; padding: 24px; }
-      .brand { color: #2563EB; font-weight: 700; }
-      .card { background: #F8FAFC; padding: 16px; border-radius: 10px; margin-top: 16px; }
-      .cta { margin-top: 16px; padding: 12px 16px; background: #2563EB; color: #FFFFFF; border-radius: 8px; display: inline-block; text-decoration: none; }
-      .muted { color: #475569; font-size: 14px; }
-    </style>
   </head>
-  <body>
-    <div class="wrapper">
-      <div class="brand">BizControl</div>
-      <h2>Conta aprovada</h2>
-      <p>O seu negocio <strong>{{ business.name }}</strong> foi aprovado. Pode entrar com os dados abaixo:</p>
-      <div class="card">
-        <p><strong>Utilizador:</strong> {{ owner.email }}</p>
-        <p><strong>Password temporaria:</strong> {{ temp_password }}</p>
-      </div>
-      <a class="cta" href="{{ login_url }}">Entrar no BizControl</a>
-      <p class="muted">Na primeira entrada vai ser solicitado que altere a password.</p>
+  <body style="margin:0;padding:0;background:#ecfdf5;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+      Conta aprovada. Dados de acesso disponiveis para entrar no BizControl.
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ecfdf5;padding:22px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #bbf7d0;">
+            <tr>
+              <td style="background:linear-gradient(135deg,#166534,#16a34a,#22c55e);padding:28px 28px 20px 28px;">
+                {% if brand_logo_url %}
+                  <img src="{{ brand_logo_url }}" alt="BizControl" width="132" style="display:block;max-width:132px;height:auto;border:0;">
+                {% else %}
+                  <div style="display:inline-block;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:999px;padding:8px 14px;color:#ffffff;font-size:17px;font-weight:700;letter-spacing:0.2px;">
+                    BizControl
+                  </div>
+                {% endif %}
+                <div style="margin-top:16px;font-size:28px;line-height:34px;font-weight:700;color:#ffffff;">
+                  Conta aprovada
+                </div>
+                <div style="margin-top:10px;font-size:15px;line-height:22px;color:#dcfce7;">
+                  O negocio <strong>{{ business.name }}</strong> ja pode aceder a plataforma.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px 28px 10px 28px;">
+                <div style="font-size:15px;line-height:24px;color:#334155;">
+                  Ola{% if owner.first_name %} {{ owner.first_name }}{% endif %},<br>
+                  O registo foi validado com sucesso. Use os dados abaixo para o primeiro acesso.
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 28px 4px 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #d1fae5;border-radius:14px;background:#f0fdf4;">
+                  <tr>
+                    <td style="padding:16px 18px;">
+                      <div style="font-size:12px;color:#047857;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Credenciais de acesso</div>
+                      <div style="font-size:15px;color:#0f172a;margin-top:10px;"><strong>Utilizador:</strong> {{ owner.email }}</div>
+                      <div style="font-size:15px;color:#0f172a;margin-top:6px;"><strong>Password temporaria:</strong> {{ temp_password }}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            {% if login_url %}
+              <tr>
+                <td style="padding:18px 28px 8px 28px;">
+                  <a href="{{ login_url }}" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 18px;border-radius:10px;">
+                    Entrar no BizControl
+                  </a>
+                </td>
+              </tr>
+            {% endif %}
+
+            <tr>
+              <td style="padding:4px 28px 10px 28px;font-size:14px;line-height:22px;color:#64748b;">
+                Por seguranca, na primeira entrada sera solicitado que altere a password.
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:12px 28px 30px 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+                  <tr>
+                    <td style="padding:14px 16px;font-size:13px;line-height:20px;color:#475569;">
+                      Se precisar de apoio, contacte
+                      <a href="mailto:{{ support_contact }}" style="color:#166534;text-decoration:none;font-weight:600;">{{ support_contact }}</a>.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;margin-top:10px;">
+            <tr>
+              <td align="center" style="font-size:12px;line-height:18px;color:#64748b;padding:0 10px;">
+                BizControl SaaS - Conta ativada com sucesso
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
+

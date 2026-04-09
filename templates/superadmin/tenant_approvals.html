@@ -1,0 +1,87 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Aprovacoes de Tenants - SuperAdmin{% endblock %}
+{% block page_title %}Fila de aprovacao{% endblock %}
+{% block page_subtitle %}Analise e aprovacao de tenants pendentes{% endblock %}
+
+{% block top_actions %}
+  <a class="btn btn-success btn-sm" href="{% url 'superadmin:tenant_create' %}">Criar tenant</a>
+{% endblock %}
+
+{% block content %}
+  <div class="sa-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1">Pendentes de aprovacao</h5>
+        <div class="small text-muted">{{ pending_count }} tenant(s) aguardando decisao.</div>
+      </div>
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_list' %}?status=pending">Ver em lista</a>
+    </div>
+  </div>
+
+  <div class="d-grid gap-3">
+    {% for entry in entries %}
+      <div class="sa-card p-3">
+        <div class="row g-3">
+          <div class="col-xl-5">
+            <div class="fw-semibold">{{ entry.business.name }}</div>
+            <div class="small text-muted">
+              {{ entry.business.get_business_type_display }} |
+              Registado: {{ entry.business.registered_at|date:"d/m/Y H:i" }}
+            </div>
+            <div class="small mt-2"><strong>Owner:</strong> {% if entry.owner %}{{ entry.owner.get_full_name|default:entry.owner.username }} ({{ entry.owner.email }}){% else %}Nao definido{% endif %}</div>
+            <div class="small"><strong>Contacto:</strong> {{ entry.business.phone|default:"-" }}</div>
+            <div class="small"><strong>Cidade:</strong> {{ entry.business.city|default:"-" }}</div>
+            <div class="small"><strong>Plano:</strong> {% if entry.subscription and entry.subscription.plan %}{{ entry.subscription.plan.name }}{% else %}Sem plano{% endif %}</div>
+          </div>
+          <div class="col-xl-5">
+            <label class="form-label small mb-1" for="note-{{ entry.business.id }}">Nota da decisao</label>
+            <textarea id="note-{{ entry.business.id }}" class="form-control" rows="3" placeholder="Motivo da aprovacao/rejeicao (interno e historico)"></textarea>
+            <div class="small text-muted mt-2">A aprovacao gera password temporaria e envia email de acesso ao owner.</div>
+          </div>
+          <div class="col-xl-2 d-grid gap-2">
+            <form method="post" action="{% url 'superadmin:tenant_status_action' entry.business.id %}" class="approval-form" data-note-id="note-{{ entry.business.id }}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="approve">
+              <input type="hidden" name="reason" value="">
+              <input type="hidden" name="next" value="{% url 'superadmin:tenant_approvals' %}">
+              <button class="btn btn-success w-100" type="submit">Aprovar</button>
+            </form>
+            <form method="post" action="{% url 'superadmin:tenant_status_action' entry.business.id %}" class="approval-form" data-note-id="note-{{ entry.business.id }}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="reject">
+              <input type="hidden" name="reason" value="">
+              <input type="hidden" name="next" value="{% url 'superadmin:tenant_approvals' %}">
+              <button class="btn btn-outline-danger w-100" type="submit">Rejeitar</button>
+            </form>
+            <form method="post" action="{% url 'superadmin:tenant_resend_pending_email' entry.business.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'superadmin:tenant_approvals' %}">
+              <button class="btn btn-outline-secondary w-100" type="submit">Reenviar email</button>
+            </form>
+            <a class="btn btn-outline-primary w-100" href="{% url 'superadmin:tenant_detail' entry.business.id %}">Detalhes</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="sa-card p-4 text-center text-muted">Sem tenants pendentes no momento.</div>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      document.querySelectorAll(".approval-form").forEach(function (form) {
+        form.addEventListener("submit", function () {
+          const noteId = form.dataset.noteId;
+          const noteField = noteId ? document.getElementById(noteId) : null;
+          const hiddenReason = form.querySelector("input[name='reason']");
+          if (noteField && hiddenReason) {
+            hiddenReason.value = noteField.value || "";
+          }
+        });
+      });
+    })();
+  </script>
+{% endblock %}

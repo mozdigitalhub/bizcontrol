@@ -40,14 +40,22 @@ class TenantLoginFlowTests(TestCase):
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_active_tenant_can_login(self):
-        self._create_business(Business.STATUS_ACTIVE)
+        business = self._create_business(Business.STATUS_ACTIVE)
         response = self.client.post(
             reverse("login"),
             {"username": self.user.username, "password": self.password},
             follow=True,
         )
         self.assertIn("_auth_user_id", self.client.session)
+        self.assertEqual(self.client.session.get("business_id"), business.id)
         self.assertEqual(response.status_code, 200)
+
+    def test_select_business_auto_redirects_when_single_active_business(self):
+        business = self._create_business(Business.STATUS_ACTIVE)
+        self.client.login(username=self.user.username, password=self.password)
+        response = self.client.get(reverse("tenants:select_business"))
+        self.assertRedirects(response, reverse("reports:dashboard"), fetch_redirect_response=False)
+        self.assertEqual(self.client.session.get("business_id"), business.id)
 
     def test_force_password_change_on_first_login(self):
         self._create_business(Business.STATUS_ACTIVE)

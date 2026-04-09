@@ -1,0 +1,135 @@
+{% extends "superadmin/base.html" %}
+{% block title %}Tenants - SuperAdmin{% endblock %}
+{% block page_title %}Gestao de Tenants{% endblock %}
+{% block page_subtitle %}Pesquisa, filtros e controlo de estado dos negocios registados{% endblock %}
+{% block top_actions %}
+  <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_approvals' %}">Fila de aprovacao</a>
+  <a class="btn btn-success btn-sm" href="{% url 'superadmin:tenant_create' %}">Criar tenant</a>
+{% endblock %}
+
+{% block content %}
+  <div class="sa-card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label mb-1">Pesquisar</label>
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Nome, email, telefone, cidade...">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Estado</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Tipo</label>
+        <select name="type" class="form-select">
+          <option value="">Todos</option>
+          {% for value,label in type_choices %}
+            <option value="{{ value }}" {% if tenant_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Subscricao</label>
+        <select name="subscription_status" class="form-select">
+          <option value="">Todas</option>
+          {% for value,label in subscription_choices %}
+            <option value="{{ value }}" {% if subscription_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Ordenar</label>
+        <select name="sort" class="form-select">
+          <option value="registered_desc" {% if sort == "registered_desc" %}selected{% endif %}>Mais recentes</option>
+          <option value="registered_asc" {% if sort == "registered_asc" %}selected{% endif %}>Mais antigos</option>
+          <option value="name_asc" {% if sort == "name_asc" %}selected{% endif %}>Nome A-Z</option>
+          <option value="name_desc" {% if sort == "name_desc" %}selected{% endif %}>Nome Z-A</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary btn-sm" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sa-card p-3">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Subscricao</th>
+            <th>Onboarding</th>
+            <th>Usuarios</th>
+            <th>Dados operacionais</th>
+            <th>Ultimo acesso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tenant in page.object_list %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ tenant.name }}</div>
+                <div class="small text-muted">{{ tenant.email|default:"sem email" }} | {{ tenant.phone|default:"sem telefone" }}</div>
+              </td>
+              <td>{{ tenant.get_business_type_display }}</td>
+              <td>
+                {% if tenant.status == "active" %}
+                  <span class="badge text-bg-success">Ativo</span>
+                {% elif tenant.status == "pending" %}
+                  <span class="badge text-bg-warning">Pendente</span>
+                {% elif tenant.status == "rejected" %}
+                  <span class="badge text-bg-danger">Rejeitado</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if tenant.subscription %}
+                  <span class="badge text-bg-info">{{ tenant.subscription.get_status_display }}</span>
+                  <div class="small text-muted">{{ tenant.subscription.plan.name|default:"Sem plano" }}</div>
+                {% else %}
+                  <span class="badge text-bg-light">Sem subscricao</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if tenant.status == "active" and tenant.approved_at %}
+                  <span class="badge text-bg-success">Aprovado</span>
+                {% elif tenant.status == "pending" %}
+                  <span class="badge text-bg-warning">Pendente</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">N/A</span>
+                {% endif %}
+              </td>
+              <td>{{ tenant.users_count|default:0 }}</td>
+              <td class="small">
+                P: {{ tenant.products_count|default:0 }}<br>
+                C: {{ tenant.customers_count|default:0 }}<br>
+                F: {{ tenant.invoices_count|default:0 }}<br>
+                V: {{ tenant.sales_count|default:0 }}
+              </td>
+              <td class="small text-muted">
+                {% if tenant.last_access %}{{ tenant.last_access|date:"d/m/Y H:i" }}{% else %}Sem acesso{% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'superadmin:tenant_detail' tenant.id %}">Detalhes</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">Nenhum tenant encontrado com os filtros atuais.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "superadmin/partials/pagination.html" with page=page %}
+  </div>
+{% endblock %}

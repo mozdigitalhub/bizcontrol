@@ -1,0 +1,135 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Utilizadores Globais - SuperAdmin{% endblock %}
+{% block page_title %}Utilizadores da Plataforma{% endblock %}
+{% block page_subtitle %}Visao global de acessos, roles e atividade de utilizadores{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="sa-card sa-kpi">
+        <small>SuperAdmin</small>
+        <h3>{{ role_distribution.superadmin }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="sa-card sa-kpi">
+        <small>Owners</small>
+        <h3>{{ role_distribution.owner }}</h3>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="sa-card sa-kpi">
+        <small>Staff</small>
+        <h3>{{ role_distribution.staff }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label mb-1">Pesquisar</label>
+        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="username, email, nome...">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Tenant</label>
+        <select class="form-select" name="tenant">
+          <option value="">Todos</option>
+          {% for tenant in tenants %}
+            <option value="{{ tenant.id }}" {% if tenant_id == tenant.id|stringformat:'s' %}selected{% endif %}>{{ tenant.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Papel</label>
+        <select class="form-select" name="role">
+          <option value="">Todos</option>
+          <option value="superadmin" {% if role == "superadmin" %}selected{% endif %}>SuperAdmin</option>
+          <option value="owner" {% if role == "owner" %}selected{% endif %}>Owner</option>
+          <option value="staff" {% if role == "staff" %}selected{% endif %}>Staff</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label mb-1">Ativo</label>
+        <select class="form-select" name="active">
+          <option value="">Todos</option>
+          <option value="yes" {% if active == "yes" %}selected{% endif %}>Sim</option>
+          <option value="no" {% if active == "no" %}selected{% endif %}>Nao</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <button class="btn btn-primary btn-sm w-100" type="submit">Filtrar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-xl-8">
+      <div class="sa-card p-3">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Utilizador</th>
+                <th>Email</th>
+                <th>Tenants</th>
+                <th>Ultimo login</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in page.object_list %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="small text-muted">@{{ user.username }}</div>
+                  </td>
+                  <td>{{ user.email|default:"-" }}</td>
+                  <td>{{ user.tenant_count|default:0 }}</td>
+                  <td>{% if user.last_login %}{{ user.last_login|date:"d/m/Y H:i" }}{% else %}Nunca{% endif %}</td>
+                  <td>
+                    {% if user.is_active %}
+                      <span class="badge text-bg-success">Ativo</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Inativo</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if user.id != request.user.id %}
+                      <form method="post" action="{% url 'superadmin:user_toggle_active' user.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-secondary btn-sm" type="submit">
+                          {% if user.is_active %}Desativar{% else %}Ativar{% endif %}
+                        </button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Sem utilizadores para os filtros selecionados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include "superadmin/partials/pagination.html" with page=page %}
+      </div>
+    </div>
+    <div class="col-12 col-xl-4">
+      <div class="sa-card p-3">
+        <h6 class="mb-3">Ultimos logins</h6>
+        <div class="d-grid gap-2">
+          {% for item in latest_logins %}
+            <div class="border rounded-3 p-2">
+              <div class="fw-semibold">{{ item.get_full_name|default:item.username }}</div>
+              <div class="small text-muted">{{ item.last_login|date:"d/m/Y H:i" }}</div>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem registos de login.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

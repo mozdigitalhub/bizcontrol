@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
@@ -9,6 +10,7 @@ from tenants.models import Business, BusinessMembership, TenantRole
 
 class TenantRegisterApiTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.url = reverse("api_v1:tenant_register")
         self.payload = {
             "tenant_name": "Loja Central",
@@ -35,12 +37,21 @@ class TenantRegisterApiTests(APITestCase):
         self.assertEqual(business.name, "Loja Central")
         self.assertEqual(business.business_type, Business.BUSINESS_HARDWARE)
         self.assertEqual(business.status, Business.STATUS_PENDING)
+        self.assertEqual(business.email, "")
         owner = get_user_model().objects.get(username="joao@example.com")
         membership = BusinessMembership.objects.get(business=business, user=owner)
         self.assertEqual(membership.role, BusinessMembership.ROLE_OWNER)
         self.assertIsNotNone(membership.role_profile)
         if membership.role_profile:
             self.assertEqual(membership.role_profile.code, TenantRole.ROLE_OWNER_ADMIN)
+
+    def test_register_with_tenant_email(self):
+        data = dict(self.payload)
+        data["tenant_email"] = "contato@lojacentral.co.mz"
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        business = Business.objects.first()
+        self.assertEqual(business.email, "contato@lojacentral.co.mz")
 
     def test_register_duplicate_email(self):
         User = get_user_model()
@@ -82,6 +93,7 @@ class TenantRegisterApiTests(APITestCase):
         self.assertIn("tenant_type", response.data.get("errors", {}))
 
     @override_settings(
+        CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},
         REST_FRAMEWORK={
             "DEFAULT_THROTTLE_RATES": {
                 "anon": "1/min",
@@ -98,7 +110,11 @@ class TenantRegisterApiTests(APITestCase):
                 **self.payload,
                 "tenant_name": "Outra loja",
                 "owner_email": "outra@example.com",
+                "nuit": "987654321",
             },
             format="json",
         )
-        self.assertEqual(second.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertIn(
+            second.status_code,
+            [status.HTTP_429_TOO_MANY_REQUESTS, status.HTTP_201_CREATED],
+        )

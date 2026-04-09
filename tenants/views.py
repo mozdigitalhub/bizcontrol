@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 
 from accounts.forms import UserPasswordForm, UserProfileForm
 from accounts.models import UserProfile
+from accounts.passwords import generate_temp_password
 from tenants.decorators import _is_owner, business_required, owner_required
 from tenants.forms import (
     BusinessProfileForm,
@@ -40,6 +41,7 @@ from tenants.rbac import (
 )
 from tenants.services import send_approved_email, send_pending_email, send_rejected_email
 from tenants.serializers import TenantRegisterSerializer
+from tenants.utils import get_default_business_membership
 
 
 def _superuser_required(view_func):
@@ -60,6 +62,11 @@ def select_business(request):
     if is_superuser:
         businesses = Business.objects.order_by("name")
     else:
+        default_membership = get_default_business_membership(request.user)
+        if default_membership:
+            request.session["business_id"] = default_membership.business_id
+            next_url = request.GET.get("next") or "reports:dashboard"
+            return redirect(next_url)
         memberships = (
             BusinessMembership.objects.filter(
                 user=request.user,
@@ -106,19 +113,34 @@ def select_business(request):
 def business_profile(request):
     business = request.business
     is_owner = _is_owner(request)
+    owner_membership = (
+        BusinessMembership.objects.filter(
+            business=business,
+            role=BusinessMembership.ROLE_OWNER,
+            is_active=True,
+        )
+        .select_related("user")
+        .first()
+    )
+    owner_email = (owner_membership.user.email or "").strip() if owner_membership else ""
     if request.method == "POST":
         form = BusinessProfileForm(
             request.POST,
             request.FILES,
             instance=business,
             can_edit_legal=is_owner,
+            owner_email=owner_email,
         )
         if form.is_valid():
             form.save()
             messages.success(request, "Perfil do negocio atualizado.")
             return redirect("tenants:business_profile")
     else:
-        form = BusinessProfileForm(instance=business, can_edit_legal=is_owner)
+        form = BusinessProfileForm(
+            instance=business,
+            can_edit_legal=is_owner,
+            owner_email=owner_email,
+        )
     return render(
         request,
         "tenants/business_profile.html",
@@ -269,7 +291,7 @@ def tenant_approve(request, business_id):
     if not owner:
         messages.error(request, "Nao foi possivel localizar o utilizador owner.")
         return redirect("tenants:tenant_approvals")
-    temp_password = get_user_model().objects.make_random_password()
+    temp_password = generate_temp_password()
     owner.set_password(temp_password)
     owner.save(update_fields=["password"])
     profile, _ = UserProfile.objects.get_or_create(user=owner)
@@ -619,7 +641,7 @@ def staff_create(request):
             phone = cleaned.get("phone")
             username = email or phone
             User = get_user_model()
-            password = cleaned.get("password") or User.objects.make_random_password()
+            password = cleaned.get("password") or generate_temp_password()
             user = User.objects.create_user(
                 username=username,
                 email=email or "",

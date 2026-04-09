@@ -81,3 +81,11 @@ class TenantProfileTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Password atual")
+
+    def test_business_profile_hides_owner_email_in_company_email_field(self):
+        self.business.email = "owner@example.com"
+        self.business.save(update_fields=["email"])
+        response = self.client.get(reverse("tenants:business_profile"))
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertEqual(form.initial.get("email"), "")

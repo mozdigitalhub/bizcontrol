@@ -1,0 +1,85 @@
+{% extends "superadmin/base.html" %}
+
+{% block title %}Planos - SuperAdmin{% endblock %}
+{% block page_title %}Planos de Subscricao{% endblock %}
+{% block page_subtitle %}Definicao de precos, limites e defaults de trial{% endblock %}
+
+{% block content %}
+  <div class="row g-3">
+    <div class="col-12 col-xl-7">
+      <div class="sa-card p-3 h-100">
+        <h5 class="mb-3">Planos existentes</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Codigo</th>
+                <th>Preco mensal</th>
+                <th>Trial</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for plan in plans %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ plan.name }}</div>
+                    <div class="small text-muted">{{ plan.description|truncatechars:70 }}</div>
+                  </td>
+                  <td>{{ plan.code }}</td>
+                  <td>{{ plan.price_monthly|floatformat:2 }} MZN</td>
+                  <td>{{ plan.trial_days }} dias</td>
+                  <td>
+                    {% if plan.is_active %}
+                      <span class="badge text-bg-success">Ativo</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Inativo</span>
+                    {% endif %}
+                    {% if plan.is_default %}
+                      <span class="badge text-bg-primary">Default</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-outline-primary btn-sm" href="?plan={{ plan.id }}">Editar</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="text-muted text-center py-4">Nenhum plano criado.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-xl-5">
+      <div class="sa-card p-3">
+        <h5 class="mb-3">{% if selected_plan %}Editar plano{% else %}Novo plano{% endif %}</h5>
+        <form method="post">
+          {% csrf_token %}
+          {% if selected_plan %}
+            <input type="hidden" name="plan_id" value="{{ selected_plan.id }}">
+          {% endif %}
+          <div class="row g-2">
+            {% for field in form %}
+              <div class="col-12 {% if field.name != 'description' and field.name != 'feature_flags' %}col-md-6{% endif %}">
+                <label class="form-label mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                  <div class="text-danger small">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" type="submit">Guardar plano</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

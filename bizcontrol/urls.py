@@ -21,19 +21,23 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
-from accounts.forms import TenantLoginForm
+from accounts.views import BizControlLoginView
+from superadmin import views as superadmin_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path(
         "accounts/login/",
-        auth_views.LoginView.as_view(
-            template_name="registration/login.html",
-            authentication_form=TenantLoginForm,
-        ),
+        BizControlLoginView.as_view(),
         name="login",
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path(
+        "superadmin/tenants/<int:business_id>/resend-pending-email/",
+        superadmin_views.tenant_resend_pending_email,
+        name="tenant_resend_pending_email",
+    ),
+    path("superadmin/", include(("superadmin.urls", "superadmin"), namespace="superadmin")),
     path("tenants/", include(("tenants.urls", "tenants"), namespace="tenants")),
     path("api/v1/", include(("tenants.api_urls", "tenants_api"), namespace="api_v1")),
     path("", include(("reports.urls", "reports"), namespace="reports")),

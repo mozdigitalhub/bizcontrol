@@ -10,15 +10,18 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <style>
       :root {
-        --sa-bg: #f4f6fb;
+        --sa-bg: #eef3fa;
         --sa-surface: #ffffff;
-        --sa-border: #dbe3ef;
-        --sa-text: #18233a;
-        --sa-muted: #61708a;
+        --sa-border: #d8e1ef;
+        --sa-text: #0f172a;
+        --sa-muted: #52607a;
         --sa-primary: #1d4ed8;
-        --sa-primary-soft: #e2eafc;
+        --sa-primary-soft: #e7efff;
         --sa-success: #16a34a;
         --sa-warning: #f59e0b;
         --sa-danger: #dc2626;
@@ -26,6 +29,7 @@
       }
 
       body {
+        font-family: "Manrope", system-ui, sans-serif;
         background: var(--sa-bg);
         color: var(--sa-text);
       }
@@ -37,12 +41,16 @@
 
       .sa-sidebar {
         width: 270px;
-        background: linear-gradient(170deg, #102b67 0%, #1d4ed8 100%);
+        background:
+          radial-gradient(circle at 22% 8%, rgba(255, 255, 255, 0.2), transparent 32%),
+          linear-gradient(170deg, #102b67 0%, #1d4ed8 58%, #0f766e 100%);
         color: #fff;
         display: flex;
         flex-direction: column;
         padding: 24px 16px;
         gap: 16px;
+        border-right: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 18px 0 34px rgba(15, 23, 42, 0.18);
       }
 
       .sa-brand {
@@ -54,6 +62,7 @@
         margin: 0;
         font-size: 20px;
         font-weight: 700;
+        font-family: "Sora", "Manrope", sans-serif;
       }
 
       .sa-brand p {
@@ -71,14 +80,16 @@
         color: rgba(255, 255, 255, 0.9);
         text-decoration: none;
         padding: 10px 12px;
-        border-radius: 10px;
-        font-weight: 500;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: all 0.2s ease;
       }
 
       .sa-nav a:hover,
       .sa-nav a.active {
         color: #fff;
         background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
       }
 
       .sa-sidebar-footer {
@@ -94,7 +105,8 @@
       }
 
       .sa-topbar {
-        background: var(--sa-surface);
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(8px);
         border-bottom: 1px solid var(--sa-border);
         padding: 18px 24px;
         display: flex;
@@ -110,6 +122,8 @@
         margin: 0;
         font-size: 22px;
         font-weight: 700;
+        font-family: "Sora", "Manrope", sans-serif;
+        letter-spacing: -0.02em;
       }
 
       .sa-title p {
@@ -125,8 +139,8 @@
       .sa-card {
         background: var(--sa-surface);
         border: 1px solid var(--sa-border);
-        border-radius: 14px;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+        border-radius: 16px;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
       }
 
       .sa-kpi {
@@ -154,6 +168,90 @@
         border-bottom-color: var(--sa-border);
       }
 
+      .table thead th {
+        background: #f8fbff;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+      }
+
+      .table tbody tr:hover > * {
+        background: #f8fbff;
+      }
+
+      .btn {
+        border-radius: 12px;
+        font-weight: 700;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border-color: transparent;
+      }
+
+      .btn-outline-secondary {
+        border-color: #c7d4e8;
+        color: #1f3a5f;
+      }
+
+      .btn-outline-secondary:hover {
+        background: #f1f6ff;
+        border-color: #9bb2d7;
+      }
+
+      .form-control,
+      .form-select {
+        border-radius: 12px;
+        border-color: #cfdaeb;
+        min-height: 44px;
+      }
+
+      .form-control:focus,
+      .form-select:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
+      }
+
+      .bc-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .bc-pagination-summary {
+        font-size: 13px;
+        color: var(--sa-muted);
+        font-weight: 700;
+      }
+
+      .bc-pagination-jump {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bc-pagination-jump .form-control {
+        width: 86px;
+        min-height: 34px;
+        height: 34px;
+        text-align: center;
+        padding-left: 10px;
+      }
+
+      .bc-pagination .pagination {
+        gap: 4px;
+      }
+
+      .bc-pagination .page-link {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+
       .status-dot {
         display: inline-flex;
         width: 8px;
@@ -179,6 +277,7 @@
         .sa-sidebar {
           width: 100%;
           border-radius: 0 0 16px 16px;
+          box-shadow: none;
         }
       }
     </style>

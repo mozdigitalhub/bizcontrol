@@ -1,123 +1,493 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Dashboard - BizControl{% endblock %}
+
+{% block topbar_title %}
+  <h1>Painel executivo</h1>
+{% endblock %}
+
+{% block topbar_subtitle %}
+  <p>Visão geral do desempenho comercial e operacional.</p>
+{% endblock %}
 
 {% block topbar_badges %}
   <span class="pill">Hoje</span>
   <span class="pill">{{ sales_count }} {{ current_business.ui_labels.sales_count }}</span>
 {% endblock %}
 
+{% block extra_head %}
+  <style>
+    .dash-hero {
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background:
+        radial-gradient(circle at 82% 22%, rgba(20, 184, 166, 0.34), transparent 34%),
+        radial-gradient(circle at 8% 8%, rgba(59, 130, 246, 0.42), transparent 28%),
+        linear-gradient(140deg, #0f2c66 0%, #1d4ed8 54%, #0f766e 100%);
+      color: #ffffff;
+      box-shadow: 0 24px 44px rgba(15, 23, 42, 0.25);
+      padding: 24px;
+    }
+
+    .dash-hero h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .dash-hero p {
+      margin: 0;
+      color: rgba(241, 245, 249, 0.92);
+    }
+
+    .dash-hero-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .dash-hero-kpi {
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(6px);
+    }
+
+    .dash-hero-kpi .label {
+      font-size: 12px;
+      color: rgba(226, 232, 240, 0.92);
+    }
+
+    .dash-hero-kpi .value {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-top: 2px;
+    }
+
+    .dash-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .dash-actions .btn {
+      box-shadow: none;
+    }
+
+    .dash-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .dash-kpi-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .dash-kpi-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1d4ed8;
+      background: #e8f0ff;
+    }
+
+    .dash-kpi-card .label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .dash-kpi-card .value {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      margin-top: 2px;
+      color: #0f172a;
+    }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 14px;
+    }
+
+    .dash-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: #ffffff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+    }
+
+    .dash-card h4 {
+      margin: 0 0 2px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .dash-card .sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+
+    .dash-credit-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .dash-credit-box {
+      border-radius: 14px;
+      border: 1px solid #dbe6f4;
+      background: #f8fbff;
+      padding: 12px;
+    }
+
+    .dash-credit-box .label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .dash-credit-box .value {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 4px;
+      color: #0f172a;
+    }
+
+    .dash-donut-wrap {
+      display: grid;
+      place-items: center;
+      padding-top: 4px;
+    }
+
+    .dash-donut-label {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .dash-bars {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dash-bar-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .dash-bar-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: #1e293b;
+      font-weight: 700;
+    }
+
+    .dash-bar-track {
+      height: 9px;
+      border-radius: 999px;
+      background: #e9f1fb;
+      overflow: hidden;
+    }
+
+    .dash-bar-fill {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2563eb, #0f766e);
+      transition: width 0.28s ease;
+    }
+
+    .dash-bar-fill.product.rank-1 {
+      background: linear-gradient(90deg, #1d4ed8, #2563eb);
+    }
+
+    .dash-bar-fill.product.rank-2 {
+      background: linear-gradient(90deg, #0f766e, #14b8a6);
+    }
+
+    .dash-bar-fill.product.rank-3 {
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+    }
+
+    .dash-bar-fill.product.rank-4 {
+      background: linear-gradient(90deg, #ea580c, #f97316);
+    }
+
+    .dash-bar-fill.product.rank-5 {
+      background: linear-gradient(90deg, #b45309, #f59e0b);
+    }
+
+    .dash-level {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+      margin-left: 10px;
+    }
+
+    .dash-trend-svg {
+      width: 100%;
+      height: 240px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #f8fbff, #ffffff);
+      border: 1px solid #e1ebf8;
+    }
+
+    .dash-trend-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .dash-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .dash-dot.sales { background: #2563eb; }
+    .dash-dot.payments { background: #0f766e; }
+
+    .dash-trend-labels {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .dash-empty {
+      padding: 8px;
+      border-radius: 12px;
+      background: #f8fbff;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1200px) {
+      .dash-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dash-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dash-hero {
+        padding: 16px;
+      }
+
+      .dash-hero h2 {
+        font-size: 22px;
+      }
+
+      .dash-hero-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .dash-credit-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .dash-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dash-trend-svg {
+        height: 190px;
+      }
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
-  <section class="grid-4">
-    <div class="stat-card">
-      <div class="stat-icon">PR</div>
-      <div>
-        <h3>{{ product_count }}</h3>
-        <p>{{ current_business.ui_labels.products_total }}</p>
+  <section class="dash-hero">
+    <h2>{{ current_business.name }}</h2>
+    <p>Acompanhe vendas, crédito e stock num único painel de controlo.</p>
+
+    <div class="dash-hero-kpis">
+      <div class="dash-hero-kpi">
+        <div class="label">Vendas hoje</div>
+        <div class="value">{{ sales_today|floatformat:2 }} MZN</div>
+      </div>
+      <div class="dash-hero-kpi">
+        <div class="label">Clientes</div>
+        <div class="value">{{ customer_count }}</div>
+      </div>
+      <div class="dash-hero-kpi">
+        <div class="label">Stock baixo</div>
+        <div class="value">{{ low_stock_count }}</div>
       </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-icon">VD</div>
-      <div>
-        <h3>{{ sales_today|floatformat:2 }} MZN</h3>
-        <p>{{ current_business.ui_labels.sales_today }}</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">CL</div>
-      <div>
-        <h3>{{ customer_count }}</h3>
-        <p>Total de clientes</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">ST</div>
-      <div>
-        <h3>{{ low_stock_count }}</h3>
-        <p>Stock baixo</p>
-      </div>
+
+    <div class="dash-actions">
+      {% if perms.sales.add_sale %}
+        <a class="btn btn-light btn-sm" href="{% url 'sales:new' %}">Nova venda</a>
+      {% endif %}
+      <a class="btn btn-outline-light btn-sm" href="{% url 'sales:list' %}">Ver vendas</a>
+      <a class="btn btn-outline-light btn-sm" href="{% url 'billing:invoice_list' %}">Ver faturação</a>
+      <a class="btn btn-outline-light btn-sm" href="{% url 'customers:list' %}">Ver clientes</a>
     </div>
   </section>
 
-  {% if current_business.allow_credit_sales_enabled %}
-    <section class="grid-3">
-      <div class="panel">
-        <h4>Crédito em aberto</h4>
-        <div class="stat-card" style="box-shadow: none; padding: 0; margin: 0;">
-          <div class="stat-icon" style="background: rgba(243, 181, 98, 0.2); color: #F59E0B;">F</div>
-          <div>
-            <h3>{{ receivable_open|floatformat:2 }}</h3>
-            <p>Saldo em aberto</p>
-          </div>
-        </div>
-        <div class="small text-muted mt-2">Total pago: {{ receivable_paid|floatformat:2 }} MZN</div>
+  <section class="dash-kpi-grid">
+    <article class="dash-kpi-card">
+      <div class="dash-kpi-icon">PR</div>
+      <div>
+        <div class="label">{{ current_business.ui_labels.products_total }}</div>
+        <div class="value">{{ product_count }}</div>
       </div>
-      <div class="panel text-center">
-        <h4>Pagamentos vs total</h4>
-        <div class="donut" style="--slice: {{ receivable_ratio_pct }};">
-          <span>{{ receivable_ratio_pct }}%</span>
-        </div>
-        <div class="small text-muted mt-2">Pago vs total de crédito</div>
+    </article>
+    <article class="dash-kpi-card">
+      <div class="dash-kpi-icon">VD</div>
+      <div>
+        <div class="label">{{ current_business.ui_labels.sales_count }}</div>
+        <div class="value">{{ sales_count }}</div>
       </div>
-      <div class="panel">
-        <h4>Top clientes por saldo</h4>
-        <div class="list">
-          {% for item in top_customers %}
-            <div>
-              <div class="d-flex justify-content-between small">
-                <span>{{ item.name }}</span>
-                <span>{{ item.balance|floatformat:2 }} MZN</span>
-              </div>
-              <div class="bar">
-                <span style="width: {{ item.percent|floatformat:0 }}%;"></span>
-              </div>
-            </div>
-          {% empty %}
-            <div class="text-muted small">Sem dados de clientes.</div>
-          {% endfor %}
-        </div>
+    </article>
+    <article class="dash-kpi-card">
+      <div class="dash-kpi-icon">CL</div>
+      <div>
+        <div class="label">Total de clientes</div>
+        <div class="value">{{ customer_count }}</div>
       </div>
-    </section>
-  {% else %}
-    <section class="grid-3">
-      <div class="panel" style="grid-column: span 3;">
-        <h4>Crédito desativado</h4>
-        <div class="text-muted small">Ative o crédito nas configurações para ver indicadores financeiros.</div>
+    </article>
+    <article class="dash-kpi-card">
+      <div class="dash-kpi-icon">ST</div>
+      <div>
+        <div class="label">Alertas de stock</div>
+        <div class="value">{{ low_stock_count }}</div>
       </div>
-    </section>
-  {% endif %}
+    </article>
+  </section>
 
-  <section class="grid-3">
-    <div class="chart" style="grid-column: span 2;">
+  <section class="dash-grid">
+    <article class="dash-card">
       <h4>{{ current_business.ui_labels.sales_vs_payments }}</h4>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      <div class="sub">Tendência dos últimos 6 meses.</div>
+      <svg class="dash-trend-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
         <polyline fill="none" stroke="#2563EB" stroke-width="2.4" points="{{ sales_points }}" />
         <polyline fill="none" stroke="#0F766E" stroke-width="2.4" points="{{ payment_points }}" />
       </svg>
-      <div class="chart-labels">
+      <div class="dash-trend-legend">
+        <span><i class="dash-dot sales"></i>Vendas</span>
+        <span><i class="dash-dot payments"></i>Pagamentos</span>
+      </div>
+      <div class="dash-trend-labels">
         {% for label in month_labels %}
           <span>{{ label }}</span>
         {% endfor %}
       </div>
-    </div>
-    <div class="panel">
+    </article>
+
+    <article class="dash-card">
       <h4>{{ current_business.ui_labels.top_products }}</h4>
-      <div class="list">
+      <div class="sub">Produtos com maior valor de vendas.</div>
+      <div class="dash-bars">
         {% for item in top_products %}
-          <div>
-            <div class="d-flex justify-content-between small">
+          <div class="dash-bar-row">
+            <div class="dash-bar-head">
               <span>{{ item.name }}</span>
-              <span>{{ item.total|floatformat:2 }} MZN</span>
+              <span>{{ item.total|floatformat:2 }} MZN <span class="dash-level">({{ item.percent|floatformat:0 }}%)</span></span>
             </div>
-            <div class="bar">
-              <span style="width: {{ item.percent|floatformat:0 }}%;"></span>
+            <div class="dash-bar-track">
+              <span class="dash-bar-fill product rank-{{ forloop.counter }}" style="width: {{ item.percent|floatformat:0 }}%;"></span>
             </div>
           </div>
         {% empty %}
-          <div class="text-muted small">Sem vendas confirmadas.</div>
+          <div class="dash-empty">Sem vendas confirmadas.</div>
         {% endfor %}
       </div>
-    </div>
+    </article>
   </section>
-{% endblock %}
 
+  {% if current_business.allow_credit_sales_enabled %}
+    <section class="dash-grid">
+      <article class="dash-card">
+        <h4>Crédito de clientes</h4>
+        <div class="sub">Situação atual de cobranças e saldos.</div>
+        <div class="dash-credit-metrics">
+          <div class="dash-credit-box">
+            <div class="label">Saldo em aberto</div>
+            <div class="value">{{ receivable_open|floatformat:2 }} MZN</div>
+          </div>
+          <div class="dash-credit-box">
+            <div class="label">Total pago</div>
+            <div class="value">{{ receivable_paid|floatformat:2 }} MZN</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="dash-card">
+        <h4>Top clientes por saldo</h4>
+        <div class="sub">Clientes com maior saldo pendente.</div>
+        <div class="dash-bars">
+          {% for item in top_customers %}
+            <div class="dash-bar-row">
+              <div class="dash-bar-head">
+                <span>{{ item.name }}</span>
+                <span>{{ item.balance|floatformat:2 }} MZN</span>
+              </div>
+              <div class="dash-bar-track">
+                <span class="dash-bar-fill" style="width: {{ item.percent|floatformat:0 }}%;"></span>
+              </div>
+            </div>
+          {% empty %}
+            <div class="dash-empty">Sem dados de clientes.</div>
+          {% endfor %}
+        </div>
+        <div class="dash-donut-wrap">
+          <div class="donut" style="--slice: {{ receivable_ratio_pct }};">
+            <span>{{ receivable_ratio_pct }}%</span>
+          </div>
+          <div class="dash-donut-label">Taxa de crédito liquidado</div>
+        </div>
+      </article>
+    </section>
+  {% else %}
+    <section class="dash-card">
+      <h4>Crédito desativado</h4>
+      <div class="sub">Ative o módulo de crédito para ver indicadores financeiros desta área.</div>
+    </section>
+  {% endif %}
+{% endblock %}

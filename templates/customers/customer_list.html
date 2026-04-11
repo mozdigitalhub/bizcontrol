@@ -2,98 +2,361 @@
 
 {% block title %}Clientes - BizControl{% endblock %}
 
-{% block content %}
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h1 class="h4 mb-0">Clientes</h1>
-    {% if perms.customers.add_customer %}
-      <a class="btn btn-primary" href="{% url 'customers:create' %}">
-        <i class="bi bi-plus-circle"></i>
-        Novo cliente
-      </a>
-    {% endif %}
-  </div>
+{% block topbar_title %}
+  <h1>Clientes</h1>
+{% endblock %}
 
-  <form class="card p-3 mb-3" method="get">
+{% block topbar_subtitle %}
+  <p>Gestão da base de clientes, contactos e crédito em aberto.</p>
+{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .customers-hero {
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background:
+        radial-gradient(circle at 90% 10%, rgba(20, 184, 166, 0.2), transparent 34%),
+        radial-gradient(circle at 8% 5%, rgba(37, 99, 235, 0.2), transparent 26%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .customers-hero h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+
+    .customers-hero p {
+      margin: 5px 0 0;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .customers-kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .customers-kpi {
+      border: 1px solid #dbe7f5;
+      border-radius: 14px;
+      background: #f8fbff;
+      padding: 12px;
+      min-height: 94px;
+    }
+
+    .customers-kpi .label {
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .customers-kpi .value {
+      margin-top: 5px;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .customers-filter {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .customers-filter .input-group-text {
+      background: transparent;
+      border: none;
+      color: #64748b;
+    }
+
+    .customers-filter .form-control {
+      border-left: 1px solid #cfdaeb;
+      height: 46px;
+    }
+
+    .customers-table-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .customers-table th {
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      color: #64748b;
+    }
+
+    .customer-ident {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .customer-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #0f766e);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex: 0 0 auto;
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+    }
+
+    .customer-name {
+      color: #0f172a;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .customer-name:hover {
+      color: #1d4ed8;
+    }
+
+    .customer-sub {
+      margin-top: 1px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .customer-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef4ff;
+      color: #1d4ed8;
+      border: 1px solid #d0def4;
+    }
+
+    .credit-amount {
+      font-size: 13px;
+      font-weight: 700;
+      color: #b45309;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 999px;
+      padding: 3px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .credit-ok {
+      font-size: 12px;
+      font-weight: 700;
+      color: #15803d;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      border-radius: 999px;
+      padding: 3px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .table-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1200px) {
+      .customers-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .customers-kpis {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .table-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .customers-kpis {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="customers-hero mb-3">
+    <div>
+      <h1>Clientes</h1>
+      <p>Acompanhe contactos, perfil e estado de crédito num único ecrã.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if perms.customers.add_customer %}
+        <a class="btn btn-primary" href="{% url 'customers:create' %}">
+          <i class="bi bi-plus-circle"></i>
+          Novo cliente
+        </a>
+      {% endif %}
+      <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">
+        <i class="bi bi-speedometer2"></i>
+        Dashboard
+      </a>
+    </div>
+  </section>
+
+  <section class="customers-kpis mb-3">
+    <article class="customers-kpi">
+      <div class="label">Total clientes</div>
+      <div class="value">{{ total_customers }}</div>
+    </article>
+    <article class="customers-kpi">
+      <div class="label">Empresas</div>
+      <div class="value">{{ company_customers }}</div>
+    </article>
+    <article class="customers-kpi">
+      <div class="label">Particulares</div>
+      <div class="value">{{ individual_customers }}</div>
+    </article>
+    <article class="customers-kpi">
+      <div class="label">Com email</div>
+      <div class="value">{{ customers_with_email }}</div>
+    </article>
+    <article class="customers-kpi">
+      <div class="label">Com crédito aberto</div>
+      <div class="value">{{ customers_with_open_credit }}</div>
+    </article>
+  </section>
+
+  <form class="card customers-filter p-3 mb-3" method="get">
     <div class="row g-2 align-items-end">
-      <div class="col-lg-8">
+      <div class="col-lg-9">
         <label class="form-label small">Pesquisa</label>
-        <input class="form-control" type="text" name="q" placeholder="Pesquisar por nome ou telefone" value="{{ query }}">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="text" name="q" placeholder="Pesquisar por nome ou telefone" value="{{ query }}">
+        </div>
       </div>
-      <div class="col-lg-4">
-        <button class="btn btn-outline-secondary w-100" type="submit">
-          <i class="bi bi-search"></i>
-          Pesquisar
+      <div class="col-lg-3">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-funnel"></i>
+          Filtrar
         </button>
       </div>
     </div>
   </form>
 
-  <div class="card">
+  <div class="card customers-table-card">
     <div class="table-responsive">
-      <table class="table mb-0 align-middle">
+      <table class="table mb-0 align-middle customers-table">
         <thead class="table-light">
           <tr>
-            <th>Nome</th>
-            <th>Telefone</th>
-            <th>Email</th>
-            <th class="text-end">Acoes</th>
+            <th>Cliente</th>
+            <th>Contacto</th>
+            <th>Tipo</th>
+            <th>Crédito</th>
+            <th class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for customer in page.object_list %}
             <tr>
-              <td>{{ customer.name }}</td>
-              <td>{{ customer.phone|default:"-" }}</td>
-              <td>{{ customer.email|default:"-" }}</td>
+              <td>
+                <div class="customer-ident">
+                  <div class="customer-avatar">{{ customer.name|slice:":2"|upper }}</div>
+                  <div>
+                    <a class="customer-name" href="{% url 'customers:detail' customer.id %}">
+                      {{ customer.name }}
+                    </a>
+                    <div class="customer-sub">
+                      {% if customer.nuit %}NUIT: {{ customer.nuit }}{% else %}Sem NUIT{% endif %}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div>{{ customer.phone|default:"-" }}</div>
+                <div class="small text-muted">{{ customer.email|default:"Sem email" }}</div>
+              </td>
+              <td>
+                <span class="customer-pill">
+                  <i class="bi bi-person-badge"></i>
+                  {{ customer.get_customer_type_display }}
+                </span>
+              </td>
+              <td>
+                {% if customer.open_receivable %}
+                  <span class="credit-amount">
+                    <i class="bi bi-exclamation-circle"></i>
+                    {{ customer.open_receivable_total|floatformat:2 }} MZN
+                  </span>
+                {% else %}
+                  <span class="credit-ok">
+                    <i class="bi bi-check-circle"></i>
+                    Sem dívida
+                  </span>
+                {% endif %}
+              </td>
               <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:detail' customer.id %}">
-                  <i class="bi bi-eye"></i>
-                </a>
-                {% if perms.customers.change_customer %}
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'customers:edit' customer.id %}">
-                    <i class="bi bi-pencil"></i>
+                <div class="table-actions">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:detail' customer.id %}">
+                    <i class="bi bi-eye"></i>
                   </a>
-                {% endif %}
-                {% if perms.receivables.add_payment and customer.open_receivable %}
-                  <button
-                    class="btn btn-sm btn-outline-success"
-                    type="button"
-                    hx-get="{% url 'receivables:pay_modal' customer.open_receivable.id %}?target=modal-container"
-                    hx-target="#modal-container"
-                    hx-swap="innerHTML"
-                  >
-                    <i class="bi bi-cash-coin"></i>
-                  </button>
-                {% endif %}
+                  {% if perms.customers.change_customer %}
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'customers:edit' customer.id %}">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  {% endif %}
+                  {% if perms.receivables.add_payment and customer.open_receivable %}
+                    <button
+                      class="btn btn-sm btn-outline-success"
+                      type="button"
+                      hx-get="{% url 'receivables:pay_modal' customer.open_receivable.id %}?target=modal-container"
+                      hx-target="#modal-container"
+                      hx-swap="innerHTML"
+                    >
+                      <i class="bi bi-cash-coin"></i>
+                    </button>
+                  {% endif %}
+                </div>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted">Sem clientes.</td>
+              <td colspan="5" class="text-center text-muted py-4">Sem clientes.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% if page.paginator.num_pages > 1 %}
-      <div class="card-footer bg-white border-0">
-        <nav class="d-flex justify-content-end">
-          <ul class="pagination mb-0">
-            {% if page.has_previous %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}">Anterior</a>
-              </li>
-            {% endif %}
-            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
-            {% if page.has_next %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}">Proximo</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      </div>
-    {% endif %}
+    <div class="card-footer bg-white border-0">
+      {% include "partials/pagination.html" with page=page %}
+    </div>
   </div>
 
   <div id="modal-container"></div>

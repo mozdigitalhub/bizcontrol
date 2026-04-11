@@ -16,7 +16,7 @@
     >
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <style>
       :root {
@@ -834,6 +834,258 @@
 
         .topbar-badges {
           justify-content: flex-start;
+        }
+      }
+
+      /* Premium revamp overrides */
+      :root {
+        --primary-600: #1d4ed8;
+        --primary-700: #1e40af;
+        --primary-500: #3b82f6;
+        --secondary-600: #0f766e;
+        --secondary-500: #14b8a6;
+        --bg: #eef3fa;
+        --card: #ffffff;
+        --border: #d8e1ef;
+        --text: #0f172a;
+        --text-muted: #52607a;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        --brand-soft: #e8f0ff;
+      }
+
+      body.app-body {
+        font-family: "Manrope", system-ui, sans-serif;
+        background:
+          radial-gradient(circle at 5% 0%, rgba(30, 64, 175, 0.12), transparent 30%),
+          radial-gradient(circle at 95% 8%, rgba(20, 184, 166, 0.12), transparent 32%),
+          linear-gradient(180deg, #f4f7fd 0%, #eef3fa 100%);
+      }
+
+      .app-shell {
+        gap: 20px;
+        padding: 18px;
+      }
+
+      .app-sidebar {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background:
+          radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.24), transparent 30%),
+          linear-gradient(175deg, #102a67 0%, #1d4ed8 58%, #0f766e 100%);
+        box-shadow: 0 22px 44px rgba(15, 23, 42, 0.28);
+      }
+
+      .profile {
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .avatar {
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+      }
+
+      .nav-section-title {
+        letter-spacing: 0.12em;
+      }
+
+      .nav-item,
+      .nav-sub-item {
+        transition: all 0.22s ease;
+      }
+
+      .nav-item.active,
+      .nav-item:hover,
+      .nav-sub-item.active,
+      .nav-sub-item:hover {
+        backdrop-filter: blur(5px);
+      }
+
+      .app-main {
+        gap: 16px;
+      }
+
+      .app-topbar {
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+      }
+
+      .topbar-title h1 {
+        font-family: "Sora", "Manrope", sans-serif;
+        letter-spacing: -0.02em;
+      }
+
+      .topbar-search input {
+        border-radius: 999px;
+        border: 1px solid #d5dfee;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      }
+
+      .app-content {
+        gap: 16px;
+      }
+
+      .card {
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }
+
+      .card .card-header {
+        border-bottom-color: rgba(148, 163, 184, 0.24);
+      }
+
+      .table thead th {
+        background: #f8fbff;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .table > tbody > tr {
+        transition: background-color 0.18s ease;
+      }
+
+      .table > tbody > tr:hover > * {
+        background: #f8fbff;
+      }
+
+      .btn {
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary-600), #1e3a8a);
+        border-color: transparent;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.26);
+      }
+
+      .btn-primary:hover,
+      .btn-primary:focus {
+        background: linear-gradient(135deg, var(--primary-700), #1e3a8a);
+        transform: translateY(-1px);
+      }
+
+      .btn-outline-secondary,
+      .btn-outline-primary {
+        background: #ffffff;
+        border-color: #c7d4e8;
+        color: #1f3a5f;
+      }
+
+      .btn-outline-secondary:hover,
+      .btn-outline-primary:hover {
+        border-color: #9bb2d7;
+        background: #f1f6ff;
+        color: #123d82;
+      }
+
+      .form-control,
+      .form-select,
+      textarea.form-control,
+      .ts-wrapper .ts-control {
+        border-radius: 12px;
+        border-color: #cfdaeb;
+        min-height: 44px;
+        background-color: #ffffff;
+      }
+
+      textarea.form-control {
+        min-height: 92px;
+      }
+
+      .form-control:focus,
+      .form-select:focus,
+      textarea.form-control:focus,
+      .ts-wrapper.focus .ts-control {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
+      }
+
+      .input-group-text {
+        background: #f8fbff;
+      }
+
+      .badge {
+        border-radius: 999px;
+        padding: 0.45em 0.7em;
+        font-weight: 700;
+      }
+
+      .modal-content {
+        border-radius: 18px;
+        border-color: rgba(148, 163, 184, 0.24);
+        box-shadow: 0 28px 56px rgba(15, 23, 42, 0.18);
+      }
+
+      .pagination .page-link {
+        border-radius: 10px;
+        border-color: #cfdaeb;
+        color: #1f3a5f;
+      }
+
+      .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border-color: #1d4ed8;
+      }
+
+      .bc-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .bc-pagination-summary {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 700;
+      }
+
+      .bc-pagination-jump {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bc-pagination-jump .form-control {
+        width: 86px;
+        min-height: 36px;
+        height: 36px;
+        text-align: center;
+        padding-left: 10px;
+      }
+
+      .bc-pagination .pagination {
+        gap: 4px;
+      }
+
+      .bc-pagination .page-link {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+
+      @media (max-width: 1200px) {
+        .app-shell {
+          padding: 14px;
+          gap: 14px;
+        }
+
+        .app-sidebar {
+          width: 232px;
+        }
+
+        .app-topbar {
+          padding: 14px 16px;
         }
       }
     </style>

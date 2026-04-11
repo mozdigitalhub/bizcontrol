@@ -1,9 +1,12 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth
 from django.utils import timezone
 
+from deliveries.models import DeliveryGuide, DeliveryGuideItem
+from deliveries.services import get_deposit_limits
 from finance.models import CashMovement
 from catalog.models import Product
 from inventory.models import StockMovement
@@ -316,3 +319,182 @@ def get_receivables_aging(*, business):
             }
         )
     return buckets, rows
+
+
+def get_gross_margin_summary(*, business, date_from, date_to):
+    items = SaleItem.objects.filter(
+        sale__business=business,
+        sale__status=Sale.STATUS_CONFIRMED,
+        sale__sale_date__date__gte=date_from,
+        sale__sale_date__date__lte=date_to,
+    ).select_related("product")
+
+    revenue_total = Decimal("0")
+    cost_total = Decimal("0")
+    for item in items:
+        net_qty = item.quantity - (item.returned_quantity or 0)
+        if net_qty <= 0:
+            continue
+        if item.quantity > 0:
+            line_unit_price = Decimal(item.line_total or 0) / Decimal(item.quantity)
+            revenue = line_unit_price * Decimal(net_qty)
+        else:
+            revenue = Decimal("0")
+        unit_cost = Decimal(item.product.cost_price or 0)
+        cost = unit_cost * Decimal(net_qty)
+        revenue_total += revenue
+        cost_total += cost
+
+    margin_total = revenue_total - cost_total
+    margin_pct = float((margin_total / revenue_total) * 100) if revenue_total > 0 else 0.0
+    return {
+        "revenue_total": float(revenue_total),
+        "cost_total": float(cost_total),
+        "margin_total": float(margin_total),
+        "margin_pct": margin_pct,
+    }
+
+
+def get_cashflow_snapshot(*, business, date_from, date_to):
+    period = CashMovement.objects.filter(
+        business=business,
+        happened_at__date__gte=date_from,
+        happened_at__date__lte=date_to,
+    )
+    period_totals = period.aggregate(
+        total_in=Coalesce(
+            Sum(
+                Case(
+                    When(movement_type=CashMovement.MOVEMENT_IN, then=F("amount")),
+                    default=Value(0),
+                    output_field=DecimalField(),
+                )
+            ),
+            Value(0, output_field=DecimalField()),
+        ),
+        total_out=Coalesce(
+            Sum(
+                Case(
+                    When(movement_type=CashMovement.MOVEMENT_OUT, then=F("amount")),
+                    default=Value(0),
+                    output_field=DecimalField(),
+                )
+            ),
+            Value(0, output_field=DecimalField()),
+        ),
+    )
+    total_in = Decimal(period_totals["total_in"] or 0)
+    total_out = Decimal(period_totals["total_out"] or 0)
+    net = total_in - total_out
+
+    before = CashMovement.objects.filter(
+        business=business,
+        happened_at__date__lt=date_from,
+    ).aggregate(
+        total_in=Coalesce(
+            Sum(
+                Case(
+                    When(movement_type=CashMovement.MOVEMENT_IN, then=F("amount")),
+                    default=Value(0),
+                    output_field=DecimalField(),
+                )
+            ),
+            Value(0, output_field=DecimalField()),
+        ),
+        total_out=Coalesce(
+            Sum(
+                Case(
+                    When(movement_type=CashMovement.MOVEMENT_OUT, then=F("amount")),
+                    default=Value(0),
+                    output_field=DecimalField(),
+                )
+            ),
+            Value(0, output_field=DecimalField()),
+        ),
+    )
+    opening_balance = Decimal(before["total_in"] or 0) - Decimal(before["total_out"] or 0)
+    closing_balance = opening_balance + net
+    return {
+        "total_in": float(total_in),
+        "total_out": float(total_out),
+        "net": float(net),
+        "opening_balance": float(opening_balance),
+        "closing_balance": float(closing_balance),
+    }
+
+
+def get_pending_deposits_snapshot(*, business):
+    deposit_sales = list(
+        Sale.objects.filter(
+            business=business,
+            status=Sale.STATUS_CONFIRMED,
+            sale_type=Sale.SALE_TYPE_DEPOSIT,
+        )
+        .exclude(delivery_status=Sale.DELIVERY_STATUS_DELIVERED)
+        .prefetch_related("items", "invoices__payments")
+        .order_by("-sale_date")
+    )
+    if not deposit_sales:
+        return {
+            "sales_count": 0,
+            "open_sales_count": 0,
+            "total_amount": 0.0,
+            "paid_total": 0.0,
+            "balance_total": 0.0,
+            "pending_qty_total": 0,
+        }
+
+    sale_ids = [sale.id for sale in deposit_sales]
+    delivered_rows = (
+        DeliveryGuideItem.objects.filter(
+            sale_item__sale_id__in=sale_ids,
+            guide__status__in=[
+                DeliveryGuide.STATUS_ISSUED,
+                DeliveryGuide.STATUS_PARTIAL,
+                DeliveryGuide.STATUS_DELIVERED,
+            ],
+        )
+        .values("sale_item_id")
+        .annotate(total=Coalesce(Sum("quantity"), Value(0, output_field=IntegerField())))
+    )
+    delivered_map = {row["sale_item_id"]: int(row["total"] or 0) for row in delivered_rows}
+
+    total_amount = Decimal("0")
+    paid_total = Decimal("0")
+    balance_total = Decimal("0")
+    pending_qty_total = 0
+    open_sales_count = 0
+
+    for sale in deposit_sales:
+        deposit_data = get_deposit_limits(sale=sale) or {}
+        paid = Decimal(deposit_data.get("paid") or 0)
+        balance = Decimal(sale.total or 0) - paid
+        if balance < 0:
+            balance = Decimal("0")
+
+        sale_pending_qty = 0
+        for item in sale.items.all():
+            net_qty = item.quantity - (item.returned_quantity or 0)
+            if net_qty < 0:
+                net_qty = 0
+            delivered_qty = delivered_map.get(item.id, 0)
+            remaining_qty = net_qty - delivered_qty
+            if remaining_qty < 0:
+                remaining_qty = 0
+            sale_pending_qty += remaining_qty
+
+        if sale_pending_qty > 0:
+            open_sales_count += 1
+        pending_qty_total += sale_pending_qty
+        total_amount += Decimal(sale.total or 0)
+        paid_total += paid
+        balance_total += balance
+
+    return {
+        "sales_count": len(deposit_sales),
+        "open_sales_count": open_sales_count,
+        "total_amount": float(total_amount),
+        "paid_total": float(paid_total),
+        "balance_total": float(balance_total),
+        "pending_qty_total": pending_qty_total,
+    }

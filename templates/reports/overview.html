@@ -47,6 +47,18 @@
       <div>
         <div class="text-muted small">Total de vendas</div>
         <div class="fw-semibold">{{ summary.total|floatformat:2 }} MZN</div>
+        <div class="variation-row mt-1">
+          <span class="variation-badge {% if summary_variation.sales_total.is_positive %}positive{% else %}negative{% endif %}">
+            {% if summary_variation.sales_total.is_positive %}+{% endif %}{{ summary_variation.sales_total.diff|floatformat:2 }} MZN
+          </span>
+          <span class="small text-muted">
+            {% if summary_variation.sales_total.pct is None %}
+              sem base comparativa
+            {% else %}
+              {% if summary_variation.sales_total.is_positive %}+{% endif %}{{ summary_variation.sales_total.pct|floatformat:1 }}%
+            {% endif %}
+          </span>
+        </div>
       </div>
     </div>
     <div class="summary-card">
@@ -54,6 +66,18 @@
       <div>
         <div class="text-muted small">Transações</div>
         <div class="fw-semibold">{{ summary.count }}</div>
+        <div class="variation-row mt-1">
+          <span class="variation-badge {% if summary_variation.transactions.is_positive %}positive{% else %}negative{% endif %}">
+            {% if summary_variation.transactions.is_positive %}+{% endif %}{{ summary_variation.transactions.diff|floatformat:0 }}
+          </span>
+          <span class="small text-muted">
+            {% if summary_variation.transactions.pct is None %}
+              sem base comparativa
+            {% else %}
+              {% if summary_variation.transactions.is_positive %}+{% endif %}{{ summary_variation.transactions.pct|floatformat:1 }}%
+            {% endif %}
+          </span>
+        </div>
       </div>
     </div>
     <div class="summary-card">
@@ -61,6 +85,63 @@
       <div>
         <div class="text-muted small">Ticket medio</div>
         <div class="fw-semibold">{{ summary.ticket|floatformat:2 }} MZN</div>
+        <div class="variation-row mt-1">
+          <span class="variation-badge {% if summary_variation.ticket.is_positive %}positive{% else %}negative{% endif %}">
+            {% if summary_variation.ticket.is_positive %}+{% endif %}{{ summary_variation.ticket.diff|floatformat:2 }} MZN
+          </span>
+          <span class="small text-muted">
+            {% if summary_variation.ticket.pct is None %}
+              sem base comparativa
+            {% else %}
+              {% if summary_variation.ticket.is_positive %}+{% endif %}{{ summary_variation.ticket.pct|floatformat:1 }}%
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-percent"></i></div>
+      <div>
+        <div class="text-muted small">Margem bruta estimada</div>
+        <div class="fw-semibold">{{ gross_margin.margin_total|floatformat:2 }} MZN</div>
+        <div class="small text-muted">{{ gross_margin.margin_pct|floatformat:1 }}% sobre vendas</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-grid mt-3">
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div>
+        <div class="text-muted small">Fluxo líquido (período)</div>
+        <div class="fw-semibold {% if cashflow_snapshot.net < 0 %}text-danger{% else %}text-success{% endif %}">
+          {{ cashflow_snapshot.net|floatformat:2 }} MZN
+        </div>
+        <div class="small text-muted">Entradas {{ cashflow_snapshot.total_in|floatformat:2 }} · Saídas {{ cashflow_snapshot.total_out|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-wallet2"></i></div>
+      <div>
+        <div class="text-muted small">Saldo de caixa no fim do período</div>
+        <div class="fw-semibold">{{ cashflow_snapshot.closing_balance|floatformat:2 }} MZN</div>
+        <div class="small text-muted">Saldo inicial {{ cashflow_snapshot.opening_balance|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="text-muted small">Depósitos pendentes</div>
+        <div class="fw-semibold">{{ pending_deposits.open_sales_count }} vendas / {{ pending_deposits.pending_qty_total }} itens</div>
+        <div class="small text-muted">Saldo pendente {{ pending_deposits.balance_total|floatformat:2 }} MZN</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-calendar-check"></i></div>
+      <div>
+        <div class="text-muted small">Comparação com período anterior</div>
+        <div class="fw-semibold">{{ previous_date_from|date:"d/m/Y" }} - {{ previous_date_to|date:"d/m/Y" }}</div>
+        <div class="small text-muted">Período atual: {{ date_from|date:"d/m/Y" }} - {{ date_to|date:"d/m/Y" }}</div>
       </div>
     </div>
   </div>

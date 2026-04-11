@@ -118,6 +118,9 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "tenants.context_processors.current_business",
             ],
+            "libraries": {
+                "pagination_tags": "tenants.templatetags.pagination_tags",
+            },
         },
     },
 ]

@@ -5,96 +5,127 @@
 {% block extra_head %}
   <style>
     .customer-hero {
-      padding: 20px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background:
+        radial-gradient(circle at 88% 12%, rgba(20, 184, 166, 0.22), transparent 32%),
+        radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.22), transparent 26%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
       display: grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(360px, 420px);
-      grid-template-areas:
-        "main cards"
-        "actions cards";
-      gap: 16px;
-      align-items: start;
+      grid-template-columns: minmax(380px, 1fr) minmax(320px, 460px);
+      gap: 18px;
+      align-items: stretch;
     }
 
     .customer-hero-main {
-      grid-area: main;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 16px;
     }
 
+    .customer-ident {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .customer-hero-headline h1 {
+      margin-bottom: 4px;
+    }
+
+    .customer-meta-list {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .customer-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e3a5f;
+      background: #e8f0ff;
+      border: 1px solid #d0ddf4;
+    }
+
+    .customer-hero-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     .customer-hero-cards {
-      grid-area: cards;
       display: grid;
       grid-template-columns: repeat(2, minmax(180px, 1fr));
       gap: 12px;
     }
 
-    .customer-hero-actions {
-      grid-area: actions;
-      display: flex;
-      gap: 10px;
-      align-items: stretch;
-      justify-self: start;
-      flex-wrap: wrap;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 8px;
-      width: fit-content;
-    }
-
-    .customer-hero-actions .btn {
-      min-width: 120px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
     .customer-avatar {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #2563EB, #0284C7);
+      width: 78px;
+      height: 78px;
+      border-radius: 22px;
+      background: linear-gradient(145deg, #1d4ed8, #0f766e);
       color: #FFFFFF;
       display: grid;
       place-items: center;
-      font-weight: 700;
-      font-size: 22px;
+      font-weight: 800;
+      font-size: 24px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
     }
 
     .summary-card {
-      border-radius: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
       padding: 14px 16px;
-      box-shadow: var(--shadow);
       background: #FFFFFF;
       display: flex;
       align-items: center;
       gap: 12px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
     }
 
-    .summary-card.success {
-      background: linear-gradient(135deg, #16A34A 0%, #16A34A 100%);
-      border: 1px solid rgba(21, 145, 99, 0.2);
-      color: #FFFFFF;
+    .summary-card .label {
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 700;
     }
 
-    .summary-card.danger {
-      background: linear-gradient(135deg, #DC2626 0%, #DC2626 100%);
-      border: 1px solid rgba(220, 53, 69, 0.2);
-      color: #FFFFFF;
+    .summary-card .value {
+      font-size: 24px;
+      line-height: 1.05;
+      font-weight: 800;
+      color: #0f172a;
     }
 
-    .summary-card.success .text-muted,
-    .summary-card.danger .text-muted {
-      color: rgba(255, 255, 255, 0.88) !important;
+    .summary-card.success .summary-icon {
+      background: #dcfce7;
+      color: #15803d;
     }
 
-    .summary-card.success .summary-icon,
     .summary-card.danger .summary-icon {
-      background: rgba(255, 255, 255, 0.18);
-      color: #FFFFFF;
-      box-shadow: none;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .summary-card.info .summary-icon {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .summary-card.warning .summary-icon {
+      background: #fef3c7;
+      color: #b45309;
     }
 
     .summary-icon {
@@ -103,30 +134,91 @@
       border-radius: 14px;
       display: grid;
       place-items: center;
-      background: var(--card);
-      color: var(--primary-600);
-      box-shadow: 0 8px 16px rgba(31, 111, 139, 0.12);
+      font-size: 18px;
+    }
+
+    .customer-side-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .customer-side-card .card-body {
+      padding: 18px;
     }
 
     .customer-info-row {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
-      padding: 6px 0;
-      border-bottom: 1px dashed #F8FAFC;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #dbe7f5;
+      font-size: 14px;
     }
 
     .customer-info-row:last-child {
       border-bottom: none;
     }
 
+    .customer-progress-wrap {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fbff;
+      border: 1px solid #dbe7f5;
+    }
+
+    .customer-progress {
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e7effb;
+    }
+
+    .customer-progress > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #2563eb, #0f766e);
+    }
+
+    .customer-tabs-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .customer-tabs-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
     .customer-tabs .nav-link {
-      color: var(--muted);
+      color: #64748b;
       font-weight: 600;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      padding: 10px 12px;
     }
 
     .customer-tabs .nav-link.active {
-      color: var(--brand);
+      color: #1d4ed8;
+      border-bottom-color: #1d4ed8;
+      background: transparent;
+    }
+
+    .tab-badge {
+      margin-left: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #e8f0ff;
+      color: #1d4ed8;
+      font-weight: 700;
     }
 
     .table td,
@@ -134,36 +226,103 @@
       vertical-align: middle;
     }
 
+    .table thead th {
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .customer-bottom-card {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .customer-bottom-card .card-body {
+      padding: 18px;
+    }
+
+    .deposit-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .deposit-summary-card {
+      border: 1px solid #dbe7f5;
+      border-radius: 12px;
+      background: #f8fbff;
+      padding: 10px 12px;
+    }
+
+    .deposit-summary-card .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .deposit-summary-card .value {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #0f172a;
+      margin-top: 3px;
+    }
+
+    .deposit-item-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: #334155;
+      display: grid;
+      gap: 4px;
+    }
+
+    .deposit-status-open {
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    .deposit-status-complete {
+      color: #15803d;
+      font-weight: 700;
+    }
+
+    .customer-hero-actions .btn {
+      min-width: 124px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
     @media (max-width: 1200px) {
       .customer-hero {
         grid-template-columns: 1fr;
-        grid-template-areas:
-          "main"
-          "actions"
-          "cards";
       }
     }
 
     @media (max-width: 992px) {
-      .customer-hero {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "main"
-          "actions"
-          "cards";
-      }
-
       .customer-hero-cards {
         grid-template-columns: 1fr;
       }
 
-      .customer-hero-actions {
-        width: 100%;
+      .customer-hero-actions .btn {
+        flex: 1 1 140px;
+        min-width: 0;
       }
 
-      .customer-hero-actions .btn {
-        flex: 1 1 0;
-        min-width: 0;
+      .deposit-summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .deposit-summary-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -172,52 +331,94 @@
 {% block content %}
   <div class="card customer-hero mb-4">
     <div class="customer-hero-main">
-      <div class="customer-avatar">
-        {{ customer.name|slice:":2"|upper }}
+      <div class="customer-ident">
+        <div class="customer-avatar">
+          {{ customer.name|slice:":2"|upper }}
+        </div>
+        <div class="customer-hero-headline">
+          <h1 class="h4 mb-1">{{ customer.name }}</h1>
+          <div class="text-muted small">{{ current_business.name }} - BizControl</div>
+          <div class="customer-meta-list">
+            <span class="customer-meta">
+              <i class="bi bi-person-badge"></i>
+              {{ customer.get_customer_type_display }}
+            </span>
+            <span class="customer-meta">
+              <i class="bi bi-calendar-event"></i>
+              Cliente desde {{ customer.created_at|date:"d/m/Y" }}
+            </span>
+            {% if customer.phone %}
+              <span class="customer-meta">
+                <i class="bi bi-telephone"></i>
+                {{ customer.phone }}
+              </span>
+            {% endif %}
+            {% if customer.email %}
+              <span class="customer-meta">
+                <i class="bi bi-envelope"></i>
+                {{ customer.email }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
       </div>
-      <div>
-        <h1 class="h4 mb-1">{{ customer.name }}</h1>
-        <div class="text-muted small">{{ current_business.name }} - BizControl</div>
-        <span class="badge text-bg-light mt-2">Cliente</span>
+      <div class="customer-hero-actions">
+        {% if perms.customers.change_customer %}
+          <a class="btn btn-primary" href="{% url 'customers:edit' customer.id %}">
+            <i class="bi bi-pencil"></i>
+            Editar cliente
+          </a>
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'customers:list' %}">
+          <i class="bi bi-arrow-left"></i>
+          Voltar à lista
+        </a>
       </div>
     </div>
+
     <div class="customer-hero-cards">
       <div class="summary-card success">
         <div class="summary-icon">
           <i class="bi bi-wallet2"></i>
         </div>
         <div>
-          <div class="text-muted small">Total gasto</div>
-          <div class="fw-semibold fs-5">{{ total_spent|floatformat:2 }} MZN</div>
+          <div class="label">Total gasto</div>
+          <div class="value">{{ total_spent|floatformat:2 }} MZN</div>
         </div>
       </div>
       <div class="summary-card danger">
-        <div class="summary-icon text-danger">
+        <div class="summary-icon">
           <i class="bi bi-exclamation-circle"></i>
         </div>
         <div>
-          <div class="text-muted small">Saldo em aberto</div>
-          <div class="fw-semibold fs-5">{{ open_balance|floatformat:2 }} MZN</div>
+          <div class="label">Saldo em aberto</div>
+          <div class="value">{{ open_balance|floatformat:2 }} MZN</div>
         </div>
       </div>
-    </div>
-    <div class="customer-hero-actions">
-      {% if perms.customers.change_customer %}
-        <a class="btn btn-outline-primary" href="{% url 'customers:edit' customer.id %}">
-          <i class="bi bi-pencil"></i>
-          Editar
-        </a>
-      {% endif %}
-      <a class="btn btn-outline-secondary" href="{% url 'customers:list' %}">
-        <i class="bi bi-arrow-left"></i>
-        Voltar
-      </a>
+      <div class="summary-card info">
+        <div class="summary-icon">
+          <i class="bi bi-receipt-cutoff"></i>
+        </div>
+        <div>
+          <div class="label">Faturas</div>
+          <div class="value">{{ invoices_count }}</div>
+        </div>
+      </div>
+      <div class="summary-card warning">
+        <div class="summary-icon">
+          <i class="bi bi-cart3"></i>
+        </div>
+        <div>
+          <div class="label">Compras confirmadas</div>
+          <div class="value">{{ sales_confirmed_count }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="row g-3">
     <div class="col-xl-4">
-      <div class="card h-100">
+      <div class="card customer-side-card h-100">
         <div class="card-body">
           <h2 class="h6 fw-semibold mb-3">Dados do cliente</h2>
           <div class="customer-info-row">
@@ -246,44 +447,84 @@
               <span class="text-end">{{ customer.notes }}</span>
             </div>
           {% endif %}
+          <div class="customer-progress-wrap">
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="text-muted">Utilização do crédito</span>
+              {% if customer.credit_limit > 0 %}
+                <span class="fw-semibold">
+                  {% widthratio open_balance customer.credit_limit 100 %}%
+                </span>
+              {% else %}
+                <span class="fw-semibold">0%</span>
+              {% endif %}
+            </div>
+            <div class="customer-progress">
+              {% if customer.credit_limit > 0 %}
+                <span style="width: {% widthratio open_balance customer.credit_limit 100 %}%;"></span>
+              {% else %}
+                <span style="width: 0%;"></span>
+              {% endif %}
+            </div>
+            <div class="small text-muted mt-2">
+              Créditos em aberto: {{ receivables_open_count }}
+            </div>
+          </div>
         </div>
       </div>
 
     </div>
     <div class="col-xl-8">
-      <div class="card h-100">
+      <div class="card customer-tabs-card h-100">
         <div class="card-body">
+          <div class="customer-tabs-head">
+            <div>
+              <h2 class="h6 fw-semibold mb-1">Histórico e documentos</h2>
+              <div class="text-muted small">Acompanhe faturação, vendas, crédito e atividade do cliente.</div>
+            </div>
+          </div>
           <ul class="nav nav-tabs customer-tabs mb-3" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-invoices" type="button" role="tab">
                 Faturas
+                <span class="tab-badge">{{ invoices_count }}</span>
               </button>
             </li>
             {% if current_business.module_quotations_enabled %}
               <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-quotations" type="button" role="tab">
                   Cotações
+                  <span class="tab-badge">{{ quotations_count }}</span>
                 </button>
               </li>
             {% endif %}
             <li class="nav-item" role="presentation">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sales" type="button" role="tab">
                 Compras
+                <span class="tab-badge">{{ sales_total_count }}</span>
               </button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-credit" type="button" role="tab">
                 Crédito
+                <span class="tab-badge">{{ receivables_total_count }}</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-deposits" type="button" role="tab">
+                Depósitos
+                <span class="tab-badge">{{ deposit_sales_count }}</span>
               </button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-deliveries" type="button" role="tab">
                 Levantamentos
+                <span class="tab-badge">{{ delivery_guides_count }}</span>
               </button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-activity" type="button" role="tab">
                 Atividades
+                <span class="tab-badge">{{ payments_count }}</span>
               </button>
             </li>
           </ul>
@@ -492,6 +733,84 @@
                 </table>
               </div>
             </div>
+            <div class="tab-pane fade" id="tab-deposits" role="tabpanel">
+              <div class="deposit-summary-grid">
+                <div class="deposit-summary-card">
+                  <div class="label">Total depósitos</div>
+                  <div class="value">{{ deposit_total_amount|floatformat:2 }} MZN</div>
+                </div>
+                <div class="deposit-summary-card">
+                  <div class="label">Total pago</div>
+                  <div class="value">{{ deposit_total_paid|floatformat:2 }} MZN</div>
+                </div>
+                <div class="deposit-summary-card">
+                  <div class="label">Saldo em aberto</div>
+                  <div class="value">{{ deposit_total_balance|floatformat:2 }} MZN</div>
+                </div>
+                <div class="deposit-summary-card">
+                  <div class="label">Qtd por levantar</div>
+                  <div class="value">{{ deposit_pending_total_qty }}</div>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Depósito</th>
+                      <th>Data</th>
+                      <th>Valor</th>
+                      <th>Pago</th>
+                      <th>Saldo</th>
+                      <th>Pendente</th>
+                      <th>Estado</th>
+                      <th>Material por levantar</th>
+                      <th class="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sale in deposit_sales %}
+                      <tr>
+                        <td>{{ sale.code|default:sale.id }}</td>
+                        <td>{{ sale.sale_date|date:"d/m/Y H:i" }}</td>
+                        <td>{{ sale.total|floatformat:2 }} MZN</td>
+                        <td>{{ sale.deposit_paid|floatformat:2 }} MZN</td>
+                        <td>{{ sale.deposit_balance|floatformat:2 }} MZN</td>
+                        <td>{{ sale.deposit_remaining_qty }}</td>
+                        <td>
+                          {% if sale.deposit_open %}
+                            <span class="deposit-status-open">Em aberto</span>
+                          {% else %}
+                            <span class="deposit-status-complete">Levantado</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if sale.deposit_pending_items %}
+                            <ul class="deposit-item-list">
+                              {% for row in sale.deposit_pending_items %}
+                                <li>{{ row.product_name }} ({{ row.remaining_qty }})</li>
+                              {% endfor %}
+                            </ul>
+                          {% else %}
+                            <span class="text-muted small">Sem material pendente</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:detail' sale.id %}">
+                            <i class="bi bi-eye"></i>
+                            Ver venda
+                          </a>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="9" class="text-center text-muted">Sem depósitos de material.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div class="tab-pane fade" id="tab-deliveries" role="tabpanel">
               <div class="table-responsive">
                 <table class="table align-middle mb-0">
@@ -582,9 +901,9 @@
 
   <div class="row g-3 mt-1">
     <div class="col-lg-6">
-      <div class="card">
+      <div class="card customer-bottom-card">
         <div class="card-body">
-          <h3 class="h6 fw-semibold mb-3">Historico de compras</h3>
+          <h3 class="h6 fw-semibold mb-3">Histórico de compras</h3>
           <div class="table-responsive">
             <table class="table mb-0">
               <thead class="table-light">
@@ -613,7 +932,7 @@
       </div>
     </div>
     <div class="col-lg-6">
-      <div class="card">
+      <div class="card customer-bottom-card">
         <div class="card-body">
           <h3 class="h6 fw-semibold mb-3">Crédito / Dívidas</h3>
           <div class="table-responsive">

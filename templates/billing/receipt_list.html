@@ -179,27 +179,8 @@
         </tbody>
       </table>
     </div>
-    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-      <span class="text-muted small">
-        Mostrando {{ page.start_index }} a {{ page.end_index }} de {{ page.paginator.count }} registos
-      </span>
-      {% if page.paginator.num_pages > 1 %}
-        <nav>
-          <ul class="pagination mb-0">
-            {% if page.has_previous %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page.previous_page_number }}&q={{ query }}&date_from={{ date_from }}&date_to={{ date_to }}">Anterior</a>
-              </li>
-            {% endif %}
-            <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
-            {% if page.has_next %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page.next_page_number }}&q={{ query }}&date_from={{ date_from }}&date_to={{ date_to }}">Proximo</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
+    <div class="px-3 py-2 border-top">
+      {% include "partials/pagination.html" with page=page %}
     </div>
   </div>
   <div id="receipt-modal-container"></div>

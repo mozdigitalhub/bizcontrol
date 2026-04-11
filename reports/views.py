@@ -20,7 +20,10 @@ from tenants.permissions import tenant_permission_required, user_has_tenant_perm
 from reports.services import (
     MONTH_LABELS,
     get_cashflow_series,
+    get_cashflow_snapshot,
     get_date_range,
+    get_gross_margin_summary,
+    get_pending_deposits_snapshot,
     get_payment_breakdown,
     get_receivables_aging,
     get_sales_series,
@@ -239,6 +242,35 @@ def overview(request):
     summary = get_sales_summary(
         business=request.business, date_from=date_from, date_to=date_to
     )
+    period_days = (date_to - date_from).days + 1
+    previous_date_to = date_from - timedelta(days=1)
+    previous_date_from = previous_date_to - timedelta(days=period_days - 1)
+    previous_summary = get_sales_summary(
+        business=request.business,
+        date_from=previous_date_from,
+        date_to=previous_date_to,
+    )
+
+    summary_variation = {
+        "sales_total": _build_variation(
+            current=summary["total"], previous=previous_summary["total"]
+        ),
+        "transactions": _build_variation(
+            current=summary["count"], previous=previous_summary["count"]
+        ),
+        "ticket": _build_variation(
+            current=summary["ticket"], previous=previous_summary["ticket"]
+        ),
+    }
+
+    gross_margin = get_gross_margin_summary(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+    cashflow_snapshot = get_cashflow_snapshot(
+        business=request.business, date_from=date_from, date_to=date_to
+    )
+    pending_deposits = get_pending_deposits_snapshot(business=request.business)
+
     labels, values = get_sales_series(
         business=request.business,
         date_from=date_from,
@@ -256,6 +288,12 @@ def overview(request):
         "date_to": date_to,
         "preset": preset,
         "summary": summary,
+        "summary_variation": summary_variation,
+        "previous_date_from": previous_date_from,
+        "previous_date_to": previous_date_to,
+        "gross_margin": gross_margin,
+        "cashflow_snapshot": cashflow_snapshot,
+        "pending_deposits": pending_deposits,
         "sales_labels": labels,
         "sales_values": values,
         "payments": payments,
@@ -598,3 +636,14 @@ def _parse_date(value):
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         return None
+
+
+def _build_variation(*, current, previous):
+    current_value = float(current or 0)
+    previous_value = float(previous or 0)
+    diff = current_value - previous_value
+    if previous_value == 0:
+        pct = None if current_value == 0 else 100.0
+    else:
+        pct = (diff / previous_value) * 100
+    return {"diff": diff, "pct": pct, "is_positive": diff >= 0}

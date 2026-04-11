@@ -10,7 +10,7 @@ from inventory.services import record_movement
 from billing.models import Invoice
 from receivables.models import Receivable
 from receivables.services import register_payment
-from sales.models import Sale, SaleItem, SaleRefund
+from sales.models import ContingencyBatch, Sale, SaleItem, SaleRefund
 from deliveries.models import DeliveryGuideItem
 from tenants.services import generate_document_code
 
@@ -222,6 +222,39 @@ def _open_receivable_total(*, business, customer, exclude_sale_id=None):
     return total
 
 
+def _ensure_contingency_batch(*, sale, user):
+    operation_date = timezone.localtime(sale.sale_date).date()
+    existing = (
+        ContingencyBatch.objects.filter(
+            business=sale.business,
+            status=ContingencyBatch.STATUS_OPEN,
+            date_from__lte=operation_date,
+            date_to__gte=operation_date,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    if existing:
+        return existing
+    base = operation_date.strftime("%Y%m%d")
+    seq = (
+        ContingencyBatch.objects.filter(
+            business=sale.business,
+            code__startswith=f"CTG-{base}-",
+        ).count()
+        + 1
+    )
+    code = f"CTG-{base}-{seq:02d}"
+    return ContingencyBatch.objects.create(
+        business=sale.business,
+        code=code,
+        date_from=operation_date,
+        date_to=operation_date,
+        notes="Lote criado automaticamente a partir de venda retroativa.",
+        opened_by=user,
+    )
+
+
 def confirm_sale(*, sale_id, business, user, items_data=None, confirm_open_debt=False):
     with transaction.atomic():
         sale = (
@@ -245,6 +278,25 @@ def confirm_sale(*, sale_id, business, user, items_data=None, confirm_open_debt=
         items = sale.items.select_related("product")
         if not items.exists():
             raise ValidationError("Adicione pelo menos um item.")
+
+        operation_date = timezone.localtime(sale.sale_date).date()
+        today = timezone.localdate()
+        if operation_date < today and sale.entry_mode != Sale.ENTRY_MODE_CONTINGENCY:
+            raise ValidationError(
+                "Venda retroativa deve ser marcada como registo de contingencia."
+            )
+        if sale.entry_mode == Sale.ENTRY_MODE_CONTINGENCY:
+            if not (sale.contingency_reason or "").strip():
+                raise ValidationError(
+                    "Indique o motivo da contingencia para confirmar a venda."
+                )
+            if not sale.contingency_batch_id:
+                sale.contingency_batch = _ensure_contingency_batch(sale=sale, user=user)
+                sale.save(update_fields=["contingency_batch"])
+        elif sale.contingency_batch_id or sale.contingency_reason:
+            sale.contingency_batch = None
+            sale.contingency_reason = ""
+            sale.save(update_fields=["contingency_batch", "contingency_reason"])
 
         if sale.is_credit and not business.feature_enabled("allow_credit_sales"):
             raise ValidationError("Crédito não está disponível para este negócio.")

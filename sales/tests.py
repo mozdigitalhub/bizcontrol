@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -11,14 +12,13 @@ from inventory.models import StockMovement
 from inventory.services import get_product_stock
 from receivables.models import Receivable
 from receivables.services import register_payment
-from sales.models import Sale
+from sales.models import ContingencyBatch, Sale
 from sales.services import (
     add_item_to_sale,
     calculate_line_totals,
     cancel_sale,
     confirm_sale,
 )
-from deliveries.services import create_delivery_for_sale
 from deliveries.models import DeliveryGuide, DeliveryGuideItem
 from tenants.models import Business, BusinessMembership
 
@@ -77,7 +77,30 @@ class SaleStockTests(TestCase):
     def test_cancel_sale_restores_stock(self):
         sale = self._create_sale_with_item("2")
         confirm_sale(sale_id=sale.id, business=self.business, user=self.user)
-        create_delivery_for_sale(sale=sale, user=self.user)
+        item = sale.items.first()
+        guide = DeliveryGuide.objects.create(
+            business=self.business,
+            sale=sale,
+            customer=sale.customer,
+            guide_number=1,
+            origin_type=DeliveryGuide.ORIGIN_SALE,
+            status=DeliveryGuide.STATUS_PARTIAL,
+        )
+        DeliveryGuideItem.objects.create(
+            guide=guide,
+            sale_item=item,
+            product=self.product,
+            quantity=1,
+        )
+        StockMovement.objects.create(
+            business=self.business,
+            product=self.product,
+            movement_type=StockMovement.MOVEMENT_OUT,
+            quantity=1,
+            reference_type="delivery_guide",
+            reference_id=guide.id,
+        )
+        previous_total = sale.total
         cancel_sale(
             sale_id=sale.id,
             business=self.business,
@@ -87,9 +110,9 @@ class SaleStockTests(TestCase):
         current = get_product_stock(self.business, self.product)
         self.assertEqual(current, 10)
         sale.refresh_from_db()
-        item = sale.items.first()
-        self.assertEqual(sale.total, Decimal("0"))
-        self.assertEqual(item.returned_quantity, item.quantity)
+        item.refresh_from_db()
+        self.assertLess(sale.total, previous_total)
+        self.assertEqual(item.returned_quantity, 1)
 
     def test_manual_stock_mode_does_not_create_movements(self):
         manual_product = Product.objects.create(
@@ -153,8 +176,29 @@ class SaleStockTests(TestCase):
     def test_cancel_sale_partial_return(self):
         sale = self._create_sale_with_item("2")
         confirm_sale(sale_id=sale.id, business=self.business, user=self.user)
-        create_delivery_for_sale(sale=sale, user=self.user)
         item = sale.items.first()
+        guide = DeliveryGuide.objects.create(
+            business=self.business,
+            sale=sale,
+            customer=sale.customer,
+            guide_number=1,
+            origin_type=DeliveryGuide.ORIGIN_SALE,
+            status=DeliveryGuide.STATUS_PARTIAL,
+        )
+        DeliveryGuideItem.objects.create(
+            guide=guide,
+            sale_item=item,
+            product=self.product,
+            quantity=1,
+        )
+        StockMovement.objects.create(
+            business=self.business,
+            product=self.product,
+            movement_type=StockMovement.MOVEMENT_OUT,
+            quantity=1,
+            reference_type="delivery_guide",
+            reference_id=guide.id,
+        )
         previous_total = sale.total
         cancel_sale(
             sale_id=sale.id,
@@ -164,7 +208,7 @@ class SaleStockTests(TestCase):
             return_items={item.id: 1},
         )
         current = get_product_stock(self.business, self.product)
-        self.assertEqual(current, 9)
+        self.assertEqual(current, 10)
         sale.refresh_from_db()
         item.refresh_from_db()
         self.assertEqual(item.returned_quantity, 1)
@@ -338,6 +382,44 @@ class SaleValidationTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             confirm_sale(sale_id=sale.id, business=self.business, user=self.user)
+
+    def test_backdated_sale_requires_contingency_mode(self):
+        sale = Sale.objects.create(
+            business=self.business,
+            created_by=self.user,
+            sale_date=timezone.now() - timedelta(days=1),
+            payment_method=Sale.METHOD_CASH,
+        )
+        add_item_to_sale(
+            sale=sale,
+            product=self.product,
+            quantity=1,
+            unit_price=self.product.sale_price,
+            user=self.user,
+        )
+        with self.assertRaises(ValidationError):
+            confirm_sale(sale_id=sale.id, business=self.business, user=self.user)
+
+    def test_backdated_sale_creates_contingency_batch(self):
+        sale = Sale.objects.create(
+            business=self.business,
+            created_by=self.user,
+            sale_date=timezone.now() - timedelta(days=1),
+            entry_mode=Sale.ENTRY_MODE_CONTINGENCY,
+            contingency_reason="Falha de energia",
+            payment_method=Sale.METHOD_CASH,
+        )
+        add_item_to_sale(
+            sale=sale,
+            product=self.product,
+            quantity=1,
+            unit_price=self.product.sale_price,
+            user=self.user,
+        )
+        confirm_sale(sale_id=sale.id, business=self.business, user=self.user)
+        sale.refresh_from_db()
+        self.assertIsNotNone(sale.contingency_batch_id)
+        self.assertEqual(sale.contingency_batch.status, ContingencyBatch.STATUS_OPEN)
 
 
 class VatCalculationTests(TestCase):

@@ -62,6 +62,7 @@ ROLE_BASE_PRESETS = {
             "reports.view_basic",
             "reports.view_finance",
             "reports.view_stock",
+            "sales.can_backdate_sale",
         ],
     },
     TenantRole.ROLE_CASHIER: {

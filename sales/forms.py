@@ -1,8 +1,11 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django import forms
+from django.conf import settings
+from django.utils import timezone
 
-from sales.models import Sale, SaleItem
+from sales.models import ContingencyBatch, Sale, SaleItem
 
 
 class SaleUpdateForm(forms.ModelForm):
@@ -10,6 +13,10 @@ class SaleUpdateForm(forms.ModelForm):
         model = Sale
         fields = [
             "customer",
+            "sale_date",
+            "entry_mode",
+            "contingency_batch",
+            "contingency_reason",
             "sale_type",
             "delivery_mode",
             "is_credit",
@@ -20,9 +27,13 @@ class SaleUpdateForm(forms.ModelForm):
         ]
         labels = {
             "customer": "Cliente",
+            "sale_date": "Data/hora da operacao",
+            "entry_mode": "Modo de registo",
+            "contingency_batch": "Lote de contingencia",
+            "contingency_reason": "Motivo da contingencia",
             "sale_type": "Tipo de venda",
             "delivery_mode": "Levantamento",
-            "is_credit": "Crédito",
+            "is_credit": "Credito",
             "discount_type": "Tipo de desconto",
             "discount_value": "Desconto",
             "payment_method": "Metodo de pagamento",
@@ -31,9 +42,14 @@ class SaleUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.allow_credit = kwargs.pop("allow_credit", True)
+        self.business = kwargs.pop("business", None)
         self.read_only = kwargs.pop("read_only", False)
         self.relaxed = kwargs.pop("relaxed", False)
         super().__init__(*args, **kwargs)
+        self.fields["sale_date"].required = True
+        self.fields["entry_mode"].required = False
+        self.fields["contingency_batch"].required = False
+        self.fields["contingency_reason"].required = False
         self.fields["discount_value"].required = False
         self.fields["payment_method"].required = False
         self.fields["payment_due_date"].required = False
@@ -41,6 +57,36 @@ class SaleUpdateForm(forms.ModelForm):
         self.fields["customer"].widget.attrs.update(
             {"data-placeholder": "Pesquisar cliente...", "data-dropdown-parent": "self"}
         )
+        self.fields["sale_date"].widget = forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        )
+        self.fields["sale_date"].input_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+        if self.instance and self.instance.sale_date:
+            current_dt = timezone.localtime(self.instance.sale_date)
+            self.initial["sale_date"] = current_dt.strftime("%Y-%m-%dT%H:%M")
+
+        self.fields["entry_mode"].widget.attrs.update(
+            {"data-placeholder": "Modo de registo...", "data-dropdown-parent": "self"}
+        )
+        if self.business:
+            self.fields["contingency_batch"].queryset = ContingencyBatch.objects.filter(
+                business=self.business,
+                status=ContingencyBatch.STATUS_OPEN,
+            ).order_by("-created_at")
+        else:
+            self.fields["contingency_batch"].queryset = ContingencyBatch.objects.none()
+        self.fields["contingency_batch"].empty_label = "Sem lote"
+        self.fields["contingency_batch"].widget.attrs.update(
+            {"data-placeholder": "Selecionar lote...", "data-dropdown-parent": "self"}
+        )
+        self.fields["contingency_reason"].widget.attrs.update(
+            {"maxlength": "255", "placeholder": "Ex.: Falha de energia/internet"}
+        )
+
         self.fields["discount_value"].widget.attrs.update(
             {"inputmode": "decimal", "step": "0.01", "min": "0", "data-money": "true"}
         )
@@ -89,6 +135,9 @@ class SaleUpdateForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        sale_date = cleaned.get("sale_date")
+        entry_mode = cleaned.get("entry_mode") or Sale.ENTRY_MODE_NORMAL
+        contingency_reason = (cleaned.get("contingency_reason") or "").strip()
         discount_type = cleaned.get("discount_type")
         discount_value = cleaned.get("discount_value") or Decimal("0")
         sale_type = cleaned.get("sale_type")
@@ -97,6 +146,34 @@ class SaleUpdateForm(forms.ModelForm):
         payment_method = cleaned.get("payment_method")
         payment_due_date = cleaned.get("payment_due_date")
         raw_discount_value = str(self.data.get("discount_value", "")).strip()
+
+        if sale_date:
+            if timezone.is_naive(sale_date):
+                sale_date = timezone.make_aware(sale_date, timezone.get_current_timezone())
+            cleaned["sale_date"] = sale_date
+            now = timezone.now()
+            if sale_date > now:
+                self.add_error("sale_date", "A data da operacao nao pode ser futura.")
+            max_days = int(getattr(settings, "BACKDATED_SALE_MAX_DAYS", 30))
+            if sale_date.date() < (timezone.localdate() - timedelta(days=max_days)):
+                self.add_error(
+                    "sale_date",
+                    f"Registo retroativo limitado a {max_days} dias.",
+                )
+            if sale_date.date() < timezone.localdate():
+                entry_mode = Sale.ENTRY_MODE_CONTINGENCY
+                cleaned["entry_mode"] = entry_mode
+
+        if entry_mode == Sale.ENTRY_MODE_CONTINGENCY:
+            if not contingency_reason:
+                self.add_error(
+                    "contingency_reason",
+                    "Indique o motivo para o registo em contingencia.",
+                )
+        else:
+            cleaned["contingency_batch"] = None
+            cleaned["contingency_reason"] = ""
+
         if sale_type == Sale.SALE_TYPE_DEPOSIT:
             cleaned["is_credit"] = False
             cleaned["payment_due_date"] = None
@@ -121,7 +198,7 @@ class SaleUpdateForm(forms.ModelForm):
             discount_type = Sale.DISCOUNT_NONE
             discount_value = Decimal("0")
         if sale_type == Sale.SALE_TYPE_DEPOSIT and is_credit:
-            self.add_error("sale_type", "Depósito não pode ser a crédito.")
+            self.add_error("sale_type", "Deposito nao pode ser a credito.")
         if discount_value < 0:
             self.add_error("discount_value", "O desconto nao pode ser negativo.")
         if discount_type == Sale.DISCOUNT_NONE:

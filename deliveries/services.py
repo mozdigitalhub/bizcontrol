@@ -107,6 +107,14 @@ def _create_guide(
     transport_responsible="",
     transport_cost=None,
 ):
+    operation_date = timezone.localtime(sale.sale_date).date()
+    if expected_delivery_date is None:
+        expected_delivery_date = operation_date
+    elif expected_delivery_date < operation_date:
+        raise ValidationError(
+            "A data de levantamento nao pode ser anterior a data da operacao."
+        )
+
     delivered_map = _delivered_map(sale)
     items_to_deliver = []
     remaining_total = 0

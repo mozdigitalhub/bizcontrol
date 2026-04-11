@@ -14,6 +14,13 @@ from tenants.decorators import business_required, feature_required
 from tenants.models import Business
 
 
+def _allow_backdated_payment_for_receivable(receivable):
+    return bool(
+        receivable.sale
+        and receivable.sale.entry_mode == receivable.sale.ENTRY_MODE_CONTINGENCY
+    )
+
+
 @login_required
 @business_required
 @feature_required(
@@ -78,11 +85,19 @@ def receivable_list(request):
 @permission_required("receivables.view_receivable", raise_exception=True)
 def receivable_detail(request, pk):
     receivable = get_object_or_404(Receivable, pk=pk, business=request.business)
-    payment_form = PaymentForm()
+    allow_backdated_payment = _allow_backdated_payment_for_receivable(receivable)
+    payment_form = PaymentForm(
+        allow_backdated_payment=allow_backdated_payment,
+        initial_paid_at=receivable.sale.sale_date if allow_backdated_payment and receivable.sale else None,
+    )
     return render(
         request,
         "receivables/receivable_detail.html",
-        {"receivable": receivable, "payment_form": payment_form},
+        {
+            "receivable": receivable,
+            "payment_form": payment_form,
+            "allow_backdated_payment": allow_backdated_payment,
+        },
     )
 
 
@@ -96,11 +111,20 @@ def receivable_detail(request, pk):
 def payment_modal(request, pk):
     receivable = get_object_or_404(Receivable, pk=pk, business=request.business)
     target_id = request.GET.get("target", "receivable-summary")
-    form = PaymentForm()
+    allow_backdated_payment = _allow_backdated_payment_for_receivable(receivable)
+    form = PaymentForm(
+        allow_backdated_payment=allow_backdated_payment,
+        initial_paid_at=receivable.sale.sale_date if allow_backdated_payment and receivable.sale else None,
+    )
     return render(
         request,
         "receivables/partials/payment_modal.html",
-        {"receivable": receivable, "form": form, "target_id": target_id},
+        {
+            "receivable": receivable,
+            "form": form,
+            "target_id": target_id,
+            "allow_backdated_payment": allow_backdated_payment,
+        },
     )
 
 
@@ -113,11 +137,19 @@ def payment_modal(request, pk):
 @permission_required("receivables.add_payment", raise_exception=True)
 def payment_create(request, pk):
     receivable = get_object_or_404(Receivable, pk=pk, business=request.business)
+    allow_backdated_payment = _allow_backdated_payment_for_receivable(receivable)
     target_id = request.POST.get("target", "receivable-summary")
-    form = PaymentForm()
+    form = PaymentForm(
+        allow_backdated_payment=allow_backdated_payment,
+        initial_paid_at=receivable.sale.sale_date if allow_backdated_payment and receivable.sale else None,
+    )
     payment_success = False
     if request.method == "POST":
-        form = PaymentForm(request.POST)
+        form = PaymentForm(
+            request.POST,
+            allow_backdated_payment=allow_backdated_payment,
+            initial_paid_at=receivable.sale.sale_date if allow_backdated_payment and receivable.sale else None,
+        )
         if form.is_valid():
             try:
                 register_payment(
@@ -125,6 +157,7 @@ def payment_create(request, pk):
                     business=request.business,
                     amount=form.cleaned_data["amount"],
                     method=form.cleaned_data["method"],
+                    paid_at=form.cleaned_data.get("paid_at"),
                     user=request.user,
                     notes=form.cleaned_data.get("notes", ""),
                 )
@@ -137,9 +170,15 @@ def payment_create(request, pk):
                         "receivables/partials/payment_modal.html",
                         {
                             "receivable": receivable,
-                            "form": PaymentForm(),
+                            "form": PaymentForm(
+                                allow_backdated_payment=allow_backdated_payment,
+                                initial_paid_at=receivable.sale.sale_date
+                                if allow_backdated_payment and receivable.sale
+                                else None,
+                            ),
                             "target_id": target_id,
                             "success": True,
+                            "allow_backdated_payment": allow_backdated_payment,
                         },
                     )
             except Exception as exc:
@@ -160,6 +199,11 @@ def payment_create(request, pk):
         return render(
             request,
             "receivables/partials/payment_modal.html",
-            {"receivable": receivable, "form": form, "target_id": target_id},
+            {
+                "receivable": receivable,
+                "form": form,
+                "target_id": target_id,
+                "allow_backdated_payment": allow_backdated_payment,
+            },
         )
     return redirect("receivables:detail", pk=receivable.id)

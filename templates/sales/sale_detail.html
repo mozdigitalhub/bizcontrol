@@ -141,8 +141,32 @@
       gap: 16px;
     }
 
-    .form-switch .form-check-input {
-      margin-top: 0;
+    .sale-credit-row {
+      margin-top: 4px;
+    }
+
+    .customer-quick-create {
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    [data-credit-toggle="wrapper"] {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 0;
+      min-height: 40px;
+      clear: both;
+    }
+
+    [data-credit-toggle="wrapper"] .form-check-input {
+      float: none;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    [data-credit-toggle="wrapper"] .form-check-label {
+      margin: 0;
     }
 
     .sale-actions {
@@ -173,9 +197,16 @@
             <i class="bi bi-truck"></i>
             {{ sale.get_delivery_status_display }}
           </span>
+          {% if sale.entry_mode == "contingency" %}
+            <span class="status-badge status-partial">
+              <i class="bi bi-clock-history"></i>
+              Registo retroativo
+            </span>
+          {% endif %}
         </div>
         <div class="text-muted small mt-2 d-flex flex-wrap gap-3">
-          <span><i class="bi bi-calendar-event me-1"></i>{{ sale.sale_date|date:"d/m/Y H:i" }}</span>
+          <span><i class="bi bi-calendar-event me-1"></i>Operação: {{ sale.sale_date|date:"d/m/Y H:i" }}</span>
+          <span><i class="bi bi-clock me-1"></i>Registo: {{ sale.created_at|date:"d/m/Y H:i" }}</span>
           <span><i class="bi bi-tag me-1"></i>{{ sale.get_sale_type_display }}</span>
           <span><i class="bi bi-box-seam me-1"></i>{{ sale.get_delivery_mode_display }}</span>
         </div>
@@ -267,7 +298,7 @@
                 {{ header_form.customer }}
               </div>
               {% if perms.customers.add_customer and sale.status == "draft" %}
-                <div class="form-text">
+                <div class="form-text customer-quick-create">
                   <a
                     class="text-decoration-none"
                     href="{% url 'customers:quick_create' %}"
@@ -283,11 +314,58 @@
                 <div class="invalid-feedback d-block">{{ header_form.customer.errors|striptags }}</div>
               {% endif %}
             </div>
-            <div class="col-lg-6 d-flex align-items-end">
+            <div class="col-lg-3">
+              <label class="form-label">{{ header_form.sale_date.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-calendar-event"></i></span>
+                {{ header_form.sale_date }}
+              </div>
+              {% if header_form.sale_date.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.sale_date.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">{{ header_form.entry_mode.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-clock-history"></i></span>
+                {{ header_form.entry_mode }}
+              </div>
+              {% if header_form.entry_mode.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.entry_mode.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row g-3" data-contingency-wrapper>
+            <div class="col-lg-4" data-contingency-field="batch">
+              <label class="form-label">{{ header_form.contingency_batch.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-folder2-open"></i></span>
+                {{ header_form.contingency_batch }}
+              </div>
+              <div class="form-note">Opcional. Se vazio, o sistema cria lote automatico na confirmação.</div>
+              {% if header_form.contingency_batch.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.contingency_batch.errors|striptags }}</div>
+              {% endif %}
+            </div>
+            <div class="col-lg-8" data-contingency-field="reason">
+              <label class="form-label">{{ header_form.contingency_reason.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-pencil-square"></i></span>
+                {{ header_form.contingency_reason }}
+              </div>
+              {% if header_form.contingency_reason.errors %}
+                <div class="invalid-feedback d-block">{{ header_form.contingency_reason.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row g-2 align-items-center sale-credit-row">
+            <div class="col-lg-6">
               {% if allow_credit %}
                 <div class="form-check form-switch" data-credit-toggle="wrapper">
                   {{ header_form.is_credit }}
-                  <label class="form-check-label">{{ header_form.is_credit.label }}</label>
+                  <label class="form-check-label" for="{{ header_form.is_credit.id_for_label }}">{{ header_form.is_credit.label }}</label>
                 </div>
               {% else %}
                 <div class="text-muted small">Crédito desativado para este negócio.</div>
@@ -827,6 +905,68 @@
       if (saleTypeEl) {
         saleTypeEl.addEventListener("change", toggleSaleType);
       }
+
+        var contingencyMode = document.querySelector("#{{ header_form.entry_mode.id_for_label }}");
+        var operationDateInput = document.querySelector("#{{ header_form.sale_date.id_for_label }}");
+        var contingencyWrapper = document.querySelector("[data-contingency-wrapper]");
+        var contingencyFields = document.querySelectorAll("[data-contingency-field]");
+        var setSelectValue = function (element, value) {
+          if (!element) {
+            return;
+          }
+          if (element.tomselect) {
+            element.tomselect.setValue(value, true);
+          } else {
+            element.value = value;
+            element.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        };
+        var parseDateOnly = function (value) {
+          if (!value) {
+            return null;
+          }
+          var day = String(value).split("T")[0];
+          var parsed = new Date(day + "T00:00:00");
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+        var toggleContingencyFields = function () {
+          if (!contingencyMode || !contingencyWrapper) {
+            return;
+          }
+          var isContingency = contingencyMode.value === "contingency";
+          contingencyFields.forEach(function (field) {
+            if (isContingency) {
+              field.classList.remove("d-none");
+            } else {
+              field.classList.add("d-none");
+            }
+          });
+        };
+        var syncEntryModeByDate = function () {
+          if (!operationDateInput || !contingencyMode || isReadOnly) {
+            return;
+          }
+          var opDate = parseDateOnly(operationDateInput.value);
+          if (!opDate) {
+            return;
+          }
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (opDate < today && contingencyMode.value !== "contingency") {
+            setSelectValue(contingencyMode, "contingency");
+          }
+        };
+        toggleContingencyFields();
+        if (contingencyMode) {
+          contingencyMode.addEventListener("change", toggleContingencyFields);
+        }
+        if (operationDateInput) {
+          operationDateInput.addEventListener("change", function () {
+            syncEntryModeByDate();
+            toggleContingencyFields();
+          });
+        }
+        syncEntryModeByDate();
 
         document.body.addEventListener("deliveryGuideCreated", function () {
           var modalEl = document.getElementById("delivery-guide-modal");

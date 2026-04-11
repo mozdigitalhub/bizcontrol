@@ -161,17 +161,22 @@ def get_quotation_stock_shortages(*, quotation):
 
 
 def approve_quotation(*, quotation_id, business, user, confirm_stock=False):
+    quotation = Quotation.objects.select_related("business").get(
+        id=quotation_id, business=business
+    )
+    if quotation.valid_until and quotation.valid_until < timezone.localdate():
+        if quotation.status != Quotation.STATUS_EXPIRED:
+            quotation.status = Quotation.STATUS_EXPIRED
+            quotation.save(update_fields=["status"])
+            add_status_history(quotation=quotation, status=quotation.status, user=user)
+        raise ValidationError("A cotacao expirou e nao pode ser aprovada.")
+
     with transaction.atomic():
         quotation = (
             Quotation.objects.select_for_update()
             .select_related("business")
             .get(id=quotation_id, business=business)
         )
-        if quotation.valid_until and quotation.valid_until < timezone.localdate():
-            quotation.status = Quotation.STATUS_EXPIRED
-            quotation.save(update_fields=["status"])
-            add_status_history(quotation=quotation, status=quotation.status, user=user)
-            raise ValidationError("A cotacao expirou e nao pode ser aprovada.")
         shortages = get_quotation_stock_shortages(quotation=quotation)
         if shortages and not confirm_stock:
             raise ValidationError("Stock insuficiente para aprovar a cotacao.")

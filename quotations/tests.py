@@ -35,6 +35,14 @@ class QuotationFlowTests(TestCase):
             sale_price=Decimal("100.00"),
             cost_price=Decimal("50.00"),
         )
+        StockMovement.objects.create(
+            business=self.business,
+            product=self.product,
+            movement_type=StockMovement.MOVEMENT_IN,
+            quantity=20,
+            reference_type="test",
+            reference_id=0,
+        )
 
     def _login_with_business(self, business):
         self.client.force_login(self.user)
@@ -169,4 +177,4 @@ class QuotationFlowTests(TestCase):
         self.assertContains(response, "Cliente A")
         self.assertNotContains(response, "Cliente Externo")
         self.assertContains(response, reverse("customers:quick_create"))
-        self.assertContains(response, "Criar cliente rapido")
+        self.assertContains(response, "Criar cliente rápido")

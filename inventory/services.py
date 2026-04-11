@@ -169,6 +169,7 @@ def receive_goods(
                 reference_id=receipt.id,
                 user=user,
                 notes=f"Fornecedor: {supplier.name} | Guia: {receipt.document_number}",
+                happened_at=receipt.document_date,
             )
             receipt.cash_movement = cash_movement
             receipt.save(update_fields=["cash_movement"])

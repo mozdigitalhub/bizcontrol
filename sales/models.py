@@ -9,6 +9,56 @@ from customers.models import Customer
 from tenants.models import Business
 
 
+class ContingencyBatch(models.Model):
+    STATUS_OPEN = "open"
+    STATUS_CLOSED = "closed"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Aberto"),
+        (STATUS_CLOSED, "Fechado"),
+    ]
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="contingency_batches"
+    )
+    code = models.CharField(max_length=40)
+    date_from = models.DateField()
+    date_to = models.DateField()
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    opened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="opened_contingency_batches",
+    )
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="closed_contingency_batches",
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"],
+                name="uniq_contingency_batch_code_business",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["business", "status", "date_from", "date_to"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.business} - {self.code}"
+
+
 class Sale(models.Model):
     SALE_TYPE_NORMAL = "normal"
     SALE_TYPE_DEPOSIT = "deposit"
@@ -94,6 +144,12 @@ class Sale(models.Model):
         (RETURN_PARTIAL, "Devolucao parcial"),
         (RETURN_TOTAL, "Devolucao total"),
     ]
+    ENTRY_MODE_NORMAL = "normal"
+    ENTRY_MODE_CONTINGENCY = "contingency"
+    ENTRY_MODE_CHOICES = [
+        (ENTRY_MODE_NORMAL, "Normal"),
+        (ENTRY_MODE_CONTINGENCY, "Contingencia"),
+    ]
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="sales")
     code = models.CharField(max_length=30, null=True, blank=True)
@@ -111,8 +167,19 @@ class Sale(models.Model):
         choices=DELIVERY_STATUS_CHOICES,
         default=DELIVERY_STATUS_PENDING,
     )
+    entry_mode = models.CharField(
+        max_length=20, choices=ENTRY_MODE_CHOICES, default=ENTRY_MODE_NORMAL
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     sale_date = models.DateTimeField(default=timezone.now)
+    contingency_batch = models.ForeignKey(
+        ContingencyBatch,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+    contingency_reason = models.CharField(max_length=255, blank=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount_type = models.CharField(
@@ -167,6 +234,7 @@ class Sale(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["business", "status", "sale_date"]),
+            models.Index(fields=["business", "entry_mode", "sale_date"]),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -175,9 +243,18 @@ class Sale(models.Model):
                 name="uniq_sale_code",
             )
         ]
+        permissions = [
+            ("can_backdate_sale", "Pode registar vendas retroativas"),
+        ]
 
     def __str__(self):
         return f"Sale {self.code or self.id} - {self.total}"
+
+    @property
+    def is_backdated(self):
+        if not self.sale_date or not self.created_at:
+            return False
+        return self.sale_date.date() < self.created_at.date()
 
 
 class SaleItem(models.Model):

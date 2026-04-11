@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -85,7 +86,31 @@ def _resolve_payment_method(business, method_code):
     return None, category, account
 
 
-def _create_cash_out(*, business, amount, method, reference_type, reference_id, user, notes=""):
+def _coerce_happened_at(happened_at=None):
+    if happened_at is None:
+        return timezone.now()
+    if isinstance(happened_at, datetime):
+        if timezone.is_naive(happened_at):
+            return timezone.make_aware(happened_at, timezone.get_current_timezone())
+        return happened_at
+    if hasattr(happened_at, "year") and hasattr(happened_at, "month") and hasattr(happened_at, "day"):
+        now_local = timezone.localtime()
+        date_time = datetime.combine(happened_at, now_local.time())
+        return timezone.make_aware(date_time, timezone.get_current_timezone())
+    return timezone.now()
+
+
+def _create_cash_out(
+    *,
+    business,
+    amount,
+    method,
+    reference_type,
+    reference_id,
+    user,
+    notes="",
+    happened_at=None,
+):
     if amount <= 0:
         return None
     if not method:
@@ -102,12 +127,22 @@ def _create_cash_out(*, business, amount, method, reference_type, reference_id, 
         reference_type=reference_type,
         reference_id=reference_id,
         notes=notes,
-        happened_at=timezone.now(),
+        happened_at=_coerce_happened_at(happened_at),
         created_by=user,
     )
 
 
-def _create_cash_in(*, business, amount, method, reference_type, reference_id, user, notes=""):
+def _create_cash_in(
+    *,
+    business,
+    amount,
+    method,
+    reference_type,
+    reference_id,
+    user,
+    notes="",
+    happened_at=None,
+):
     if amount <= 0:
         return None
     payment_method, category, account = _resolve_payment_method(business, method)
@@ -122,7 +157,7 @@ def _create_cash_in(*, business, amount, method, reference_type, reference_id, u
         reference_type=reference_type,
         reference_id=reference_id,
         notes=notes,
-        happened_at=timezone.now(),
+        happened_at=_coerce_happened_at(happened_at),
         created_by=user,
     )
 
@@ -183,6 +218,7 @@ def confirm_purchase(*, purchase_id, business, user):
             reference_type="purchase",
             reference_id=purchase.id,
             user=user,
+            happened_at=purchase.purchase_date,
         )
         return purchase
 
@@ -263,6 +299,7 @@ def pay_expense(*, expense_id, business, user):
             reference_id=expense.id,
             user=user,
             notes=label,
+            happened_at=expense.expense_date,
         )
         return expense
 

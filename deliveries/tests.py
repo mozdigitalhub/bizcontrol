@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
 from billing.services import generate_invoice, register_invoice_payment
 from catalog.models import Product
@@ -51,6 +53,19 @@ class DeliveryRulesTests(TestCase):
         sale.refresh_from_db()
         return sale
 
+    def _prepare_paid_sale(self):
+        sale = self._create_confirmed_sale()
+        invoice = generate_invoice(sale_id=sale.id, business=self.business, user=self.user)
+        register_invoice_payment(
+            invoice_id=invoice.id,
+            business=self.business,
+            amount=invoice.total,
+            method=Sale.METHOD_CASH,
+            user=self.user,
+        )
+        sale.refresh_from_db()
+        return sale
+
     def test_delivery_requires_invoice(self):
         sale = self._create_confirmed_sale()
         item = sale.items.first()
@@ -87,3 +102,30 @@ class DeliveryRulesTests(TestCase):
             items_map={str(item.id): "1"},
         )
         self.assertIsNotNone(guide)
+
+    def test_delivery_date_cannot_be_before_operation_date(self):
+        sale = self._prepare_paid_sale()
+        item = sale.items.first()
+        invalid_date = timezone.localtime(sale.sale_date).date() - timedelta(days=1)
+        with self.assertRaisesMessage(ValidationError, "nao pode ser anterior"):
+            register_delivery(
+                sale_id=sale.id,
+                business=self.business,
+                user=self.user,
+                items_map={str(item.id): "1"},
+                expected_delivery_date=invalid_date,
+            )
+
+    def test_delivery_date_defaults_to_operation_date(self):
+        sale = self._prepare_paid_sale()
+        item = sale.items.first()
+        guide = register_delivery(
+            sale_id=sale.id,
+            business=self.business,
+            user=self.user,
+            items_map={str(item.id): "1"},
+        )
+        self.assertEqual(
+            guide.expected_delivery_date,
+            timezone.localtime(sale.sale_date).date(),
+        )

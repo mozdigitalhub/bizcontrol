@@ -82,6 +82,12 @@ def _get_available_stock(*, business, product):
     return int(stock), int(reserved), int(available)
 
 
+def _sale_datetime_local_value(value):
+    if not value:
+        return ""
+    return timezone.localtime(value).strftime("%Y-%m-%dT%H:%M")
+
+
 @login_required
 @business_required
 @permission_required("sales.add_sale", raise_exception=True)
@@ -119,6 +125,7 @@ def sale_list(request):
     status = request.GET.get("status", "").strip()
     payment_status = request.GET.get("payment_status", "").strip()
     delivery_status = request.GET.get("delivery_status", "").strip()
+    entry_mode = request.GET.get("entry_mode", "").strip()
     date_from = request.GET.get("date_from", "").strip()
     date_to = request.GET.get("date_to", "").strip()
     if not date_from and not date_to:
@@ -144,7 +151,19 @@ def sale_list(request):
     if payment_status:
         sales = sales.filter(payment_status=payment_status)
     if delivery_status:
-        sales = sales.filter(delivery_status=delivery_status)
+        if delivery_status == "with_pickup":
+            sales = sales.filter(
+                delivery_status__in=[
+                    Sale.DELIVERY_STATUS_PARTIAL,
+                    Sale.DELIVERY_STATUS_DELIVERED,
+                ]
+            )
+        elif delivery_status == "without_pickup":
+            sales = sales.filter(delivery_status=Sale.DELIVERY_STATUS_PENDING)
+        else:
+            sales = sales.filter(delivery_status=delivery_status)
+    if entry_mode:
+        sales = sales.filter(entry_mode=entry_mode)
     if date_from:
         sales = sales.filter(sale_date__date__gte=date_from)
     if date_to:
@@ -171,11 +190,13 @@ def sale_list(request):
             "status": status,
             "payment_status": payment_status,
             "delivery_status": delivery_status,
+            "entry_mode": entry_mode,
             "date_from": date_from,
             "date_to": date_to,
             "status_choices": Sale.STATUS_CHOICES,
             "payment_choices": Sale.PAYMENT_CHOICES,
             "delivery_choices": Sale.DELIVERY_STATUS_CHOICES,
+            "entry_mode_choices": Sale.ENTRY_MODE_CHOICES,
             "customers": request.business.customers.order_by("name"),
             "total_sales_amount": total_sales_amount,
             "canceled_count": canceled_count,
@@ -227,6 +248,7 @@ def sale_detail(request, pk):
     header_form = SaleUpdateForm(
         instance=sale,
         allow_credit=allow_credit,
+        business=request.business,
         read_only=sale.status != Sale.STATUS_DRAFT,
     )
     header_form.fields["customer"].queryset = sale.business.customers.all()
@@ -341,6 +363,7 @@ def sale_detail(request, pk):
             request.POST,
             instance=sale,
             allow_credit=allow_credit,
+            business=request.business,
             read_only=False,
         )
         header_form.fields["customer"].queryset = sale.business.customers.all()
@@ -350,6 +373,10 @@ def sale_detail(request, pk):
             sale.save(
                 update_fields=[
                     "customer",
+                    "sale_date",
+                    "entry_mode",
+                    "contingency_batch",
+                    "contingency_reason",
                     "sale_type",
                     "delivery_mode",
                     "is_credit",
@@ -403,6 +430,10 @@ def sale_add_item(request, pk):
     allow_credit = request.business.feature_enabled("allow_credit_sales")
     header_fields = [
         "customer",
+        "sale_date",
+        "entry_mode",
+        "contingency_batch",
+        "contingency_reason",
         "sale_type",
         "delivery_mode",
         "is_credit",
@@ -417,6 +448,7 @@ def sale_add_item(request, pk):
                 request.POST,
                 instance=sale,
                 allow_credit=allow_credit,
+                business=request.business,
                 relaxed=True,
             )
             header_form.fields["customer"].queryset = sale.business.customers.all()
@@ -426,6 +458,10 @@ def sale_add_item(request, pk):
                 sale.save(
                     update_fields=[
                         "customer",
+                        "sale_date",
+                        "entry_mode",
+                        "contingency_batch",
+                        "contingency_reason",
                         "sale_type",
                         "delivery_mode",
                         "is_credit",
@@ -512,6 +548,10 @@ def sale_update_discount(request, pk):
     allow_credit = request.business.feature_enabled("allow_credit_sales")
     form_data = {
         "customer": sale.customer_id or "",
+        "sale_date": _sale_datetime_local_value(sale.sale_date),
+        "entry_mode": sale.entry_mode,
+        "contingency_batch": sale.contingency_batch_id or "",
+        "contingency_reason": sale.contingency_reason or "",
         "sale_type": sale.sale_type,
         "delivery_mode": sale.delivery_mode,
         "is_credit": sale.is_credit,
@@ -521,7 +561,11 @@ def sale_update_discount(request, pk):
         "payment_due_date": sale.payment_due_date or "",
     }
     form = SaleUpdateForm(
-        form_data, instance=sale, allow_credit=allow_credit, relaxed=True
+        form_data,
+        instance=sale,
+        allow_credit=allow_credit,
+        business=request.business,
+        relaxed=True,
     )
     if form.is_valid():
         sale = form.save(commit=False)
@@ -674,6 +718,10 @@ def sale_confirm(request, pk):
             allow_credit = request.business.feature_enabled("allow_credit_sales")
             header_fields = [
                 "customer",
+                "sale_date",
+                "entry_mode",
+                "contingency_batch",
+                "contingency_reason",
                 "sale_type",
                 "delivery_mode",
                 "is_credit",
@@ -686,6 +734,14 @@ def sale_confirm(request, pk):
                 form_data = request.POST.copy()
                 if "customer" not in form_data and sale.customer_id:
                     form_data["customer"] = str(sale.customer_id)
+                if "sale_date" not in form_data:
+                    form_data["sale_date"] = _sale_datetime_local_value(sale.sale_date)
+                if "entry_mode" not in form_data:
+                    form_data["entry_mode"] = sale.entry_mode
+                if "contingency_batch" not in form_data and sale.contingency_batch_id:
+                    form_data["contingency_batch"] = str(sale.contingency_batch_id)
+                if "contingency_reason" not in form_data and sale.contingency_reason:
+                    form_data["contingency_reason"] = sale.contingency_reason
                 if "sale_type" not in form_data:
                     form_data["sale_type"] = sale.sale_type
                 if "delivery_mode" not in form_data:
@@ -704,6 +760,7 @@ def sale_confirm(request, pk):
                     form_data,
                     instance=sale,
                     allow_credit=allow_credit,
+                    business=request.business,
                 )
                 header_form.fields["customer"].queryset = sale.business.customers.all()
                 if header_form.is_valid():
@@ -712,6 +769,10 @@ def sale_confirm(request, pk):
                     sale.save(
                         update_fields=[
                             "customer",
+                            "sale_date",
+                            "entry_mode",
+                            "contingency_batch",
+                            "contingency_reason",
                             "sale_type",
                             "delivery_mode",
                             "is_credit",

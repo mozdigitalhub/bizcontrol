@@ -71,6 +71,10 @@ def _build_sale_item_summary(sale):
     return summary
 
 
+def _sale_operation_date_iso(sale):
+    return timezone.localtime(sale.sale_date).date().isoformat()
+
+
 @login_required
 @business_required
 @permission_required("deliveries.view_deliveryguide", raise_exception=True)
@@ -173,6 +177,7 @@ def guide_create_modal(request, sale_id):
             "summary_items": summary,
             "deposit_data": deposit_data,
             "deposit_allow_over": deposit_allow_over,
+            "operation_date_iso": _sale_operation_date_iso(sale),
         },
     )
 
@@ -252,7 +257,12 @@ def guide_create(request, sale_id):
                 response = render(
                     request,
                     "deliveries/partials/guide_create_modal.html",
-                    {"sale": sale, "summary_items": summary, "error": message},
+                    {
+                        "sale": sale,
+                        "summary_items": summary,
+                        "error": message,
+                        "operation_date_iso": _sale_operation_date_iso(sale),
+                    },
                 )
                 response["HX-Retarget"] = "#delivery-modal-container"
                 response["HX-Reswap"] = "innerHTML"
@@ -264,7 +274,12 @@ def guide_create(request, sale_id):
                 response = render(
                     request,
                     "deliveries/partials/guide_create_modal.html",
-                    {"sale": sale, "summary_items": summary, "error": "Nao foi possivel registar o levantamento."},
+                    {
+                        "sale": sale,
+                        "summary_items": summary,
+                        "error": "Nao foi possivel registar o levantamento.",
+                        "operation_date_iso": _sale_operation_date_iso(sale),
+                    },
                 )
                 response["HX-Retarget"] = "#delivery-modal-container"
                 response["HX-Reswap"] = "innerHTML"

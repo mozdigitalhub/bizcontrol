@@ -30,6 +30,13 @@ except Exception:  # pragma: no cover - optional dependency
     HTML = None
 
 
+def _allow_backdated_payment_for_invoice(invoice):
+    return bool(
+        invoice.sale
+        and invoice.sale.entry_mode == invoice.sale.ENTRY_MODE_CONTINGENCY
+    )
+
+
 @login_required
 @business_required
 @permission_required("billing.view_invoice", raise_exception=True)
@@ -125,6 +132,8 @@ def invoice_detail(request, pk):
             payments.extend(list(extra_payments))
     payments.sort(key=lambda payment: payment.paid_at, reverse=True)
     template = "billing/partials/invoice_detail_modal.html" if is_htmx else "billing/invoice_detail.html"
+    allow_backdated_payment = _allow_backdated_payment_for_invoice(invoice)
+    initial_paid_at = invoice.sale.sale_date if allow_backdated_payment else None
     return render(
         request,
         template,
@@ -132,7 +141,10 @@ def invoice_detail(request, pk):
             "invoice": invoice,
             "items": items,
             "payments": payments,
-            "payment_form": InvoicePaymentForm(),
+            "payment_form": InvoicePaymentForm(
+                allow_backdated_payment=allow_backdated_payment,
+                initial_paid_at=initial_paid_at,
+            ),
         },
     )
 
@@ -246,17 +258,26 @@ def receipt_detail(request, pk):
 @permission_required("billing.add_invoicepayment", raise_exception=True)
 def invoice_payment_modal(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, business=request.business)
+    allow_backdated_payment = _allow_backdated_payment_for_invoice(invoice)
     initial = {"amount": invoice.balance}
+    if allow_backdated_payment and invoice.sale:
+        initial["paid_at"] = timezone.localtime(invoice.sale.sale_date).strftime(
+            "%Y-%m-%dT%H:%M"
+        )
     if invoice.sale and invoice.sale.payment_method:
         allowed = dict(InvoicePayment.METHOD_CHOICES)
         if invoice.sale.payment_method in allowed:
             initial["method"] = invoice.sale.payment_method
-    form = InvoicePaymentForm(initial=initial)
+    form = InvoicePaymentForm(
+        initial=initial,
+        allow_backdated_payment=allow_backdated_payment,
+        initial_paid_at=invoice.sale.sale_date if allow_backdated_payment and invoice.sale else None,
+    )
     form.fields["amount"].widget.attrs["max"] = str(invoice.balance)
     return render(
         request,
         "billing/partials/invoice_payment_modal.html",
-        {"invoice": invoice, "form": form},
+        {"invoice": invoice, "form": form, "allow_backdated_payment": allow_backdated_payment},
     )
 
 
@@ -265,9 +286,17 @@ def invoice_payment_modal(request, pk):
 @permission_required("billing.add_invoicepayment", raise_exception=True)
 def invoice_payment_create(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, business=request.business)
-    form = InvoicePaymentForm()
+    allow_backdated_payment = _allow_backdated_payment_for_invoice(invoice)
+    form = InvoicePaymentForm(
+        allow_backdated_payment=allow_backdated_payment,
+        initial_paid_at=invoice.sale.sale_date if allow_backdated_payment and invoice.sale else None,
+    )
     if request.method == "POST":
-        form = InvoicePaymentForm(request.POST)
+        form = InvoicePaymentForm(
+            request.POST,
+            allow_backdated_payment=allow_backdated_payment,
+            initial_paid_at=invoice.sale.sale_date if allow_backdated_payment and invoice.sale else None,
+        )
         if form.is_valid():
             try:
                 register_invoice_payment(
@@ -275,6 +304,7 @@ def invoice_payment_create(request, pk):
                     business=request.business,
                     amount=form.cleaned_data["amount"],
                     method=form.cleaned_data["method"],
+                    paid_at=form.cleaned_data.get("paid_at"),
                     user=request.user,
                     notes=form.cleaned_data.get("notes", ""),
                 )
@@ -295,7 +325,7 @@ def invoice_payment_create(request, pk):
         return render(
             request,
             "billing/partials/invoice_payment_modal.html",
-            {"invoice": invoice, "form": form},
+            {"invoice": invoice, "form": form, "allow_backdated_payment": allow_backdated_payment},
         )
     return redirect("billing:invoice_detail", pk=invoice.id)
 

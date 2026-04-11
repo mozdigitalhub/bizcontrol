@@ -178,8 +178,22 @@
           <span class="input-group-text"><i class="bi bi-truck"></i></span>
           <select class="form-select tom-select" name="delivery_status" data-placeholder="Estado do levantamento..." data-dropdown-parent="form">
             <option value="">Todos</option>
+            <option value="with_pickup"{% if delivery_status == "with_pickup" %} selected{% endif %}>Com material levantado</option>
+            <option value="without_pickup"{% if delivery_status == "without_pickup" %} selected{% endif %}>Sem material levantado</option>
             {% for value, label in delivery_choices %}
               <option value="{{ value }}"{% if delivery_status == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <label class="form-label small">Modo de registo</label>
+        <div class="input-group filter-group">
+          <span class="input-group-text"><i class="bi bi-clock-history"></i></span>
+          <select class="form-select tom-select" name="entry_mode" data-placeholder="Modo..." data-dropdown-parent="form">
+            <option value="">Todos</option>
+            {% for value, label in entry_mode_choices %}
+              <option value="{{ value }}"{% if entry_mode == value %} selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
@@ -200,10 +214,11 @@
           <tr>
             <th>Nº</th>
             <th>Cliente</th>
-            <th>Data</th>
+            <th>Operação</th>
             <th>Total</th>
             <th>Estado</th>
             <th>Pagamento</th>
+            <th>Material</th>
             <th class="text-end">Acoes</th>
           </tr>
         </thead>
@@ -220,10 +235,21 @@
                       CF
                     {% endif %}
                   </div>
-                  <div class="fw-semibold">{{ sale.customer.name|default:"Consumidor final" }}</div>
+                  <div class="fw-semibold">
+                    {% if sale.customer %}
+                      <a class="text-decoration-none" href="{% url 'customers:detail' sale.customer.id %}">
+                        {{ sale.customer.name }}
+                      </a>
+                    {% else %}
+                      Consumidor final
+                    {% endif %}
+                  </div>
                 </div>
               </td>
-              <td>{{ sale.sale_date|date:"d/m/Y H:i" }}</td>
+              <td>
+                <div>{{ sale.sale_date|date:"d/m/Y H:i" }}</div>
+                <div class="small text-muted">Registo: {{ sale.created_at|date:"d/m/Y H:i" }}</div>
+              </td>
               <td>{{ sale.total|floatformat:2 }} MZN</td>
               <td>
                 {% if sale.status == "confirmed" %}
@@ -235,6 +261,9 @@
                 {% endif %}
                 {% if sale.sale_type == "deposit" %}
                   <span class="badge bg-info text-dark ms-1">Deposito</span>
+                {% endif %}
+                {% if sale.entry_mode == "contingency" %}
+                  <span class="badge bg-warning text-dark ms-1">Retroativa</span>
                 {% endif %}
               </td>
               <td>
@@ -268,6 +297,15 @@
                   {% endif %}
                 {% endif %}
               </td>
+              <td>
+                {% if sale.delivery_status == "delivered" %}
+                  <span class="badge bg-success">Levantado</span>
+                {% elif sale.delivery_status == "partial" %}
+                  <span class="badge bg-warning text-dark">Levantamento parcial</span>
+                {% else %}
+                  <span class="badge bg-secondary">Sem levantamento</span>
+                {% endif %}
+              </td>
               <td class="text-end">
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:detail' sale.id %}">
                   <i class="bi bi-eye"></i>
@@ -287,7 +325,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center text-muted">{{ current_business.ui_labels.sales_empty }}</td>
+              <td colspan="8" class="text-center text-muted">{{ current_business.ui_labels.sales_empty }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -302,13 +340,13 @@
           <ul class="pagination mb-0">
             {% if page.has_previous %}
               <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
+                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&entry_mode={{ entry_mode }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.previous_page_number }}">Anterior</a>
               </li>
             {% endif %}
             <li class="page-item active"><span class="page-link">{{ page.number }}</span></li>
             {% if page.has_next %}
               <li class="page-item">
-                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
+                <a class="page-link" href="?q={{ query }}&customer={{ customer_id }}&status={{ status }}&payment_status={{ payment_status }}&delivery_status={{ delivery_status }}&entry_mode={{ entry_mode }}&date_from={{ date_from }}&date_to={{ date_to }}&page={{ page.next_page_number }}">Seguinte</a>
               </li>
             {% endif %}
           </ul>

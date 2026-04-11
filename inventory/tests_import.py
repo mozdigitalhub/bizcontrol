@@ -1,4 +1,4 @@
-from io import BytesIO
+ï»¿from io import BytesIO
 from decimal import Decimal
 
 import openpyxl
@@ -25,10 +25,10 @@ class StockExcelImportTests(TestCase):
         ws = wb.active
         ws.title = "Cimento"
         ws.append([
-            "Descrição do Item",
+            "Descricao do Item",
             "Un.",
-            "PREÇO DE COMPRA",
-            "PREÇO DE VENDA",
+            "PRECO DE COMPRA",
+            "PRECO DE VENDA",
             "ENTRADA",
         ])
         ws.append(["Cimento 32", "saco", "250,00", "450,00", "10"])
@@ -71,10 +71,10 @@ class StockExcelImportTests(TestCase):
         ws = wb.active
         ws.title = "Ferramentas"
         ws.append([
-            "Descrição do Item",
+            "Descricao do Item",
             "Un.",
-            "PREÇO DE COMPRA",
-            "PREÇO DE VENDA",
+            "PRECO DE COMPRA",
+            "PRECO DE VENDA",
             "ENTRADA",
         ])
         ws.append(["", "un", "", "", ""])

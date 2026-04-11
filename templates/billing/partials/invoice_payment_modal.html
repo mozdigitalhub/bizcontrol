@@ -22,11 +22,6 @@
         data-swal-cancel-text="Voltar"
       >
         {% csrf_token %}
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-danger">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
         {% if form.non_field_errors %}
           <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
         {% endif %}
@@ -54,6 +49,19 @@
               <div class="invalid-feedback d-block">{{ form.method.errors|striptags }}</div>
             {% endif %}
           </div>
+          {% if form.paid_at %}
+            <div class="col-md-6">
+              <label class="form-label">{{ form.paid_at.label }}</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-clock-history"></i></span>
+                {{ form.paid_at }}
+              </div>
+              <div class="form-note">Disponivel apenas para venda de contingência.</div>
+              {% if form.paid_at.errors %}
+                <div class="invalid-feedback d-block">{{ form.paid_at.errors|striptags }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
           <div class="col-12">
             <label class="form-label">{{ form.notes.label }}</label>
             <div class="field-with-icon">

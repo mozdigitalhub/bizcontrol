@@ -44,7 +44,14 @@
           <div class="row g-3 mb-3" id="transport-fields">
             <div class="col-md-4">
               <label class="form-label">Data prevista</label>
-              <input class="form-control" type="date" name="expected_delivery_date" id="expected-delivery-date">
+              <input
+                class="form-control"
+                type="date"
+                name="expected_delivery_date"
+                id="expected-delivery-date"
+                value="{{ operation_date_iso }}"
+                min="{{ operation_date_iso }}"
+              >
             </div>
             <div class="col-md-5">
               <label class="form-label">Responsavel pelo transporte</label>
@@ -208,7 +215,9 @@
         }
         if (dateInput) {
           if (isCustomer) {
-            dateInput.value = "";
+            if (!dateInput.value) {
+              dateInput.value = "{{ operation_date_iso }}";
+            }
           }
           dateInput.readOnly = false;
         }

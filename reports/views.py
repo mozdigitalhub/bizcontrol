@@ -305,6 +305,180 @@ def overview(request):
 
 @login_required
 @business_required
+def user_guide(request):
+    business = request.business
+    tenant_permissions = getattr(request, "tenant_permissions", set())
+    is_super = request.user.is_superuser
+    is_burger = business.business_type == business.BUSINESS_BURGER
+    has_quotations = bool(business.module_quotations_enabled)
+    has_cashflow = bool(business.module_cashflow_enabled)
+    has_credit = bool(business.allow_credit_sales_enabled)
+
+    setup_steps = [
+        {
+            "title": "Completar o perfil da empresa",
+            "details": "Defina nome comercial, contacto, email oficial, endereco, NUIT e logotipo.",
+            "menu": "Perfil > Perfil do negocio",
+            "url_name": "tenants:business_profile",
+        },
+        {
+            "title": "Configurar regras basicas de operacao",
+            "details": "Valide IVA, formato dos documentos, bancos/carteiras e politicas de stock.",
+            "menu": "Configuracoes > Configuracoes do sistema",
+            "url_name": "tenants:system_settings",
+            "visible": is_super or "tenants.manage_tax" in tenant_permissions,
+        },
+        {
+            "title": "Registar catalogo inicial",
+            "details": "Crie produtos com preco de venda e custo. Sem preco definido nao ha venda consistente.",
+            "menu": "Produtos & Stock",
+            "url_name": "catalog:product_list",
+            "visible": not is_burger,
+        },
+        {
+            "title": "Criar base de clientes",
+            "details": "Registe clientes frequentes para historico, credito e documentos fiscais.",
+            "menu": "Clientes & Credito",
+            "url_name": "customers:list",
+            "visible": not is_burger,
+        },
+        {
+            "title": "Validar equipa e permissoes",
+            "details": "Adicione colaboradores e atribua apenas os acessos necessarios por funcao.",
+            "menu": "Configuracoes > Colaboradores / Roles",
+            "url_name": "tenants:staff_list",
+            "visible": is_super or "tenants.manage_staff" in tenant_permissions,
+        },
+    ]
+    setup_steps = [step for step in setup_steps if step.get("visible", True)]
+
+    menu_reference = [
+        {
+            "menu": "Dashboard",
+            "purpose": "Resumo diario da operacao: vendas, clientes, stock baixo, credito e tendencias.",
+            "when": "Primeiro e ultimo ecrã do dia para controlo rapido.",
+        },
+        {
+            "menu": "Operacoes",
+            "purpose": "Criar novas vendas/pedidos, acompanhar estado, emitir documentos e gerir excecoes.",
+            "when": "Durante atendimento e fecho de vendas.",
+        },
+        {
+            "menu": "Clientes & Credito",
+            "purpose": "Cadastro de clientes, acompanhamento de saldos em aberto e cobrancas.",
+            "when": "Sempre que houver vendas a credito ou relacionamento recorrente.",
+            "visible": not is_burger and has_credit,
+        },
+        {
+            "menu": "Produtos & Stock",
+            "purpose": "Cadastro de produtos, entradas/saidas de stock, inventario e reposicao.",
+            "when": "Gestao diaria do armazem e controlo de ruptura.",
+            "visible": not is_burger,
+        },
+        {
+            "menu": "Faturacao",
+            "purpose": "Listar faturas e recibos, reenviar email, imprimir PDF e controlar estado do documento.",
+            "when": "Pos-venda e auditoria documental.",
+            "visible": not is_burger,
+        },
+        {
+            "menu": "Financeiro",
+            "purpose": "Fluxo de caixa, despesas, compras e movimentos financeiros por periodo.",
+            "when": "Conferencia financeira diaria e mensal.",
+            "visible": has_cashflow and not is_burger,
+        },
+        {
+            "menu": "Relatorios",
+            "purpose": "Analise de desempenho, margem, cashflow, metodos de pagamento e stock.",
+            "when": "Tomada de decisao do dono/gestor.",
+        },
+        {
+            "menu": "Perfil",
+            "purpose": "Atualizar dados da empresa e do utilizador para documentos e comunicacao.",
+            "when": "Sempre que houver mudanca de contacto, morada ou identidade visual.",
+        },
+        {
+            "menu": "Configuracoes",
+            "purpose": "Parametrizacao de impostos, equipa, permissoes e politicas operacionais.",
+            "when": "Na implementacao inicial e sempre que a operacao evoluir.",
+        },
+    ]
+    menu_reference = [item for item in menu_reference if item.get("visible", True)]
+
+    order_flow = [
+        {
+            "step": "1. Preparar dados base",
+            "action": "Confirme que o produto tem preco e stock, e que o cliente esta registado (se aplicavel).",
+            "result": "Evita bloqueios no checkout e documentos incompletos.",
+        },
+        {
+            "step": "2. Criar venda/pedido",
+            "action": "Menu Operacoes > Nova venda/Novo pedido. Defina data da operacao, modo e tipo de venda.",
+            "result": "Documento fica criado em rascunho para adicionar itens.",
+        },
+        {
+            "step": "3. Adicionar itens e quantidades",
+            "action": "Selecione produtos, ajuste quantidade, desconto e impostos conforme politica da empresa.",
+            "result": "Total calculado automaticamente com rastreio do stock.",
+        },
+        {
+            "step": "4. Confirmar a venda",
+            "action": "Clique em Confirmar para congelar os dados e gerar o fluxo financeiro/documental.",
+            "result": "Venda passa para confirmada e entra nos relatorios.",
+        },
+        {
+            "step": "5. Gerar fatura e registar pagamento",
+            "action": "Abra a venda e emita a fatura; registe pagamento total ou parcial conforme regra da venda.",
+            "result": "Estado de pagamento atualizado e movimentos de caixa registados.",
+        },
+        {
+            "step": "6. Emitir guia de levantamento/entrega",
+            "action": "Para levantamento faseado ou deposito, emita guia conforme itens liberados.",
+            "result": "Controla o que foi levantado e o que ainda esta pendente.",
+        },
+        {
+            "step": "7. Acompanhar pos-venda",
+            "action": "Use Clientes e Relatorios para monitorizar saldo em aberto, margens e performance.",
+            "result": "Visibilidade completa da operacao ponta-a-ponta.",
+        },
+    ]
+
+    quotation_flow = [
+        {
+            "step": "1. Criar cotacao",
+            "action": "Menu Operacoes > Cotacoes > Nova cotacao. Escolha cliente e validade.",
+            "result": "Proposta comercial estruturada para aprovacao.",
+        },
+        {
+            "step": "2. Inserir itens da proposta",
+            "action": "Adicione produtos, quantidades, preco e desconto negociado.",
+            "result": "Valor final da proposta fica pronto para envio.",
+        },
+        {
+            "step": "3. Enviar por email/partilhar PDF",
+            "action": "Use o botao de envio para o cliente receber a proposta formal.",
+            "result": "Rastreabilidade comercial e comunicacao profissional.",
+        },
+        {
+            "step": "4. Converter em venda",
+            "action": "Quando o cliente aprovar, converta para venda para seguir faturacao e entrega.",
+            "result": "Evita retrabalho e preserva historico completo.",
+        },
+    ]
+
+    context = {
+        "setup_steps": setup_steps,
+        "menu_reference": menu_reference,
+        "order_flow": order_flow,
+        "quotation_flow": quotation_flow,
+        "has_quotations": has_quotations,
+        "is_burger": is_burger,
+    }
+    return render(request, "reports/user_guide.html", context)
+
+
+@login_required
+@business_required
 @tenant_permission_required("reports.view_basic")
 def sales_report(request):
     preset = request.GET.get("preset") or ""

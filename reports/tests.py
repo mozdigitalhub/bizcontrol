@@ -89,6 +89,10 @@ class ReportsPermissionsTests(TestCase):
         response = self.client.get(reverse("reports:overview"))
         self.assertEqual(response.status_code, 200)
 
+    def test_user_guide_is_available_without_report_permission(self):
+        response = self.client.get(reverse("reports:user_guide"))
+        self.assertEqual(response.status_code, 200)
+
 
 class SalesSeriesIsolationTests(TestCase):
     def setUp(self):

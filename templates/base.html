@@ -1352,6 +1352,12 @@
             {% endif %}
 
               <div class="nav-section">
+                <a class="nav-item{% if ns == 'reports' and url_name == 'user_guide' %} active{% endif %}" href="{% url 'reports:user_guide' %}">
+                  Guia de utilizador
+                </a>
+              </div>
+
+              <div class="nav-section">
                 <button
                   class="nav-item nav-toggle{% if ns == 'tenants' and url_name == 'business_profile' or ns == 'tenants' and url_name == 'payment_data' or ns == 'tenants' and url_name == 'user_profile' %} active{% endif %}"
                   type="button"

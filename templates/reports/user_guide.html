@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Guia de utilizador - BizControl{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .guide-hero {
+      background: linear-gradient(145deg, #0f172a, #1d4ed8);
+      color: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+    }
+    .guide-hero p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 780px;
+    }
+    .guide-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .guide-layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+    }
+    .guide-index {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+      align-self: start;
+    }
+    .guide-index a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+    }
+    .guide-index a:hover {
+      background: var(--bg);
+    }
+    .guide-section {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .guide-section h4 {
+      margin-bottom: 12px;
+      font-size: 1.15rem;
+    }
+    .step-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .step-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+    .step-card .menu-pill {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .flow-list {
+      display: grid;
+      gap: 10px;
+    }
+    .flow-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    .flow-item h6 {
+      margin-bottom: 6px;
+      color: #1d4ed8;
+    }
+    .flow-result {
+      margin: 8px 0 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .menu-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .menu-table th,
+    .menu-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .menu-table th {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .checklist {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    @media (max-width: 992px) {
+      .guide-layout {
+        grid-template-columns: 1fr;
+      }
+      .guide-index {
+        position: static;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="guide-hero">
+    <div>
+      <h2 class="mb-2">Guia de utilizador BizControl</h2>
+      <p>
+        Este manual explica cada menu da aplicacao e o fluxo recomendado para configurar o negocio,
+        criar o primeiro pedido e acompanhar a operacao completa sem falhas.
+      </p>
+    </div>
+    <div class="guide-actions">
+      <button type="button" class="btn btn-light" data-start-tour>
+        <i class="bi bi-compass"></i>Iniciar guia interativo
+      </button>
+      <a class="btn btn-outline-light" href="{% url 'sales:new' %}">
+        <i class="bi bi-cart-plus"></i>Criar primeiro pedido
+      </a>
+      {% if has_quotations %}
+        <a class="btn btn-outline-light" href="{% url 'quotations:create' %}">
+          <i class="bi bi-file-earmark-text"></i>Criar cotacao
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="guide-layout">
+    <aside class="guide-index">
+      <div class="fw-semibold mb-2">Indice rapido</div>
+      <a href="#configuracao">1. Primeiros passos</a>
+      <a href="#menus">2. Para que serve cada menu</a>
+      <a href="#fluxo-pedido">3. Fluxo do primeiro pedido</a>
+      {% if has_quotations %}
+        <a href="#fluxo-cotacao">4. Fluxo de cotacao</a>
+      {% endif %}
+      <a href="#checklist">5. Checklist de arranque</a>
+    </aside>
+
+    <div>
+      <section class="guide-section" id="configuracao">
+        <h4>1) Primeiros passos para configurar a aplicacao</h4>
+        <div class="step-grid">
+          {% for step in setup_steps %}
+            <article class="step-card">
+              <span class="menu-pill">{{ step.menu }}</span>
+              <h6>{{ step.title }}</h6>
+              <p class="mb-3 text-muted">{{ step.details }}</p>
+              <a class="btn btn-sm btn-outline-primary" href="{% url step.url_name %}">Abrir menu</a>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="guide-section" id="menus">
+        <h4>2) Explicacao menu a menu</h4>
+        <div class="table-responsive">
+          <table class="menu-table">
+            <thead>
+              <tr>
+                <th>Menu</th>
+                <th>Para que serve</th>
+                <th>Quando usar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in menu_reference %}
+                <tr>
+                  <td class="fw-semibold">{{ item.menu }}</td>
+                  <td>{{ item.purpose }}</td>
+                  <td>{{ item.when }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="guide-section" id="fluxo-pedido">
+        <h4>3) Como criar o primeiro pedido e acompanhar o fluxo completo</h4>
+        <div class="flow-list">
+          {% for step in order_flow %}
+            <article class="flow-item">
+              <h6>{{ step.step }}</h6>
+              <p class="mb-0">{{ step.action }}</p>
+              <p class="flow-result"><strong>Resultado:</strong> {{ step.result }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      {% if has_quotations %}
+        <section class="guide-section" id="fluxo-cotacao">
+          <h4>4) Como criar cotacao e converter em venda</h4>
+          <div class="flow-list">
+            {% for step in quotation_flow %}
+              <article class="flow-item">
+                <h6>{{ step.step }}</h6>
+                <p class="mb-0">{{ step.action }}</p>
+                <p class="flow-result"><strong>Resultado:</strong> {{ step.result }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="guide-section" id="checklist">
+        <h4>5) Checklist de arranque rapido</h4>
+        <ol class="checklist">
+          <li>Perfil da empresa preenchido com email, contacto, morada e dados fiscais.</li>
+          <li>Pelo menos 10 produtos/servicos com preco de venda e custo definidos.</li>
+          <li>Pelo menos 3 clientes criados para teste de fluxo normal e a credito.</li>
+          <li>Uma venda confirmada com fatura emitida e pagamento registado.</li>
+          <li>Uma guia de levantamento emitida para validar controlo de entrega.</li>
+          <li>Relatorio de visao geral consultado para validar indicadores.</li>
+        </ol>
+      </section>
+    </div>
+  </div>
+{% endblock %}

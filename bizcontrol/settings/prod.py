@@ -15,6 +15,7 @@ SECURE_SSL_REDIRECT = get_env_bool("SECURE_SSL_REDIRECT", True)
 # Secure cookies in production
 SESSION_COOKIE_SECURE = get_env_bool("SESSION_COOKIE_SECURE", True)
 CSRF_COOKIE_SECURE = get_env_bool("CSRF_COOKIE_SECURE", True)
+SERVE_MEDIA = get_env_bool("SERVE_MEDIA", not USE_SPACES)
 
 # If not explicitly provided, derive CSRF trusted origins from allowed hosts.
 # This avoids CSRF 403 on first production deploy when env var is missing.

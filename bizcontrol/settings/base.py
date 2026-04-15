@@ -156,8 +156,81 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+
+USE_SPACES = get_env_bool("USE_SPACES", False)
+
+if USE_SPACES:
+    if "storages" not in INSTALLED_APPS:
+        INSTALLED_APPS.append("storages")
+
+    SPACES_ACCESS_KEY = os.environ.get("SPACES_ACCESS_KEY", os.environ.get("AWS_ACCESS_KEY_ID", "")).strip()
+    SPACES_SECRET_KEY = os.environ.get("SPACES_SECRET_KEY", os.environ.get("AWS_SECRET_ACCESS_KEY", "")).strip()
+    SPACES_BUCKET_NAME = os.environ.get(
+        "SPACES_BUCKET_NAME", os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
+    ).strip()
+    SPACES_REGION = os.environ.get("SPACES_REGION", os.environ.get("AWS_S3_REGION_NAME", "")).strip()
+    SPACES_ENDPOINT_URL = os.environ.get(
+        "SPACES_ENDPOINT_URL",
+        f"https://{SPACES_REGION}.digitaloceanspaces.com" if SPACES_REGION else "",
+    ).strip()
+    SPACES_CUSTOM_DOMAIN = os.environ.get("SPACES_CUSTOM_DOMAIN", "").strip()
+    SPACES_LOCATION = os.environ.get("SPACES_LOCATION", "media").strip("/")
+    SPACES_QUERYSTRING_AUTH = get_env_bool("SPACES_QUERYSTRING_AUTH", False)
+    SPACES_FILE_OVERWRITE = get_env_bool("SPACES_FILE_OVERWRITE", False)
+
+    missing_spaces_vars = []
+    if not SPACES_ACCESS_KEY:
+        missing_spaces_vars.append("SPACES_ACCESS_KEY")
+    if not SPACES_SECRET_KEY:
+        missing_spaces_vars.append("SPACES_SECRET_KEY")
+    if not SPACES_BUCKET_NAME:
+        missing_spaces_vars.append("SPACES_BUCKET_NAME")
+    if not SPACES_REGION:
+        missing_spaces_vars.append("SPACES_REGION")
+    if not SPACES_ENDPOINT_URL:
+        missing_spaces_vars.append("SPACES_ENDPOINT_URL")
+    if missing_spaces_vars:
+        raise RuntimeError(
+            "USE_SPACES=True, mas faltam variaveis: "
+            + ", ".join(missing_spaces_vars)
+        )
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": SPACES_ACCESS_KEY,
+                "secret_key": SPACES_SECRET_KEY,
+                "bucket_name": SPACES_BUCKET_NAME,
+                "region_name": SPACES_REGION,
+                "endpoint_url": SPACES_ENDPOINT_URL,
+                "default_acl": None,
+                "querystring_auth": SPACES_QUERYSTRING_AUTH,
+                "file_overwrite": SPACES_FILE_OVERWRITE,
+                "location": SPACES_LOCATION,
+            },
+        },
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+    }
+
+    if SPACES_CUSTOM_DOMAIN:
+        if SPACES_LOCATION:
+            MEDIA_URL = f"https://{SPACES_CUSTOM_DOMAIN}/{SPACES_LOCATION}/"
+        else:
+            MEDIA_URL = f"https://{SPACES_CUSTOM_DOMAIN}/"
+    else:
+        if SPACES_LOCATION:
+            MEDIA_URL = (
+                f"{SPACES_ENDPOINT_URL.rstrip('/')}/{SPACES_BUCKET_NAME}/{SPACES_LOCATION}/"
+            )
+        else:
+            MEDIA_URL = f"{SPACES_ENDPOINT_URL.rstrip('/')}/{SPACES_BUCKET_NAME}/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    SERVE_MEDIA = False
+else:
+    MEDIA_URL = os.environ.get("MEDIA_URL", "/media/")
+    MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
+    SERVE_MEDIA = get_env_bool("SERVE_MEDIA", DEBUG)
 
 LOGIN_REDIRECT_URL = "reports:dashboard"
 LOGOUT_REDIRECT_URL = "login"

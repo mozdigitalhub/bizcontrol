@@ -87,3 +87,17 @@ class TenantLoginForm(AuthenticationForm):
                 code="rejected",
             )
         raise ValidationError("Conta inativa.", code="inactive")
+
+
+class ForgotPasswordForm(forms.Form):
+    identifier = forms.CharField(
+        label="Email ou utilizador",
+        max_length=150,
+        widget=forms.TextInput(
+            attrs={
+                "class": "auth-input",
+                "placeholder": "Email ou utilizador",
+                "autocomplete": "username",
+            }
+        ),
+    )

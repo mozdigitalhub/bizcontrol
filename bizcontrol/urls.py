@@ -22,6 +22,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from accounts.views import BizControlLoginView
+from accounts.views import ForgotPasswordView
 from superadmin import views as superadmin_views
 
 urlpatterns = [
@@ -30,6 +31,11 @@ urlpatterns = [
         "accounts/login/",
         BizControlLoginView.as_view(),
         name="login",
+    ),
+    path(
+        "accounts/forgot-password/",
+        ForgotPasswordView.as_view(),
+        name="forgot_password",
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path(

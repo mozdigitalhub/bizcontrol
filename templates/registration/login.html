@@ -96,6 +96,9 @@
         {% if form.password.errors %}
           <div class="text-danger small">{{ form.password.errors }}</div>
         {% endif %}
+        <div class="text-end mt-2">
+          <a href="{% url 'forgot_password' %}" class="auth-muted text-decoration-none fw-semibold">Esqueceu a palavra-passe?</a>
+        </div>
       </div>
       <button class="btn btn-primary w-100 py-2" type="submit">Entrar</button>
     </form>

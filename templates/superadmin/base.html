@@ -342,6 +342,42 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
+    {% if request.user.is_authenticated and session_inactivity_timeout %}
+      <script>
+        (function () {
+          var timeoutSeconds = Number("{{ session_inactivity_timeout|default:0 }}");
+          if (!timeoutSeconds || timeoutSeconds <= 0) {
+            return;
+          }
+          var logoutUrl = "{% url 'logout' %}";
+          var timeoutMs = timeoutSeconds * 1000;
+          var timer = null;
+
+          var triggerLogout = function () {
+            window.location.href = logoutUrl;
+          };
+
+          var resetTimer = function () {
+            if (timer) {
+              clearTimeout(timer);
+            }
+            timer = setTimeout(triggerLogout, timeoutMs);
+          };
+
+          ["click", "mousemove", "keydown", "scroll", "touchstart"].forEach(function (eventName) {
+            window.addEventListener(eventName, resetTimer, { passive: true });
+          });
+
+          document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) {
+              resetTimer();
+            }
+          });
+
+          resetTimer();
+        })();
+      </script>
+    {% endif %}
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>

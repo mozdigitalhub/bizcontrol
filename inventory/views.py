@@ -581,10 +581,20 @@ def stock_import(request):
         if form.is_valid():
             service = ExcelImportService(business=request.business, user=request.user)
             result = service.import_workbook(form.cleaned_data["file"])
+            if result.rows_failed:
+                messages.warning(
+                    request,
+                    (
+                        f"Importacao concluida com {result.rows_failed} linha(s) com erro. "
+                        f"{result.failed_products_count} produto(s) nao carregado(s)."
+                    ),
+                )
+            else:
+                messages.success(request, "Importacao concluida sem erros.")
             return render(
                 request,
                 "inventory/stock_import.html",
-                {"form": form, "result": result},
+                {"form": StockImportForm(), "result": result},
             )
     else:
         form = StockImportForm()

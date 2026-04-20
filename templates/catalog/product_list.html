@@ -124,7 +124,7 @@
         <label class="form-label small">Categoria</label>
         <div class="input-group filter-group tomselect-parent">
           <span class="input-group-text"><i class="bi bi-tags"></i></span>
-          <select class="form-select tom-select" name="category" data-placeholder="Pesquisar categoria..." data-dropdown-parent="body">
+          <select class="form-select tom-select" name="category" data-placeholder="Pesquisar categoria..." data-dropdown-parent="self">
             <option value="">Todas</option>
             {% for category in categories %}
               <option value="{{ category.id }}"{% if category_id == category.id|stringformat:"s" %} selected{% endif %}>
@@ -138,7 +138,7 @@
         <label class="form-label small">Estado</label>
         <div class="input-group filter-group tomselect-parent">
           <span class="input-group-text"><i class="bi bi-flag"></i></span>
-          <select class="form-select tom-select" name="status" data-placeholder="Selecionar estado..." data-dropdown-parent="body">
+          <select class="form-select tom-select" name="status" data-placeholder="Selecionar estado..." data-dropdown-parent="self">
             <option value="">Todos</option>
             <option value="active"{% if status == "active" %} selected{% endif %}>Ativo</option>
             <option value="inactive"{% if status == "inactive" %} selected{% endif %}>Inativo</option>

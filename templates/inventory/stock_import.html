@@ -63,11 +63,38 @@
       </div>
       <div class="col-md-3">
         <div class="card p-3">
+          <div class="text-muted small">Linhas processadas</div>
+          <div class="fw-semibold">{{ result.rows_processed }}</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3">
           <div class="text-muted small">Linhas com erro</div>
           <div class="fw-semibold text-danger">{{ result.rows_failed }}</div>
         </div>
       </div>
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="text-muted small">Produtos nao carregados</div>
+          <div class="fw-semibold text-danger">{{ result.failed_products_count }}</div>
+        </div>
+      </div>
     </div>
+
+    {% if result.failed_products %}
+      <div class="card mt-3">
+        <div class="card-header bg-white">
+          <div class="fw-semibold">Produtos nao carregados</div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for product in result.failed_products %}
+              <span class="badge rounded-pill text-bg-danger">{{ product }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
 
     {% if result.errors %}
       <div class="card mt-3">
@@ -80,6 +107,7 @@
               <tr>
                 <th>Folha</th>
                 <th>Linha</th>
+                <th>Produto</th>
                 <th>Erro</th>
               </tr>
             </thead>
@@ -88,6 +116,7 @@
                 <tr>
                   <td>{{ err.sheet }}</td>
                   <td>{{ err.row }}</td>
+                  <td>{{ err.product|default:"-" }}</td>
                   <td>{{ err.error }}</td>
                 </tr>
               {% endfor %}

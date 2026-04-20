@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from accounts.models import UserProfile
 
 
@@ -10,6 +12,9 @@ def current_business(request):
         "current_membership": getattr(request, "membership", None),
         "tenant_permissions": getattr(request, "tenant_permissions", set()),
         "user_profile": profile,
+        "session_inactivity_timeout": getattr(
+            settings, "SESSION_INACTIVITY_TIMEOUT", 0
+        ),
         "nav_groups": {
             "sales": ["sales", "deliveries", "quotations", "food"],
             "customers": ["customers", "receivables"],

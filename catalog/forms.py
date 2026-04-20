@@ -65,6 +65,12 @@ class ProductForm(forms.ModelForm):
         self.fields["cost_price"].required = False
         self.fields["name"].widget.attrs.update({"placeholder": "Nome do produto"})
         self.fields["sku"].widget.attrs.update({"placeholder": "SKU (opcional)"})
+        self.fields["category"].widget.attrs.update(
+            {
+                "data-placeholder": "Pesquisar categoria...",
+                "data-dropdown-parent": "self",
+            }
+        )
         self.fields["cost_price"].widget.attrs.update(
             {"inputmode": "decimal", "step": "0.01", "min": "0", "data-money": "true"}
         )

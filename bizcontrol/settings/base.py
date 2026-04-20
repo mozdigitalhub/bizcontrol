@@ -64,6 +64,7 @@ EMAIL_BRAND_LOGO_URL = os.environ.get("EMAIL_BRAND_LOGO_URL", "").strip()
 TENANT_REQUIRE_BUSINESS_SELECTION = get_env_bool(
     "TENANT_REQUIRE_BUSINESS_SELECTION", False
 )
+SESSION_INACTIVITY_TIMEOUT = get_env_int("SESSION_INACTIVITY_TIMEOUT", 300)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -98,6 +99,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.SessionInactivityMiddleware",
     "accounts.middleware.ForcePasswordChangeMiddleware",
     "tenants.middleware.BusinessMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",

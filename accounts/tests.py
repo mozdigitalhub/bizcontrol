@@ -1,6 +1,10 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import UserProfile
 from tenants.models import Business, BusinessMembership
@@ -80,3 +84,33 @@ class TenantLoginFlowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         profile = UserProfile.objects.get(user=self.user)
         self.assertTrue(profile.onboarding_completed)
+
+    @override_settings(SESSION_INACTIVITY_TIMEOUT=300)
+    def test_session_expires_after_five_minutes_of_inactivity(self):
+        self._create_business(Business.STATUS_ACTIVE)
+        self.client.login(username=self.user.username, password=self.password)
+        session = self.client.session
+        session["_last_activity_ts"] = int(
+            (timezone.now() - timedelta(minutes=6)).timestamp()
+        )
+        session.save()
+
+        response = self.client.get(reverse("tenants:select_business"), follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    @override_settings(SESSION_INACTIVITY_TIMEOUT=300)
+    def test_session_remains_active_when_within_timeout(self):
+        self._create_business(Business.STATUS_ACTIVE)
+        self.client.login(username=self.user.username, password=self.password)
+        session = self.client.session
+        session["_last_activity_ts"] = int(
+            (timezone.now() - timedelta(minutes=2)).timestamp()
+        )
+        session.save()
+
+        response = self.client.get(reverse("tenants:select_business"), follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn(reverse("login"), response.url)
+        self.assertIn("_auth_user_id", self.client.session)

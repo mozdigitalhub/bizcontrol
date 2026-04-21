@@ -430,7 +430,26 @@ def _build_quotation_pdf_bytes(quotation, request):
     return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
 
 
+def _render_quotation_html_fallback(quotation, request):
+    logo_url = build_logo_src(quotation.business, request)
+    response = render(
+        request,
+        "quotations/quotation_pdf.html",
+        {
+            "quotation": quotation,
+            "business": quotation.business,
+            "items": quotation.items.select_related("product"),
+            "logo_url": logo_url,
+            "pdf_fallback": True,
+        },
+    )
+    response["X-PDF-Fallback"] = "html"
+    return response
+
+
 def _render_quotation_pdf(quotation, request):
+    if HTML is None:
+        return _render_quotation_html_fallback(quotation, request)
     try:
         pdf = _build_quotation_pdf_bytes(quotation, request)
     except ValueError as exc:

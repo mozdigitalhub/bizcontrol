@@ -1,13 +1,16 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
-from food.models import MenuItem
 from tenants.decorators import business_required
 from tenants.models import Business
 from food.forms import (
@@ -20,18 +23,27 @@ from food.forms import (
     MenuItemRecipeFormSet,
     OrderForm,
     OrderItemFormSet,
+    RestaurantTableForm,
 )
 from food.models import (
     IngredientStockEntry,
     MenuCategory,
     MenuItem,
     Order,
+    RestaurantTable,
 )
 from food.services import create_ingredient_entry, create_order, update_order_status
 
 
 def _food_enabled(business):
-    return business.business_type == Business.BUSINESS_BURGER
+    return bool(
+        business.feature_enabled(Business.FEATURE_USE_KITCHEN_DISPLAY)
+        and business.feature_enabled(Business.FEATURE_USE_RECIPES)
+    )
+
+
+def _tables_enabled(business):
+    return _food_enabled(business) and business.feature_enabled(Business.FEATURE_USE_TABLES)
 
 
 @login_required
@@ -43,13 +55,16 @@ def order_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
     channel = request.GET.get("channel", "").strip()
-    orders = Order.objects.filter(business=request.business).select_related("customer")
+    table_id = request.GET.get("table", "").strip()
+    orders = Order.objects.filter(business=request.business).select_related("customer", "table")
     if query:
         orders = orders.filter(Q(code__icontains=query) | Q(customer__name__icontains=query))
     if status:
         orders = orders.filter(status=status)
     if channel:
         orders = orders.filter(channel=channel)
+    if table_id:
+        orders = orders.filter(table_id=table_id)
     paginator = Paginator(orders.order_by("-created_at"), 20)
     page = paginator.get_page(request.GET.get("page"))
     return render(
@@ -60,8 +75,15 @@ def order_list(request):
             "query": query,
             "status": status,
             "channel": channel,
+            "table_id": table_id,
+            "tables": RestaurantTable.objects.filter(
+                business=request.business, is_active=True
+            ).order_by("name")
+            if _tables_enabled(request.business)
+            else [],
             "status_choices": Order.STATUS_CHOICES,
             "channel_choices": Order.CHANNEL_CHOICES,
+            "tables_enabled": _tables_enabled(request.business),
         },
     )
 
@@ -117,6 +139,7 @@ def order_create(request):
                             "delivery_form": delivery_form,
                             "product_prices": _product_prices(request.business),
                             "pay_before_service": request.business.feature_enabled("pay_before_service"),
+                            "tables_enabled": _tables_enabled(request.business),
                         },
                     )
             try:
@@ -138,6 +161,7 @@ def order_create(request):
                         "delivery_form": delivery_form,
                         "product_prices": _product_prices(request.business),
                         "pay_before_service": request.business.feature_enabled("pay_before_service"),
+                        "tables_enabled": _tables_enabled(request.business),
                     },
                 )
             messages.success(request, "Pedido enviado para a cozinha.")
@@ -162,6 +186,7 @@ def order_create(request):
             "delivery_form": delivery_form,
             "product_prices": _product_prices(request.business),
             "pay_before_service": request.business.feature_enabled("pay_before_service"),
+            "tables_enabled": _tables_enabled(request.business),
         },
     )
 
@@ -447,6 +472,164 @@ def ingredient_entry_create(request):
 
 @login_required
 @business_required
+@permission_required("food.view_restauranttable", raise_exception=True)
+def table_list(request):
+    if not _tables_enabled(request.business):
+        return redirect("reports:dashboard")
+    RestaurantTable.objects.filter(
+        business=request.business,
+        is_active=True,
+        status=RestaurantTable.STATUS_RESERVED,
+        reserved_until__isnull=False,
+        reserved_until__lte=timezone.now(),
+    ).update(
+        status=RestaurantTable.STATUS_FREE,
+        reserved_for="",
+        reserved_until=None,
+    )
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    tables = RestaurantTable.objects.filter(
+        business=request.business, is_active=True
+    ).order_by("name")
+    if query:
+        tables = tables.filter(name__icontains=query)
+    if status:
+        tables = tables.filter(status=status)
+    open_orders = (
+        Order.objects.filter(
+            business=request.business,
+            table__isnull=False,
+            status__in=[
+                Order.STATUS_CONFIRMED,
+                Order.STATUS_IN_PREPARATION,
+                Order.STATUS_READY,
+            ],
+        )
+        .values("table_id")
+        .annotate(total=Count("id"))
+    )
+    open_orders_map = {row["table_id"]: row["total"] for row in open_orders}
+    paginator = Paginator(tables, 20)
+    page = paginator.get_page(request.GET.get("page"))
+    for table in page.object_list:
+        table.open_orders = open_orders_map.get(table.id, 0)
+    return render(
+        request,
+        "food/table_list.html",
+        {
+            "page": page,
+            "query": query,
+            "status": status,
+            "status_choices": RestaurantTable.STATUS_CHOICES,
+        },
+    )
+
+
+@login_required
+@business_required
+@permission_required("food.add_restauranttable", raise_exception=True)
+def table_create(request):
+    if not _tables_enabled(request.business):
+        return redirect("reports:dashboard")
+    if request.method == "POST":
+        form = RestaurantTableForm(request.POST)
+        if form.is_valid():
+            table = form.save(commit=False)
+            table.business = request.business
+            table.save()
+            messages.success(request, "Mesa criada.")
+            return redirect("food:table_list")
+        messages.error(request, "Revise os campos obrigatorios.")
+    else:
+        form = RestaurantTableForm()
+    return render(request, "food/table_form.html", {"form": form})
+
+
+@login_required
+@business_required
+@permission_required("food.change_restauranttable", raise_exception=True)
+def table_edit(request, pk):
+    if not _tables_enabled(request.business):
+        return redirect("reports:dashboard")
+    table = get_object_or_404(
+        RestaurantTable, pk=pk, business=request.business
+    )
+    if request.method == "POST":
+        form = RestaurantTableForm(request.POST, instance=table)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Mesa atualizada.")
+            return redirect("food:table_list")
+        messages.error(request, "Revise os campos obrigatorios.")
+    else:
+        form = RestaurantTableForm(instance=table)
+    return render(request, "food/table_form.html", {"form": form, "table": table})
+
+
+@login_required
+@business_required
+@permission_required("food.change_restauranttable", raise_exception=True)
+def table_set_status(request, pk):
+    if request.method != "POST":
+        return redirect("food:table_list")
+    if not _tables_enabled(request.business):
+        return redirect("reports:dashboard")
+    table = get_object_or_404(
+        RestaurantTable, pk=pk, business=request.business
+    )
+    status = request.POST.get("status")
+    reserved_for = (request.POST.get("reserved_for") or "").strip()
+    reserved_until_raw = (request.POST.get("reserved_until") or "").strip()
+    allowed = {
+        RestaurantTable.STATUS_FREE,
+        RestaurantTable.STATUS_OCCUPIED,
+        RestaurantTable.STATUS_RESERVED,
+    }
+    if status not in allowed:
+        messages.error(request, "Estado invalido.")
+        return redirect("food:table_list")
+    if status == RestaurantTable.STATUS_FREE:
+        has_open_orders = Order.objects.filter(
+            business=request.business,
+            table=table,
+            status__in=[
+                Order.STATUS_CONFIRMED,
+                Order.STATUS_IN_PREPARATION,
+                Order.STATUS_READY,
+            ],
+        ).exists()
+        if has_open_orders:
+            messages.error(request, "Nao pode libertar mesa com pedidos ativos.")
+            return redirect("food:table_list")
+    reservation_until = None
+    if status == RestaurantTable.STATUS_RESERVED:
+        reservation_until = parse_datetime(reserved_until_raw) if reserved_until_raw else None
+        if reservation_until is None:
+            reservation_until = table.reserved_until or (timezone.now() + timedelta(hours=2))
+        elif timezone.is_naive(reservation_until):
+            reservation_until = timezone.make_aware(
+                reservation_until, timezone.get_current_timezone()
+            )
+        if reservation_until <= timezone.now():
+            messages.error(request, "Reserva invalida: a data/hora deve ser futura.")
+            return redirect("food:table_list")
+        if not reserved_for:
+            reserved_for = table.reserved_for or "Reserva de sala"
+    table.status = status
+    if status == RestaurantTable.STATUS_RESERVED:
+        table.reserved_for = reserved_for
+        table.reserved_until = reservation_until
+    else:
+        table.reserved_for = ""
+        table.reserved_until = None
+    table.save(update_fields=["status", "reserved_for", "reserved_until", "updated_at"])
+    messages.success(request, "Estado da mesa atualizado.")
+    return redirect("food:table_list")
+
+
+@login_required
+@business_required
 @permission_required("food.view_order", raise_exception=True)
 def kds(request):
     if not _food_enabled(request.business):
@@ -483,6 +666,8 @@ def kds(request):
 def update_status(request, pk):
     if request.method != "POST":
         return redirect("food:kds")
+    if not _food_enabled(request.business):
+        return redirect("reports:dashboard")
     order = get_object_or_404(Order, pk=pk, business=request.business)
     status = request.POST.get("status")
     try:

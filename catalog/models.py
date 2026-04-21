@@ -83,3 +83,43 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="variants"
+    )
+    name = models.CharField(max_length=120, blank=True)
+    size = models.CharField(max_length=30, blank=True)
+    color = models.CharField(max_length=30, blank=True)
+    sku = models.CharField(max_length=60, blank=True)
+    sale_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    stock_qty = models.IntegerField(default=0)
+    reorder_level = models.PositiveIntegerField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "name", "size", "color"],
+                name="uniq_product_variant_identity",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "sku"],
+                condition=Q(sku__isnull=False) & ~Q(sku=""),
+                name="uniq_variant_sku_per_product",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["product", "is_active"]),
+            models.Index(fields=["product", "stock_qty"]),
+        ]
+
+    def __str__(self):
+        parts = [self.product.name]
+        descriptor = " ".join(part for part in [self.name, self.size, self.color] if part)
+        if descriptor:
+            parts.append(descriptor)
+        return " - ".join(parts)

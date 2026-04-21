@@ -1121,8 +1121,7 @@
               </a>
             </div>
 
-              {% with business_type=current_business.business_type %}
-              {% with is_burger=business_type %}
+              {% with nav_profile=dashboard_navigation %}
               <div class="nav-section">
                 <button
                   class="nav-item nav-toggle{% if ns in nav_groups.sales %} active{% endif %}"
@@ -1137,7 +1136,7 @@
                 </button>
                 <div class="collapse{% if ns in nav_groups.sales %} show{% endif %}" id="nav-sales">
                   <div class="nav-sub">
-                    {% if is_burger != 'burger' %}
+                    {% if not nav_profile.use_food_operations %}
                       {% if perms.sales.add_sale %}
                         <a class="nav-sub-item{% if ns in nav_groups.sales and url_name == 'new' %} active{% endif %}" href="{% url 'sales:new' %}" data-tour="sales">
                           {{ current_business.ui_labels.new_sale }}
@@ -1147,7 +1146,7 @@
                         {{ current_business.ui_labels.sales }}
                       </a>
                     {% endif %}
-                    {% if is_burger == 'burger' %}
+                    {% if nav_profile.use_food_operations %}
                       {% if perms.food.add_order %}
                         <a class="nav-sub-item{% if ns == 'food' and url_name == 'order_create' %} active{% endif %}" href="{% url 'food:order_create' %}">
                           Novo pedido
@@ -1161,8 +1160,13 @@
                           Cozinha (KDS)
                         </a>
                       {% endif %}
+                      {% if nav_profile.show_food_tables and perms.food.view_restauranttable %}
+                        <a class="nav-sub-item{% if ns == 'food' and '/tables/' in current_path %} active{% endif %}" href="{% url 'food:table_list' %}">
+                          Mesas
+                        </a>
+                      {% endif %}
                     {% endif %}
-                    {% if is_burger != 'burger' %}
+                    {% if not nav_profile.use_food_operations %}
                       {% if current_business and current_business.module_quotations_enabled %}
                         <a class="nav-sub-item{% if ns == 'quotations' %} active{% endif %}" href="{% url 'quotations:list' %}">
                           Cotações
@@ -1178,7 +1182,7 @@
               </div>
             </div>
 
-              {% if is_burger != 'burger' %}
+              {% if not nav_profile.use_food_operations %}
               <div class="nav-section">
                 <button
                   class="nav-item nav-toggle{% if ns in nav_groups.customers %} active{% endif %}"
@@ -1215,12 +1219,12 @@
                 aria-expanded="{% if ns in nav_groups.products %}true{% else %}false{% endif %}"
                 aria-controls="nav-products"
               >
-                {% if is_burger == 'burger' %}Menu & Ingredientes{% else %}Produtos & Stock{% endif %}
+                {{ nav_profile.products_section_title }}
                 <i class="bi bi-chevron-down nav-chevron"></i>
               </button>
               <div class="collapse{% if ns in nav_groups.products %} show{% endif %}" id="nav-products">
                 <div class="nav-sub">
-                  {% if is_burger == 'burger' %}
+                  {% if nav_profile.use_food_operations %}
                     <a class="nav-sub-item{% if ns == 'food' and '/menu/' in current_path %} active{% endif %}" href="{% url 'food:menu_list' %}">
                       Menu (Pratos)
                     </a>
@@ -1254,7 +1258,7 @@
               </div>
             </div>
 
-              {% if is_burger != 'burger' %}
+              {% if not nav_profile.use_food_operations %}
               <div class="nav-section">
                 <button
                   class="nav-item nav-toggle{% if ns in nav_groups.billing %} active{% endif %}"
@@ -1432,7 +1436,6 @@
                 </div>
               </div>
             </nav>
-              {% endwith %}
               {% endwith %}
           {% endwith %}
         <form class="logout" method="post" action="{% url 'logout' %}">

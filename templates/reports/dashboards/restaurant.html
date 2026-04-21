@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Restaurante - BizControl{% endblock %}
+
+{% block topbar_title %}
+  <h1>Operacao de restaurante</h1>
+{% endblock %}
+
+{% block topbar_subtitle %}
+  <p>Mesas, pedidos e cozinha num unico painel operacional.</p>
+{% endblock %}
+
+{% block topbar_badges %}
+  <span class="pill">Pedidos hoje: {{ orders_today_count }}</span>
+  <span class="pill">Faturacao: {{ sales_today|floatformat:2 }} MZN</span>
+{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .rest-hero {
+      border-radius: 18px;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.24), transparent 34%),
+        linear-gradient(125deg, #0f766e, #0ea5a4 46%, #22c55e);
+      color: #fff;
+      box-shadow: 0 18px 36px rgba(15, 118, 110, 0.24);
+    }
+
+    .rest-hero-grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .rest-hero-card {
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .rest-hero-card .label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .rest-hero-card .value {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .rest-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+    }
+
+    .rest-card {
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      padding: 14px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .workflow .step {
+      border-radius: 12px;
+      border: 1px solid #d1fae5;
+      background: #f0fdf4;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .workflow .step .value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #065f46;
+      line-height: 1;
+      margin-top: 4px;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .module-card {
+      border-radius: 12px;
+      border: 1px solid #d1fae5;
+      background: #f7fffc;
+      padding: 12px;
+      text-decoration: none;
+      color: #0f172a;
+    }
+
+    @media (max-width: 1080px) {
+      .rest-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rest-hero-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .rest-hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="rest-hero">
+    <h2 class="h4 mb-1">{{ current_business.name }}</h2>
+    <p class="mb-0">Monitorize servico de sala e fluxo da cozinha em tempo real.</p>
+
+    <div class="rest-hero-grid">
+      <article class="rest-hero-card">
+        <div class="label">Faturacao hoje</div>
+        <div class="value">{{ sales_today|floatformat:2 }}</div>
+      </article>
+      <article class="rest-hero-card">
+        <div class="label">Pedidos hoje</div>
+        <div class="value">{{ orders_today_count }}</div>
+      </article>
+      <article class="rest-hero-card">
+        <div class="label">Ticket medio</div>
+        <div class="value">{{ average_ticket|floatformat:2 }}</div>
+      </article>
+      <article class="rest-hero-card">
+        <div class="label">Itens no menu</div>
+        <div class="value">{{ menu_item_count }}</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="rest-grid">
+    <article class="rest-card">
+      <h3 class="h6 mb-2">Workflow da cozinha</h3>
+      <div class="workflow">
+        <div class="step">
+          <div>Pendentes</div>
+          <div class="value">{{ kitchen_counts.pending }}</div>
+        </div>
+        <div class="step">
+          <div>Em preparo</div>
+          <div class="value">{{ kitchen_counts.preparing }}</div>
+        </div>
+        <div class="step">
+          <div>Prontos</div>
+          <div class="value">{{ kitchen_counts.ready }}</div>
+        </div>
+        <div class="step">
+          <div>Servidos</div>
+          <div class="value">{{ kitchen_counts.served }}</div>
+        </div>
+      </div>
+
+      <h3 class="h6 mt-4 mb-2">Pedidos ativos</h3>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th>Mesa</th>
+              <th>Estado</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in active_orders %}
+              <tr>
+                <td>{{ order.code }}</td>
+                <td>{{ order.table.name|default:"-" }}</td>
+                <td>{{ order.get_status_display }}</td>
+                <td class="text-end">{{ order.total|floatformat:2 }} MZN</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Sem pedidos ativos.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="rest-card">
+      <h3 class="h6 mb-3">Operacao de sala</h3>
+      {% if use_tables %}
+        <div class="grid-3">
+          <div class="card p-3">
+            <div class="text-muted small">Mesas livres</div>
+            <div class="fw-semibold fs-4">{{ tables_count.free|default:0 }}</div>
+          </div>
+          <div class="card p-3">
+            <div class="text-muted small">Mesas ocupadas</div>
+            <div class="fw-semibold fs-4">{{ tables_count.occupied|default:0 }}</div>
+          </div>
+          <div class="card p-3">
+            <div class="text-muted small">Mesas reservadas</div>
+            <div class="fw-semibold fs-4">{{ tables_count.reserved|default:0 }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="alert alert-info mb-0">
+          Modulo de mesas desativado para este negocio.
+        </div>
+      {% endif %}
+
+      <div class="row g-2 mt-2">
+        <div class="col-6">
+          <div class="card p-3 h-100">
+            <div class="text-muted small">Categorias de menu</div>
+            <div class="fw-semibold fs-5">{{ menu_category_count }}</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card p-3 h-100">
+            <div class="text-muted small">Alertas de ingredientes</div>
+            <div class="fw-semibold fs-5">{{ low_ingredient_alerts }}</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="h6 mt-4 mb-2">Modulos</h3>
+      <div class="module-grid">
+        {% for module in dashboard_modules %}
+          <a class="module-card" href="{% url module.url_name %}">
+            <div class="fw-semibold">{{ module.title }}</div>
+            <div class="small text-muted">{{ module.description }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

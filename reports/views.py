@@ -1,24 +1,18 @@
 import csv
-from datetime import date, datetime, timedelta
-from decimal import Decimal
+from datetime import datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, F, Sum
-from django.db.models.functions import Coalesce, TruncMonth
+from django.db.models import Count, Sum
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.utils import timezone
 
-from catalog.models import Product
-from customers.models import Customer
-from inventory.services import get_product_stock
-from receivables.models import Payment, Receivable
-from sales.models import Sale, SaleItem
+from reports.dashboard_handlers import DashboardFactory
+from sales.models import Sale
 from tenants.decorators import business_required
 from tenants.permissions import tenant_permission_required, user_has_tenant_permission
 from reports.services import (
-    MONTH_LABELS,
     get_cashflow_series,
     get_cashflow_snapshot,
     get_date_range,
@@ -35,180 +29,8 @@ from reports.services import (
 @login_required
 @business_required
 def dashboard(request):
-    today = timezone.now().date()
-    start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    sales_today = (
-        Sale.objects.filter(
-            business=request.business,
-            status=Sale.STATUS_CONFIRMED,
-            sale_date__date=today,
-        )
-        .aggregate(total=Coalesce(Sum("total"), Decimal("0")))
-        .get("total")
-    )
-
-    receivable_open = (
-        Receivable.objects.filter(
-            business=request.business, status=Receivable.STATUS_OPEN
-        )
-        .aggregate(
-            total=Coalesce(
-                Sum(F("original_amount") - F("total_paid")),
-                Decimal("0"),
-            )
-        )
-        .get("total")
-    )
-
-    low_stock_count = 0
-    products = Product.objects.filter(
-        business=request.business, reorder_level__isnull=False
-    )
-    for product in products:
-        current_stock = get_product_stock(request.business, product)
-        if current_stock <= product.reorder_level:
-            low_stock_count += 1
-
-    product_count = Product.objects.filter(business=request.business).count()
-    customer_count = Customer.objects.filter(business=request.business).count()
-    sales_count = Sale.objects.filter(
-        business=request.business, status=Sale.STATUS_CONFIRMED
-    ).count()
-
-    receivable_totals = Receivable.objects.filter(business=request.business).aggregate(
-        original_total=Coalesce(Sum("original_amount"), Decimal("0")),
-        paid_total=Coalesce(Sum("total_paid"), Decimal("0")),
-    )
-    receivable_total = receivable_totals["original_total"]
-    receivable_paid = receivable_totals["paid_total"]
-    receivable_open_total = receivable_total - receivable_paid
-    receivable_ratio = (
-        float(receivable_paid / receivable_total) if receivable_total else 0.0
-    )
-    receivable_ratio_pct = int(receivable_ratio * 100)
-
-    top_customers_qs = (
-        Receivable.objects.filter(business=request.business, status=Receivable.STATUS_OPEN)
-        .values("customer__name")
-        .annotate(
-            balance=Coalesce(
-                Sum(F("original_amount") - F("total_paid")),
-                Decimal("0"),
-            )
-        )
-        .order_by("-balance")[:5]
-    )
-    max_customer_balance = max(
-        [item["balance"] for item in top_customers_qs], default=Decimal("0")
-    )
-    top_customers = []
-    for item in top_customers_qs:
-        percent = (
-            float(item["balance"] / max_customer_balance) * 100
-            if max_customer_balance
-            else 0
-        )
-        top_customers.append(
-            {
-                "name": item["customer__name"],
-                "balance": item["balance"],
-                "percent": percent,
-            }
-        )
-
-    top_products_qs = (
-        SaleItem.objects.filter(
-            sale__business=request.business, sale__status=Sale.STATUS_CONFIRMED
-        )
-        .values("product__name")
-        .annotate(total=Coalesce(Sum("line_total"), Decimal("0")))
-        .order_by("-total")[:5]
-    )
-    max_product_total = max(
-        [item["total"] for item in top_products_qs], default=Decimal("0")
-    )
-    top_products = []
-    for item in top_products_qs:
-        percent = (
-            float(item["total"] / max_product_total) * 100 if max_product_total else 0
-        )
-        top_products.append(
-            {
-                "name": item["product__name"],
-                "total": item["total"],
-                "percent": percent,
-            }
-        )
-
-    start_month = (start_of_today.replace(day=1) - timedelta(days=150)).date()
-    sales_monthly = (
-        Sale.objects.filter(
-            business=request.business,
-            status=Sale.STATUS_CONFIRMED,
-            sale_date__date__gte=start_month,
-        )
-        .annotate(month=TruncMonth("sale_date"))
-        .values("month")
-        .annotate(total=Coalesce(Sum("total"), Decimal("0")))
-    )
-    payments_monthly = (
-        Payment.objects.filter(
-            business=request.business,
-            paid_at__date__gte=start_month,
-        )
-        .annotate(month=TruncMonth("paid_at"))
-        .values("month")
-        .annotate(total=Coalesce(Sum("amount"), Decimal("0")))
-    )
-
-    month_map_sales = {item["month"].date(): item["total"] for item in sales_monthly}
-    month_map_pay = {item["month"].date(): item["total"] for item in payments_monthly}
-
-    def month_sequence(end_date, months=6):
-        months_list = []
-        year = end_date.year
-        month = end_date.month
-        for _ in range(months):
-            months_list.append(date(year, month, 1))
-            month -= 1
-            if month == 0:
-                month = 12
-                year -= 1
-        return list(reversed(months_list))
-
-    months = month_sequence(today, 6)
-    sales_values = [month_map_sales.get(m, Decimal("0")) for m in months]
-    payment_values = [month_map_pay.get(m, Decimal("0")) for m in months]
-    max_value = max(sales_values + payment_values + [Decimal("1")])
-
-    def build_points(values):
-        points = []
-        count = len(values) - 1 or 1
-        for index, value in enumerate(values):
-            x = (index / count) * 100
-            y = 90 - (float(value) / float(max_value)) * 70
-            points.append(f"{x:.1f},{y:.1f}")
-        return " ".join(points)
-
-    context = {
-        "sales_today": sales_today,
-        "receivable_open": receivable_open,
-        "low_stock_count": low_stock_count,
-        "product_count": product_count,
-        "customer_count": customer_count,
-        "sales_count": sales_count,
-        "receivable_total": receivable_total,
-        "receivable_paid": receivable_paid,
-        "receivable_open_total": receivable_open_total,
-        "receivable_ratio": receivable_ratio,
-        "receivable_ratio_pct": receivable_ratio_pct,
-        "top_customers": top_customers,
-        "top_products": top_products,
-        "sales_points": build_points(sales_values),
-        "payment_points": build_points(payment_values),
-        "month_labels": [MONTH_LABELS[m.month - 1] for m in months],
-    }
-    return render(request, "reports/dashboard.html", context)
+    handler = DashboardFactory.get_dashboard(request.business.business_type)
+    return handler.render_dashboard(request)
 
 
 def _export_csv(request, *, filename, headers, rows):
@@ -309,7 +131,10 @@ def user_guide(request):
     business = request.business
     tenant_permissions = getattr(request, "tenant_permissions", set())
     is_super = request.user.is_superuser
-    is_burger = business.business_type == business.BUSINESS_BURGER
+    is_food_operation = bool(
+        business.feature_enabled(business.FEATURE_USE_KITCHEN_DISPLAY)
+        and business.feature_enabled(business.FEATURE_USE_RECIPES)
+    )
     has_quotations = bool(business.module_quotations_enabled)
     has_cashflow = bool(business.module_cashflow_enabled)
     has_credit = bool(business.allow_credit_sales_enabled)
@@ -317,7 +142,7 @@ def user_guide(request):
     setup_steps = [
         {
             "title": "Completar o perfil da empresa",
-            "details": "Defina nome comercial, contacto, email oficial, endereco, NUIT e logotipo.",
+            "details": "Defina nome comercial, contacto, email oficial, morada, NUIT e logotipo.",
             "menu": "Perfil > Perfil do negocio",
             "url_name": "tenants:business_profile",
         },
@@ -333,14 +158,14 @@ def user_guide(request):
             "details": "Crie produtos com preco de venda e custo. Sem preco definido nao ha venda consistente.",
             "menu": "Produtos & Stock",
             "url_name": "catalog:product_list",
-            "visible": not is_burger,
+            "visible": not is_food_operation,
         },
         {
             "title": "Criar base de clientes",
             "details": "Registe clientes frequentes para historico, credito e documentos fiscais.",
             "menu": "Clientes & Credito",
             "url_name": "customers:list",
-            "visible": not is_burger,
+            "visible": not is_food_operation,
         },
         {
             "title": "Validar equipa e permissoes",
@@ -365,27 +190,27 @@ def user_guide(request):
         },
         {
             "menu": "Clientes & Credito",
-            "purpose": "Cadastro de clientes, acompanhamento de saldos em aberto e cobrancas.",
+            "purpose": "Registo de clientes, acompanhamento de saldos em aberto e cobrancas.",
             "when": "Sempre que houver vendas a credito ou relacionamento recorrente.",
-            "visible": not is_burger and has_credit,
+            "visible": not is_food_operation and has_credit,
         },
         {
             "menu": "Produtos & Stock",
-            "purpose": "Cadastro de produtos, entradas/saidas de stock, inventario e reposicao.",
+            "purpose": "Registo de produtos, entradas/saidas de stock, inventario e reposicao.",
             "when": "Gestao diaria do armazem e controlo de ruptura.",
-            "visible": not is_burger,
+            "visible": not is_food_operation,
         },
         {
             "menu": "Faturacao",
             "purpose": "Listar faturas e recibos, reenviar email, imprimir PDF e controlar estado do documento.",
             "when": "Pos-venda e auditoria documental.",
-            "visible": not is_burger,
+            "visible": not is_food_operation,
         },
         {
             "menu": "Financeiro",
             "purpose": "Fluxo de caixa, despesas, compras e movimentos financeiros por periodo.",
             "when": "Conferencia financeira diaria e mensal.",
-            "visible": has_cashflow and not is_burger,
+            "visible": has_cashflow and not is_food_operation,
         },
         {
             "menu": "Relatorios",
@@ -472,7 +297,7 @@ def user_guide(request):
         "order_flow": order_flow,
         "quotation_flow": quotation_flow,
         "has_quotations": has_quotations,
-        "is_burger": is_burger,
+        "is_burger": is_food_operation,
     }
     return render(request, "reports/user_guide.html", context)
 

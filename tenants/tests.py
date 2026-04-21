@@ -57,3 +57,28 @@ class MultiTenantIsolationTests(TestCase):
         self._login_with_business(self.user_a, self.business_a)
         response = self.client.get(reverse("billing:invoice_detail", args=[self.invoice_b.id]))
         self.assertEqual(response.status_code, 404)
+
+
+class FoodOperationRoutingTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username="chef", password="pass")
+        self.business = Business.objects.create(
+            name="Restaurante",
+            slug="restaurante-route",
+            business_type=Business.BUSINESS_RESTAURANT,
+        )
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.user,
+            role=BusinessMembership.ROLE_OWNER,
+        )
+        self.client.force_login(self.user)
+        session = self.client.session
+        session["business_id"] = self.business.id
+        session.save()
+
+    def test_food_business_redirects_from_non_food_paths(self):
+        response = self.client.get(reverse("sales:list"))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(reverse("food:order_list")))

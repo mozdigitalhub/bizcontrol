@@ -347,7 +347,27 @@ def _build_invoice_pdf_bytes(invoice, request):
     return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
 
 
+def _render_invoice_html_fallback(invoice, request):
+    items = invoice.sale.items.all() if invoice.sale else []
+    logo_url = build_logo_src(invoice.business, request)
+    response = render(
+        request,
+        "billing/invoice_pdf.html",
+        {
+            "invoice": invoice,
+            "business": invoice.business,
+            "items": items,
+            "logo_url": logo_url,
+            "pdf_fallback": True,
+        },
+    )
+    response["X-PDF-Fallback"] = "html"
+    return response
+
+
 def _render_invoice_pdf(invoice, request, download=False):
+    if HTML is None:
+        return _render_invoice_html_fallback(invoice, request)
     try:
         pdf = _build_invoice_pdf_bytes(invoice, request)
     except ValueError as exc:
@@ -369,7 +389,25 @@ def _build_receipt_pdf_bytes(receipt, request):
     return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
 
 
+def _render_receipt_html_fallback(receipt, request):
+    logo_url = build_logo_src(receipt.business, request)
+    response = render(
+        request,
+        "billing/receipt_pdf.html",
+        {
+            "receipt": receipt,
+            "business": receipt.business,
+            "logo_url": logo_url,
+            "pdf_fallback": True,
+        },
+    )
+    response["X-PDF-Fallback"] = "html"
+    return response
+
+
 def _render_receipt_pdf(receipt, request, download=False):
+    if HTML is None:
+        return _render_receipt_html_fallback(receipt, request)
     try:
         pdf = _build_receipt_pdf_bytes(receipt, request)
     except ValueError as exc:

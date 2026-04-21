@@ -139,7 +139,9 @@ class QuotationFlowTests(TestCase):
         from quotations import views as quotation_views
 
         if quotation_views.HTML is None:
-            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["X-PDF-Fallback"], "html")
+            self.assertContains(response, "Visualizacao HTML")
         else:
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response["Content-Type"], "application/pdf")

@@ -12,12 +12,13 @@ from food.models import (
     Order,
     OrderItem,
     OrderPayment,
+    RestaurantTable,
 )
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("code", "business", "status", "channel", "total", "created_at")
+    list_display = ("code", "business", "table", "status", "channel", "total", "created_at")
     list_filter = ("status", "channel", "business")
     search_fields = ("code",)
 
@@ -61,6 +62,13 @@ class MenuItemAdmin(admin.ModelAdmin):
 @admin.register(MenuItemRecipe)
 class MenuItemRecipeAdmin(admin.ModelAdmin):
     list_display = ("menu_item", "ingredient", "quantity")
+
+
+@admin.register(RestaurantTable)
+class RestaurantTableAdmin(admin.ModelAdmin):
+    list_display = ("name", "business", "seats", "status", "is_active")
+    list_filter = ("status", "is_active", "business")
+    search_fields = ("name",)
 
 
 @admin.register(IngredientStockEntry)

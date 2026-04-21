@@ -2,6 +2,15 @@ from tenants.models import Business, BusinessMembership
 from tenants.utils import get_default_business_membership
 
 
+def _is_food_operation_business(business):
+    if not business:
+        return False
+    return bool(
+        business.feature_enabled(Business.FEATURE_USE_KITCHEN_DISPLAY)
+        and business.feature_enabled(Business.FEATURE_USE_RECIPES)
+    )
+
+
 class BusinessMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -69,10 +78,11 @@ class BusinessMiddleware:
                     if membership:
                         request.tenant_permissions = membership.get_effective_permission_keys()
 
-        if request.business and request.business.business_type == Business.BUSINESS_BURGER:
+        if _is_food_operation_business(request.business):
             path = request.path or "/"
+            if path == "/":
+                return self.get_response(request)
             allowed_prefixes = (
-                "/",
                 "/food/",
                 "/reports/",
                 "/tenants/",

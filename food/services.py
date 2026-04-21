@@ -18,6 +18,7 @@ from food.models import (
     Order,
     OrderItem,
     OrderPayment,
+    RestaurantTable,
 )
 
 
@@ -62,6 +63,17 @@ def create_order(*, business, user, order_data, items, delivery_data=None):
             total += delivery_fee
         pay_before = business.feature_enabled("pay_before_service")
         payment_method = order_data.get("payment_method") or ""
+        table = order_data.get("table")
+        if table and table.business_id != business.id:
+            raise ValidationError("Mesa invalida para este negocio.")
+        if table and order_data.get("channel") != Order.CHANNEL_DINE_IN:
+            raise ValidationError("Mesa so pode ser usada em pedidos de servico a mesa.")
+        if (
+            table
+            and business.feature_enabled("use_tables")
+            and table.status == RestaurantTable.STATUS_RESERVED
+        ):
+            raise ValidationError("A mesa selecionada esta reservada.")
         if pay_before and not payment_method:
             raise ValidationError("Selecione o metodo de pagamento.")
         amount_paid = total if payment_method else Decimal("0")
@@ -70,6 +82,7 @@ def create_order(*, business, user, order_data, items, delivery_data=None):
             business=business,
             customer=order_data.get("customer"),
             channel=order_data.get("channel"),
+            table=table if business.feature_enabled("use_tables") else None,
             payment_method=payment_method,
             notes=order_data.get("notes", ""),
             subtotal=subtotal,
@@ -87,6 +100,10 @@ def create_order(*, business, user, order_data, items, delivery_data=None):
             date=timezone.localdate(),
         )
         order.save(update_fields=["code"])
+        if order.table_id:
+            RestaurantTable.objects.filter(id=order.table_id).update(
+                status=RestaurantTable.STATUS_OCCUPIED
+            )
         for item in prepared:
             order_item = OrderItem.objects.create(
                 order=order,
@@ -122,13 +139,132 @@ def create_order(*, business, user, order_data, items, delivery_data=None):
 
 
 def update_order_status(*, order, status, user):
-    allowed = {Order.STATUS_IN_PREPARATION, Order.STATUS_READY, Order.STATUS_DELIVERED}
+    allowed = {
+        Order.STATUS_IN_PREPARATION,
+        Order.STATUS_READY,
+        Order.STATUS_DELIVERED,
+        Order.STATUS_CANCELED,
+    }
     if status not in allowed:
         raise ValidationError("Estado invalido.")
-    order.status = status
-    order.updated_by = user
-    order.save(update_fields=["status", "updated_by"])
+    with transaction.atomic():
+        order = (
+            Order.objects.select_for_update()
+            .select_related("business", "table")
+            .get(pk=order.pk, business=order.business)
+        )
+        if status == order.status:
+            return order
+
+        transitions = {
+            Order.STATUS_CONFIRMED: {
+                Order.STATUS_IN_PREPARATION,
+                Order.STATUS_READY,
+                Order.STATUS_DELIVERED,
+                Order.STATUS_CANCELED,
+            },
+            Order.STATUS_IN_PREPARATION: {
+                Order.STATUS_READY,
+                Order.STATUS_DELIVERED,
+                Order.STATUS_CANCELED,
+            },
+            Order.STATUS_READY: {
+                Order.STATUS_DELIVERED,
+                Order.STATUS_CANCELED,
+            },
+            Order.STATUS_DELIVERED: set(),
+            Order.STATUS_CANCELED: set(),
+        }
+        if status not in transitions.get(order.status, set()):
+            raise ValidationError("Transicao de estado invalida.")
+
+        if status == Order.STATUS_CANCELED:
+            _restore_ingredients_from_order(order=order, user=user)
+
+        order.status = status
+        order.updated_by = user
+        order.save(update_fields=["status", "updated_by"])
+
+        if status in {Order.STATUS_DELIVERED, Order.STATUS_CANCELED} and order.table_id:
+            _release_table_if_no_pending_orders(order=order)
     return order
+
+
+def _release_table_if_no_pending_orders(*, order):
+    has_pending = Order.objects.filter(
+        business=order.business,
+        table=order.table,
+        status__in=[
+            Order.STATUS_CONFIRMED,
+            Order.STATUS_IN_PREPARATION,
+            Order.STATUS_READY,
+        ],
+    ).exclude(id=order.id).exists()
+    if not has_pending:
+        RestaurantTable.objects.filter(id=order.table_id).update(
+            status=RestaurantTable.STATUS_FREE,
+            reserved_for="",
+            reserved_until=None,
+        )
+
+
+def _restore_ingredients_from_order(*, order, user):
+    order_items = list(
+        order.items.select_related("menu_item")
+    )
+    if not order_items:
+        return
+
+    recipe_menu_item_ids = [
+        row.menu_item_id
+        for row in order_items
+        if row.menu_item_id and row.menu_item and row.menu_item.item_type == MenuItem.TYPE_FOOD
+    ]
+    recipes_map = {}
+    if recipe_menu_item_ids:
+        for recipe in MenuItemRecipe.objects.select_related("ingredient").filter(
+            menu_item_id__in=recipe_menu_item_ids
+        ):
+            recipes_map.setdefault(recipe.menu_item_id, []).append(recipe)
+
+    required = {}
+    for row in order_items:
+        menu_item = row.menu_item
+        if not menu_item:
+            continue
+        quantity = Decimal(row.quantity)
+        if menu_item.item_type == MenuItem.TYPE_FOOD:
+            for recipe in recipes_map.get(menu_item.id, []):
+                required[recipe.ingredient_id] = required.get(
+                    recipe.ingredient_id, Decimal("0")
+                ) + (recipe.quantity * quantity)
+        elif menu_item.ingredient_id:
+            required[menu_item.ingredient_id] = required.get(
+                menu_item.ingredient_id, Decimal("0")
+            ) + quantity
+
+    if not required:
+        return
+
+    ingredients = FoodIngredient.objects.select_for_update().filter(
+        business=order.business, id__in=required.keys()
+    )
+    for ingredient in ingredients:
+        quantity = required.get(ingredient.id, Decimal("0"))
+        if quantity <= 0:
+            continue
+        ingredient.stock_qty = ingredient.stock_qty + quantity
+        ingredient.save(update_fields=["stock_qty"])
+        IngredientMovement.objects.create(
+            business=order.business,
+            ingredient=ingredient,
+            movement_type=IngredientMovement.MOVEMENT_IN,
+            quantity=quantity,
+            reference_type="order_cancel",
+            reference_id=order.id,
+            notes=f"Cancelamento pedido {order.code}",
+            created_by=user,
+        )
 
 
 def _assert_ingredients_available(*, business, items):

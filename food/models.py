@@ -7,6 +7,44 @@ from customers.models import Customer
 from tenants.models import Business
 
 
+class RestaurantTable(models.Model):
+    STATUS_FREE = "free"
+    STATUS_OCCUPIED = "occupied"
+    STATUS_RESERVED = "reserved"
+    STATUS_CHOICES = [
+        (STATUS_FREE, "Livre"),
+        (STATUS_OCCUPIED, "Ocupada"),
+        (STATUS_RESERVED, "Reservada"),
+    ]
+
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="restaurant_tables"
+    )
+    name = models.CharField(max_length=60)
+    seats = models.PositiveIntegerField(default=4)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_FREE)
+    reserved_for = models.CharField(max_length=120, blank=True)
+    reserved_until = models.DateTimeField(null=True, blank=True)
+    notes = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "name"],
+                name="uniq_restaurant_table_name_business",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["business", "status"]),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 class Order(models.Model):
     STATUS_DRAFT = "draft"
     STATUS_CONFIRMED = "confirmed"
@@ -43,6 +81,13 @@ class Order(models.Model):
 
     business = models.ForeignKey(
         Business, on_delete=models.CASCADE, related_name="food_orders"
+    )
+    table = models.ForeignKey(
+        RestaurantTable,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
     )
     code = models.CharField(max_length=30, null=True, blank=True)
     customer = models.ForeignKey(

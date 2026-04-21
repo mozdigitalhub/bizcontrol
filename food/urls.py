@@ -5,6 +5,10 @@ from food import views
 app_name = "food"
 
 urlpatterns = [
+    path("tables/", views.table_list, name="table_list"),
+    path("tables/new/", views.table_create, name="table_create"),
+    path("tables/<int:pk>/edit/", views.table_edit, name="table_edit"),
+    path("tables/<int:pk>/status/", views.table_set_status, name="table_status"),
     path("menu/", views.menu_list, name="menu_list"),
     path("menu/new/", views.menu_create, name="menu_create"),
     path("menu/<int:pk>/edit/", views.menu_edit, name="menu_edit"),

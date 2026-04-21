@@ -333,7 +333,28 @@ def _build_guide_pdf_bytes(guide, request):
     return HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
 
 
+def _render_guide_html_fallback(guide, request):
+    summary = _build_sale_item_summary(guide.sale)
+    logo_url = build_logo_src(guide.business, request)
+    response = render(
+        request,
+        "deliveries/guide_pdf.html",
+        {
+            "guide": guide,
+            "business": guide.business,
+            "items": guide.items.select_related("product"),
+            "summary_items": summary,
+            "logo_url": logo_url,
+            "pdf_fallback": True,
+        },
+    )
+    response["X-PDF-Fallback"] = "html"
+    return response
+
+
 def _render_guide_pdf(guide, request, download=False):
+    if HTML is None:
+        return _render_guide_html_fallback(guide, request)
     try:
         pdf = _build_guide_pdf_bytes(guide, request)
     except ValueError as exc:

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{% if variant %}Editar variacao{% else %}Nova variacao{% endif %} - BizControl{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">{% if variant %}Editar variacao{% else %}Nova variacao{% endif %}</h1>
+      <div class="text-muted small">{{ product.name }}</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'catalog:variant_list' product.id %}">
+      <i class="bi bi-arrow-left me-1"></i>
+      Voltar
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label">{{ form.name.label }}</label>
+            {{ form.name }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ form.size.label }}</label>
+            {{ form.size }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.color.label }}</label>
+            {{ form.color }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.sku.label }}</label>
+            {{ form.sku }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ form.sale_price.label }}</label>
+            {{ form.sale_price }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ form.stock_qty.label }}</label>
+            {{ form.stock_qty }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ form.reorder_level.label }}</label>
+            {{ form.reorder_level }}
+          </div>
+          <div class="col-md-12">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label">{{ form.is_active.label }}</label>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-4">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check2-circle me-1"></i>
+            Guardar variacao
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

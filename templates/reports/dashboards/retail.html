@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Retail - BizControl{% endblock %}
+
+{% block topbar_title %}
+  <h1>Retail & inventario</h1>
+{% endblock %}
+
+{% block topbar_subtitle %}
+  <p>Operacao comercial com foco em variacoes, stock e vendas.</p>
+{% endblock %}
+
+{% block topbar_badges %}
+  <span class="pill">Vendas hoje: {{ sales_today_count }}</span>
+  <span class="pill">Recibos hoje: {{ receipts_today_count }}</span>
+{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .retail-hero {
+      border-radius: 18px;
+      padding: 20px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 82% 20%, rgba(255, 255, 255, 0.24), transparent 36%),
+        linear-gradient(122deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%);
+      box-shadow: 0 20px 36px rgba(30, 64, 175, 0.26);
+    }
+
+    .retail-metrics {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .retail-metric {
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+    }
+
+    .retail-metric .label {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .retail-metric .value {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-top: 3px;
+    }
+
+    .retail-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 14px;
+    }
+
+    .retail-card {
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+      padding: 14px;
+    }
+
+    .retail-alert {
+      border-radius: 10px;
+      border: 1px solid #fee2e2;
+      background: #fff1f2;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    .retail-bar {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .retail-bar-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #e0ecff;
+      overflow: hidden;
+    }
+
+    .retail-bar-fill {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #1d4ed8, #0284c7);
+      border-radius: 999px;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .module-card {
+      border-radius: 12px;
+      border: 1px solid #dbeafe;
+      background: #f8fbff;
+      padding: 12px;
+      text-decoration: none;
+      color: #0f172a;
+    }
+
+    @media (max-width: 1100px) {
+      .retail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .retail-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .retail-metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="retail-hero">
+    <h2 class="h4 mb-1">{{ current_business.name }}</h2>
+    <p class="mb-0">Acompanhe vendas, variacoes e nivel de stock em tempo real.</p>
+
+    <div class="retail-metrics">
+      <article class="retail-metric">
+        <div class="label">Vendas hoje (MZN)</div>
+        <div class="value">{{ sales_today|floatformat:2 }}</div>
+      </article>
+      <article class="retail-metric">
+        <div class="label">Produtos ativos</div>
+        <div class="value">{{ product_count }}</div>
+      </article>
+      <article class="retail-metric">
+        <div class="label">Variacoes ativas</div>
+        <div class="value">{{ variant_count }}</div>
+      </article>
+      <article class="retail-metric">
+        <div class="label">Valor estimado em stock</div>
+        <div class="value">{{ estimated_stock_value|floatformat:0 }}</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="retail-grid">
+    <article class="retail-card">
+      <h3 class="h6 mb-2">Top produtos por vendas</h3>
+      {% with max_total=top_products.0.total|default:0 %}
+        {% for item in top_products %}
+          <div class="retail-bar">
+            <div class="d-flex justify-content-between small">
+              <span>{{ item.product__name }}</span>
+              <strong>{{ item.total|floatformat:2 }} MZN</strong>
+            </div>
+            <div class="retail-bar-track">
+              <span
+                class="retail-bar-fill"
+                style="width: {% if max_total %}{% widthratio item.total max_total 100 %}{% else %}0{% endif %}%"
+              ></span>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-muted small">Sem vendas confirmadas.</div>
+        {% endfor %}
+      {% endwith %}
+
+      <h3 class="h6 mt-4 mb-2">Modulos operacionais</h3>
+      <div class="module-grid">
+        {% for module in dashboard_modules %}
+          <a class="module-card" href="{% url module.url_name %}">
+            <div class="fw-semibold">{{ module.title }}</div>
+            <div class="small text-muted">{{ module.description }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="retail-card">
+      <h3 class="h6 mb-2">Alertas de stock</h3>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="card p-3 h-100">
+            <div class="text-muted small">Produtos em baixo</div>
+            <div class="fw-semibold fs-4">{{ low_stock_products_count }}</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card p-3 h-100">
+            <div class="text-muted small">Variacoes em baixo</div>
+            <div class="fw-semibold fs-4">{{ low_stock_variants_count }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% for product in low_stock_products %}
+        <div class="retail-alert">
+          <div class="fw-semibold">{{ product.name }}</div>
+          <div class="small text-muted">
+            Atual: {{ product.stock }} | Minimo: {{ product.reorder_level }}
+          </div>
+        </div>
+      {% empty %}
+        <div class="alert alert-success mb-0">
+          Sem alertas de stock para produtos no momento.
+        </div>
+      {% endfor %}
+    </article>
+  </section>
+{% endblock %}

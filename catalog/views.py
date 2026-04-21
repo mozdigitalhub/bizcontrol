@@ -1,11 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from catalog.forms import CategoryForm, ProductForm
-from catalog.models import Category, Product
+from catalog.forms import CategoryForm, ProductForm, ProductVariantForm
+from catalog.models import Category, Product, ProductVariant
 from inventory.services import get_product_stock
 from tenants.decorators import business_required, module_required
 from tenants.models import Business
@@ -22,6 +22,7 @@ def product_list(request):
     products = (
         Product.objects.filter(business=request.business)
         .select_related("category")
+        .annotate(variant_count=Count("variants"))
     )
     if query:
         products = products.filter(Q(name__icontains=query) | Q(sku__icontains=query))
@@ -177,3 +178,64 @@ def product_delete(request, pk):
     product.delete()
     messages.success(request, "Produto removido com sucesso.")
     return redirect("catalog:product_list")
+
+
+@login_required
+@business_required
+@module_required(Business.MODULE_CATALOG, message="Catalogo desativado para este negocio.")
+@permission_required("catalog.view_productvariant", raise_exception=True)
+def variant_list(request, product_id):
+    product = get_object_or_404(Product, id=product_id, business=request.business)
+    variants = product.variants.order_by("name", "size", "color")
+    return render(
+        request,
+        "catalog/variant_list.html",
+        {"product": product, "variants": variants},
+    )
+
+
+@login_required
+@business_required
+@module_required(Business.MODULE_CATALOG, message="Catalogo desativado para este negocio.")
+@permission_required("catalog.add_productvariant", raise_exception=True)
+def variant_create(request, product_id):
+    product = get_object_or_404(Product, id=product_id, business=request.business)
+    if request.method == "POST":
+        form = ProductVariantForm(request.POST)
+        if form.is_valid():
+            variant = form.save(commit=False)
+            variant.product = product
+            if not variant.sale_price:
+                variant.sale_price = product.sale_price
+            variant.save()
+            messages.success(request, "Variacao criada com sucesso.")
+            return redirect("catalog:variant_list", product_id=product.id)
+    else:
+        form = ProductVariantForm(initial={"sale_price": product.sale_price})
+    return render(
+        request,
+        "catalog/variant_form.html",
+        {"form": form, "product": product},
+    )
+
+
+@login_required
+@business_required
+@module_required(Business.MODULE_CATALOG, message="Catalogo desativado para este negocio.")
+@permission_required("catalog.change_productvariant", raise_exception=True)
+def variant_edit(request, product_id, variant_id):
+    product = get_object_or_404(Product, id=product_id, business=request.business)
+    variant = get_object_or_404(ProductVariant, id=variant_id, product=product)
+    if request.method == "POST":
+        form = ProductVariantForm(request.POST, instance=variant)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Variacao atualizada com sucesso.")
+            return redirect("catalog:variant_list", product_id=product.id)
+    else:
+        form = ProductVariantForm(instance=variant)
+    return render(
+        request,
+        "catalog/variant_form.html",
+        {"form": form, "product": product, "variant": variant},
+    )

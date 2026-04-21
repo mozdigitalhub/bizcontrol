@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BizControl{% endblock %}
+
+{% block topbar_title %}
+  <h1>Painel do negocio</h1>
+{% endblock %}
+
+{% block topbar_subtitle %}
+  <p>Resumo adaptado ao perfil da sua empresa.</p>
+{% endblock %}
+
+{% block content %}
+  <section class="grid-4">
+    <article class="stat-card">
+      <div class="stat-icon">VD</div>
+      <div>
+        <div class="text-muted small">Vendas hoje</div>
+        <div class="fw-semibold">{{ sales_today|floatformat:2 }} MZN</div>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon">OP</div>
+      <div>
+        <div class="text-muted small">{{ business_labels.sales|default:"Vendas" }} hoje</div>
+        <div class="fw-semibold">{{ sales_count_today }}</div>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon">PR</div>
+      <div>
+        <div class="text-muted small">{{ business_labels.products|default:"Produtos" }}</div>
+        <div class="fw-semibold">{{ product_count }}</div>
+      </div>
+    </article>
+    <article class="stat-card">
+      <div class="stat-icon">CL</div>
+      <div>
+        <div class="text-muted small">Clientes</div>
+        <div class="fw-semibold">{{ customer_count }}</div>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h2 class="h5 mb-1">Modulos ativos</h2>
+        <p class="text-muted small mb-0">Aceda rapidamente aos fluxos principais.</p>
+      </div>
+      <div class="fw-semibold text-muted">Contas a receber: {{ open_receivables|floatformat:2 }} MZN</div>
+    </div>
+    <div class="grid-3">
+      {% for module in dashboard_modules %}
+        <a class="card p-3 text-decoration-none text-reset" href="{% url module.url_name %}">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <div class="fw-semibold">{{ module.title }}</div>
+              <div class="text-muted small">{{ module.description }}</div>
+            </div>
+            <span class="badge text-bg-light">{{ module.key|upper }}</span>
+          </div>
+        </a>
+      {% empty %}
+        <div class="text-muted">Sem modulos configurados para este tipo de negocio.</div>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

@@ -53,6 +53,15 @@
               {{ form.channel }}
             </div>
           </div>
+          {% if tables_enabled %}
+            <div class="col-lg-6">
+              <label class="form-label">Mesa</label>
+              <div class="field-with-icon">
+                <span class="field-icon"><i class="bi bi-grid-3x3-gap"></i></span>
+                {{ form.table }}
+              </div>
+            </div>
+          {% endif %}
           <div class="col-lg-12">
             <label class="form-label">Observações</label>
             <div class="field-with-icon">

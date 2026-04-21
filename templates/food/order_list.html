@@ -47,6 +47,20 @@
           </select>
         </div>
       </div>
+      {% if tables_enabled %}
+        <div class="col-lg-2">
+          <label class="form-label small">Mesa</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-grid-3x3-gap"></i></span>
+            <select class="form-select tom-select" name="table" data-placeholder="Mesa...">
+              <option value="">Todas</option>
+              {% for table in tables %}
+                <option value="{{ table.id }}"{% if table_id == table.id|stringformat:"s" %} selected{% endif %}>{{ table.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      {% endif %}
       <div class="col-lg-2">
         <button class="btn btn-primary w-100" type="submit">
           <i class="bi bi-filter me-1"></i>
@@ -64,6 +78,9 @@
             <th>Codigo</th>
             <th>Cliente</th>
             <th>Canal</th>
+            {% if tables_enabled %}
+              <th>Mesa</th>
+            {% endif %}
             <th>Estado</th>
             <th class="text-end">Total</th>
             <th class="text-end">Acoes</th>
@@ -75,6 +92,9 @@
               <td class="fw-semibold">{{ order.code }}</td>
               <td>{{ order.customer.name|default:"Cliente final" }}</td>
               <td>{{ order.get_channel_display }}</td>
+              {% if tables_enabled %}
+                <td>{{ order.table.name|default:"-" }}</td>
+              {% endif %}
               <td>
                 <span class="badge bg-primary-subtle text-primary">{{ order.get_status_display }}</span>
               </td>
@@ -87,7 +107,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted">Sem pedidos.</td>
+              <td colspan="{% if tables_enabled %}7{% else %}6{% endif %}" class="text-center text-muted">Sem pedidos.</td>
             </tr>
           {% endfor %}
         </tbody>

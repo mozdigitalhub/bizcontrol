@@ -25,6 +25,9 @@
                 <div>
                   <div class="fw-semibold">{{ order.code }}</div>
                   <div class="text-muted small">{{ order.customer.name|default:"Cliente final" }}</div>
+                  {% if order.table %}
+                    <div class="text-muted small">Mesa: {{ order.table.name }}</div>
+                  {% endif %}
                 </div>
                 <span class="badge bg-primary-subtle text-primary">Confirmado</span>
               </div>
@@ -47,6 +50,14 @@
                   Iniciar preparo
                 </button>
               </form>
+              <form class="mt-2" method="post" action="{% url 'food:order_status' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="canceled">
+                <button class="btn btn-outline-danger btn-sm w-100" type="submit">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancelar pedido
+                </button>
+              </form>
             </div>
           {% empty %}
             <div class="text-muted small">Sem pedidos confirmados.</div>
@@ -64,6 +75,9 @@
                 <div>
                   <div class="fw-semibold">{{ order.code }}</div>
                   <div class="text-muted small">{{ order.customer.name|default:"Cliente final" }}</div>
+                  {% if order.table %}
+                    <div class="text-muted small">Mesa: {{ order.table.name }}</div>
+                  {% endif %}
                 </div>
                 <span class="badge bg-warning-subtle text-warning">Preparando</span>
               </div>
@@ -86,6 +100,14 @@
                   Marcar pronto
                 </button>
               </form>
+              <form class="mt-2" method="post" action="{% url 'food:order_status' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="canceled">
+                <button class="btn btn-outline-danger btn-sm w-100" type="submit">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancelar pedido
+                </button>
+              </form>
             </div>
           {% empty %}
             <div class="text-muted small">Sem pedidos em preparação.</div>
@@ -103,6 +125,9 @@
                 <div>
                   <div class="fw-semibold">{{ order.code }}</div>
                   <div class="text-muted small">{{ order.customer.name|default:"Cliente final" }}</div>
+                  {% if order.table %}
+                    <div class="text-muted small">Mesa: {{ order.table.name }}</div>
+                  {% endif %}
                 </div>
                 <span class="badge bg-success-subtle text-success">Pronto</span>
               </div>
@@ -123,6 +148,14 @@
                 <button class="btn btn-outline-secondary btn-sm w-100" type="submit">
                   <i class="bi bi-box-arrow-right me-1"></i>
                   Entregar
+                </button>
+              </form>
+              <form class="mt-2" method="post" action="{% url 'food:order_status' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="canceled">
+                <button class="btn btn-outline-danger btn-sm w-100" type="submit">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Cancelar pedido
                 </button>
               </form>
             </div>

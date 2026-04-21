@@ -174,7 +174,9 @@
             <tr>
               <td>
                 <div class="fw-semibold">{{ product.name }}</div>
-                <div class="product-meta">SKU: {{ product.sku|default:"-" }}</div>
+                <div class="product-meta">
+                  SKU: {{ product.sku|default:"-" }} | Variacoes: {{ product.variant_count }}
+                </div>
               </td>
               <td>{{ product.category.name|default:"-" }}</td>
               <td>{{ product.sale_price|floatformat:2 }} MZN</td>
@@ -211,6 +213,16 @@
                     aria-label="Editar"
                   >
                     <i class="bi bi-pencil"></i>
+                  </a>
+                {% endif %}
+                {% if perms.catalog.view_productvariant %}
+                  <a
+                    class="btn btn-sm btn-outline-info"
+                    href="{% url 'catalog:variant_list' product.id %}"
+                    title="Variacoes"
+                    aria-label="Variacoes"
+                  >
+                    <i class="bi bi-diagram-3"></i>
                   </a>
                 {% endif %}
                 {% if perms.catalog.delete_product %}

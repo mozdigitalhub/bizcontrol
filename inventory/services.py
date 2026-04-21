@@ -12,6 +12,28 @@ from inventory.models import (
 )
 
 
+def _compose_stock_balance(summary):
+    incoming = summary.get(StockMovement.MOVEMENT_IN) or 0
+    outgoing = summary.get(StockMovement.MOVEMENT_OUT) or 0
+    adjust = summary.get(StockMovement.MOVEMENT_ADJUST) or 0
+    return int(incoming) - int(outgoing) + int(adjust)
+
+
+def get_stock_snapshot_by_product_ids(business, product_ids):
+    if not product_ids:
+        return {}
+    totals = (
+        StockMovement.objects.filter(business=business, product_id__in=product_ids)
+        .values("product_id", "movement_type")
+        .annotate(total=Sum("quantity"))
+    )
+    grouped = {}
+    for row in totals:
+        product_id = row["product_id"]
+        grouped.setdefault(product_id, {})[row["movement_type"]] = row["total"] or 0
+    return {product_id: _compose_stock_balance(summary) for product_id, summary in grouped.items()}
+
+
 def get_product_stock(business, product):
     totals = (
         StockMovement.objects.filter(business=business, product=product)
@@ -19,10 +41,7 @@ def get_product_stock(business, product):
         .annotate(total=Sum("quantity"))
     )
     summary = {row["movement_type"]: row["total"] for row in totals}
-    incoming = summary.get(StockMovement.MOVEMENT_IN) or 0
-    outgoing = summary.get(StockMovement.MOVEMENT_OUT) or 0
-    adjust = summary.get(StockMovement.MOVEMENT_ADJUST) or 0
-    return int(incoming) - int(outgoing) + int(adjust)
+    return _compose_stock_balance(summary)
 
 
 def record_movement(

@@ -122,6 +122,11 @@
     </style>
   </head>
   <body>
+    {% if pdf_fallback %}
+      <div style="padding:8px 10px;border:1px solid #F59E0B;background:#FEF3C7;color:#92400E;font-size:11px;margin-bottom:10px;border-radius:8px;">
+        Visualizacao HTML: geracao de PDF indisponivel neste ambiente.
+      </div>
+    {% endif %}
     <div class="doc-header">
       <div class="brand">
         {% if logo_url %}

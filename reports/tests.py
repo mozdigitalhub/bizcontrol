@@ -7,6 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from catalog.models import Product
+from food.models import MenuItem, RestaurantTable
+from reports.dashboard_handlers import DashboardFactory
 from reports.services import get_product_sales_history, get_sales_series
 from sales.models import Sale, SaleItem
 from tenants.models import Business, BusinessMembership
@@ -142,3 +144,51 @@ class SalesSeriesIsolationTests(TestCase):
         )
         self.assertTrue(labels)
         self.assertEqual(sum(values), 20.0)
+
+
+class DashboardFactoryTests(TestCase):
+    def test_resolves_handler_by_business_type(self):
+        self.assertEqual(
+            DashboardFactory.get_dashboard(Business.BUSINESS_HARDWARE).key,
+            "hardware",
+        )
+        self.assertEqual(
+            DashboardFactory.get_dashboard(Business.BUSINESS_RESTAURANT).key,
+            "restaurant",
+        )
+        self.assertEqual(
+            DashboardFactory.get_dashboard(Business.BUSINESS_CLOTHING).key,
+            "retail",
+        )
+        self.assertEqual(
+            DashboardFactory.get_dashboard(Business.BUSINESS_WORKSHOP).key,
+            "default",
+        )
+
+    def test_restaurant_dashboard_is_rendered_for_restaurant_tenant(self):
+        user = get_user_model().objects.create_user(
+            username="chef", email="chef@example.com", password="pass1234"
+        )
+        business = Business.objects.create(
+            name="Restaurante", slug="restaurante", business_type=Business.BUSINESS_RESTAURANT
+        )
+        BusinessMembership.objects.create(
+            business=business, user=user, role=BusinessMembership.ROLE_OWNER
+        )
+        MenuItem.objects.create(
+            business=business,
+            name="Prato",
+            selling_price=12,
+        )
+        RestaurantTable.objects.create(
+            business=business, name="Mesa 1", status=RestaurantTable.STATUS_FREE
+        )
+
+        self.client.force_login(user)
+        session = self.client.session
+        session["business_id"] = business.id
+        session.save()
+
+        response = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "reports/dashboards/restaurant.html")

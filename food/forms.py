@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import BaseFormSet, formset_factory
+from django.utils import timezone
 
 from customers.models import Customer
 from finance.models import CashMovement, PaymentMethod
@@ -13,6 +14,7 @@ from food.models import (
     MenuItemRecipe,
     Order,
     OrderItem,
+    RestaurantTable,
 )
 
 
@@ -21,10 +23,11 @@ class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        fields = ["customer", "channel", "notes"]
+        fields = ["customer", "channel", "table", "notes"]
         labels = {
             "customer": "Cliente",
             "channel": "Canal",
+            "table": "Mesa",
             "notes": "Observacoes",
         }
 
@@ -32,10 +35,18 @@ class OrderForm(forms.ModelForm):
         business = kwargs.pop("business", None)
         super().__init__(*args, **kwargs)
         self.fields["customer"].required = False
+        self.fields["table"].required = False
         if business:
             self.fields["customer"].queryset = Customer.objects.filter(
                 business=business
             ).order_by("name")
+            use_tables = business.feature_enabled("use_tables")
+            if use_tables:
+                self.fields["table"].queryset = business.restaurant_tables.filter(
+                    is_active=True
+                ).order_by("name")
+            else:
+                self.fields["table"].widget = forms.HiddenInput()
             methods = PaymentMethod.objects.filter(
                 business=business, is_active=True
             ).order_by("name")
@@ -51,6 +62,8 @@ class OrderForm(forms.ModelForm):
             self.fields["payment_method"].choices = CashMovement.METHOD_CHOICES
 
         for name, field in self.fields.items():
+            if isinstance(field.widget, forms.HiddenInput):
+                continue
             if isinstance(field.widget, forms.Select):
                 field.widget.attrs["class"] = "form-select tom-select"
             else:
@@ -60,6 +73,11 @@ class OrderForm(forms.ModelForm):
         if "customer" in self.fields:
             self.fields["customer"].widget.attrs["data-placeholder"] = "Selecionar cliente..."
             self.fields["customer"].widget.attrs["data-dropdown-parent"] = "form"
+        if "table" in self.fields and not isinstance(
+            self.fields["table"].widget, forms.HiddenInput
+        ):
+            self.fields["table"].widget.attrs["data-placeholder"] = "Selecionar mesa..."
+            self.fields["table"].widget.attrs["data-dropdown-parent"] = "form"
         self.fields["payment_method"].widget.attrs["data-placeholder"] = "Selecionar metodo..."
         if "channel" in self.fields:
             self.fields["channel"].widget.attrs["data-dropdown-parent"] = "form"
@@ -239,6 +257,82 @@ class MenuCategoryForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
             if field.required:
                 field.widget.attrs["required"] = "required"
+
+
+class RestaurantTableForm(forms.ModelForm):
+    class Meta:
+        model = RestaurantTable
+        fields = [
+            "name",
+            "seats",
+            "status",
+            "reserved_for",
+            "reserved_until",
+            "notes",
+            "is_active",
+        ]
+        labels = {
+            "name": "Nome",
+            "seats": "Lugares",
+            "status": "Estado",
+            "reserved_for": "Reserva para",
+            "reserved_until": "Reservada ate",
+            "notes": "Observacoes",
+            "is_active": "Ativa",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["seats"].widget.attrs.update(
+            {"inputmode": "numeric", "step": "1", "min": "1"}
+        )
+        self.fields["reserved_until"].widget = forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        )
+        self.fields["reserved_until"].input_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+        if self.instance and self.instance.reserved_until:
+            local_reserved_until = timezone.localtime(self.instance.reserved_until)
+            self.initial["reserved_until"] = local_reserved_until.strftime("%Y-%m-%dT%H:%M")
+        for name, field in self.fields.items():
+            if getattr(field.widget, "input_type", None) == "checkbox":
+                field.widget.attrs["class"] = "form-check-input"
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs["class"] = "form-select tom-select"
+            else:
+                field.widget.attrs["class"] = "form-control"
+            if field.required:
+                field.widget.attrs["required"] = "required"
+
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get("status")
+        reserved_for = (cleaned.get("reserved_for") or "").strip()
+        reserved_until = cleaned.get("reserved_until")
+
+        if status == RestaurantTable.STATUS_RESERVED:
+            if not reserved_for:
+                self.add_error("reserved_for", "Informe para quem a mesa esta reservada.")
+            if not reserved_until:
+                self.add_error("reserved_until", "Informe ate quando a mesa esta reservada.")
+            elif timezone.is_naive(reserved_until):
+                reserved_until = timezone.make_aware(
+                    reserved_until, timezone.get_current_timezone()
+                )
+                cleaned["reserved_until"] = reserved_until
+            if reserved_until and reserved_until <= timezone.now():
+                self.add_error(
+                    "reserved_until",
+                    "A data/hora da reserva deve ser futura.",
+                )
+        else:
+            cleaned["reserved_for"] = ""
+            cleaned["reserved_until"] = None
+
+        return cleaned
 
 
 class MenuItemForm(forms.ModelForm):

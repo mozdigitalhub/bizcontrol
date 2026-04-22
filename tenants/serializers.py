@@ -23,6 +23,20 @@ TENANT_TYPE_MAP = {
 }
 
 
+def _normalize_tenant_type(value):
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    normalized = raw.lower()
+    if normalized in TENANT_TYPE_MAP:
+        return normalized
+    if normalized.startswith("business_"):
+        alias = normalized.replace("business_", "", 1)
+        if alias in TENANT_TYPE_MAP:
+            return alias
+    return None
+
+
 def _build_unique_slug(name):
     base = slugify(name).strip("-")[:70] or "negocio"
     slug = base
@@ -52,13 +66,15 @@ def _ensure_owner_group():
 
 class TenantRegisterSerializer(serializers.Serializer):
     tenant_name = serializers.CharField(max_length=200)
-    tenant_type = serializers.ChoiceField(choices=tuple(TENANT_TYPE_MAP.keys()))
+    tenant_type = serializers.CharField(max_length=40)
     owner_full_name = serializers.CharField(max_length=150)
     owner_email = serializers.EmailField()
     tenant_email = serializers.EmailField(required=False, allow_blank=True)
     owner_phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
-    password = serializers.CharField(write_only=True)
-    confirm_password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    confirm_password = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
     legal_name = serializers.CharField(max_length=200, required=False, allow_blank=True)
     nuit = serializers.CharField(max_length=30)
     commercial_registration = serializers.CharField(max_length=60, required=False, allow_blank=True)
@@ -93,15 +109,36 @@ class TenantRegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Tem de aceitar os termos.")
         return value
 
+    def validate_tenant_type(self, value):
+        normalized = _normalize_tenant_type(value)
+        if not normalized:
+            allowed = ", ".join(sorted(TENANT_TYPE_MAP.keys()))
+            raise serializers.ValidationError(
+                f"Tipo de negocio invalido. Use um dos valores: {allowed}."
+            )
+        return normalized
+
     def validate(self, attrs):
-        if attrs.get("password") != attrs.get("confirm_password"):
+        password = attrs.get("password") or ""
+        confirm_password = attrs.get("confirm_password") or ""
+
+        if password and not confirm_password:
+            raise serializers.ValidationError(
+                {"confirm_password": ["Confirme a password."]}
+            )
+        if confirm_password and not password:
+            raise serializers.ValidationError(
+                {"password": ["Informe a password."]}
+            )
+        if password != confirm_password:
             raise serializers.ValidationError(
                 {"confirm_password": ["As passwords nao coincidem."]}
             )
-        try:
-            password_validation.validate_password(attrs.get("password"))
-        except Exception as exc:
-            raise serializers.ValidationError({"password": list(exc.messages)})
+        if password:
+            try:
+                password_validation.validate_password(password)
+            except Exception as exc:
+                raise serializers.ValidationError({"password": list(exc.messages)})
         return attrs
 
     def create(self, validated_data):
@@ -139,7 +176,7 @@ class TenantRegisterSerializer(serializers.Serializer):
                 email=owner_email,
                 first_name=first_name,
                 last_name=last_name,
-                password=validated_data["password"],
+                password=validated_data.get("password") or None,
             )
             UserProfile.objects.get_or_create(user=owner)
             _ensure_owner_group()

@@ -18,8 +18,6 @@ class TenantRegisterApiTests(APITestCase):
             "owner_full_name": "Joao Silva",
             "owner_email": "joao@example.com",
             "owner_phone": "841234567",
-            "password": "StrongPass123!",
-            "confirm_password": "StrongPass123!",
             "nuit": "123456789",
             "country": "MZ",
             "city": "Maputo",
@@ -39,6 +37,7 @@ class TenantRegisterApiTests(APITestCase):
         self.assertEqual(business.status, Business.STATUS_PENDING)
         self.assertEqual(business.email, "")
         owner = get_user_model().objects.get(username="joao@example.com")
+        self.assertFalse(owner.has_usable_password())
         membership = BusinessMembership.objects.get(business=business, user=owner)
         self.assertEqual(membership.role, BusinessMembership.ROLE_OWNER)
         self.assertIsNotNone(membership.role_profile)
@@ -75,6 +74,7 @@ class TenantRegisterApiTests(APITestCase):
 
     def test_register_password_mismatch(self):
         data = dict(self.payload)
+        data["password"] = "StrongPass123!"
         data["confirm_password"] = "OutraSenha123!"
         response = self.client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -91,6 +91,17 @@ class TenantRegisterApiTests(APITestCase):
         response = self.client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("tenant_type", response.data.get("errors", {}))
+
+    def test_register_accepts_business_constant_alias(self):
+        data = dict(self.payload)
+        data["tenant_type"] = "BUSINESS_BURGER"
+        data["tenant_name"] = "Burger Hub"
+        data["owner_email"] = "burger@example.com"
+        data["nuit"] = "223456789"
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        business = Business.objects.get(slug="burger-hub")
+        self.assertEqual(business.business_type, Business.BUSINESS_BURGER)
 
     @override_settings(
         CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}},

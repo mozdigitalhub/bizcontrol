@@ -762,6 +762,7 @@ class FoodOrderCreateBurgerFlowTests(TestCase):
         drink_stock = FoodIngredient.objects.create(
             business=self.business,
             name="Refresco lata",
+            category=FoodIngredient.CATEGORY_BEVERAGE,
             usage_type=FoodIngredient.USAGE_SELLABLE,
             unit="unidade",
             stock_qty=Decimal("100.000"),
@@ -781,11 +782,13 @@ class FoodOrderCreateBurgerFlowTests(TestCase):
     def test_order_form_separates_dishes_complements_and_beverages(self):
         response = self.client.get(reverse("food:order_create"))
         self.assertEqual(response.status_code, 200)
-        form = response.context["formset"].forms[0]
-        menu_ids = set(form.fields["menu_item"].queryset.values_list("id", flat=True))
+        item_form = response.context["formset"].forms[0]
+        beverage_form = response.context["beverage_formset"].forms[0]
+        menu_ids = set(item_form.fields["menu_item"].queryset.values_list("id", flat=True))
         self.assertEqual(menu_ids, {self.dish.id})
-        self.assertIn(self.complement, form.fields["complements"].queryset)
-        self.assertIn(self.beverage, form.fields["beverages"].queryset)
+        self.assertIn(self.complement, item_form.fields["complements"].queryset)
+        beverage_ids = set(beverage_form.fields["menu_item"].queryset.values_list("id", flat=True))
+        self.assertEqual(beverage_ids, {self.beverage.id})
 
     def test_order_create_expands_selected_complements_and_beverages(self):
         response = self.client.post(
@@ -804,8 +807,16 @@ class FoodOrderCreateBurgerFlowTests(TestCase):
                 "items-0-unit_price": "",
                 "items-0-notes": "",
                 "items-0-complements": [str(self.complement.id)],
-                "items-0-beverages": [str(self.beverage.id)],
                 "items-0-DELETE": "",
+                "beverages-TOTAL_FORMS": "1",
+                "beverages-INITIAL_FORMS": "0",
+                "beverages-MIN_NUM_FORMS": "0",
+                "beverages-MAX_NUM_FORMS": "1000",
+                "beverages-0-menu_item": str(self.beverage.id),
+                "beverages-0-quantity": "4",
+                "beverages-0-unit_price": "",
+                "beverages-0-notes": "",
+                "beverages-0-DELETE": "",
             },
         )
         self.assertEqual(response.status_code, 302)
@@ -821,7 +832,33 @@ class FoodOrderCreateBurgerFlowTests(TestCase):
         )
         self.assertEqual(
             order.items.filter(menu_item=self.beverage).values_list("quantity", flat=True).first(),
-            2,
+            4,
         )
-        expected_total = (self.dish.selling_price + self.complement.selling_price + self.beverage.selling_price) * 2
+        expected_total = (
+            (self.dish.selling_price + self.complement.selling_price) * 2
+            + (self.beverage.selling_price * 4)
+        )
         self.assertEqual(order.total, expected_total)
+
+    def test_order_form_beverages_only_include_sellable_ingredient_in_beverage_category(self):
+        non_beverage_stock = FoodIngredient.objects.create(
+            business=self.business,
+            name="Xarope especial",
+            category=FoodIngredient.CATEGORY_SAUCE,
+            usage_type=FoodIngredient.USAGE_SELLABLE,
+            unit="ml",
+            stock_qty=Decimal("500.000"),
+        )
+        non_beverage_item = MenuItem.objects.create(
+            business=self.business,
+            name="Xarope premium",
+            item_type=MenuItem.TYPE_BEVERAGE,
+            selling_price=Decimal("45.00"),
+            ingredient=non_beverage_stock,
+        )
+        response = self.client.get(reverse("food:order_create"))
+        self.assertEqual(response.status_code, 200)
+        beverage_form = response.context["beverage_formset"].forms[0]
+        beverage_ids = set(beverage_form.fields["menu_item"].queryset.values_list("id", flat=True))
+        self.assertIn(self.beverage.id, beverage_ids)
+        self.assertNotIn(non_beverage_item.id, beverage_ids)

@@ -191,7 +191,7 @@
               Adicionar item
             </button>
           </div>
-          <div class="form-text mb-2">Cada linha permite prato, quantidade, complementos e bebidas adicionais.</div>
+          <div class="form-text mb-2">Cada linha permite prato, quantidade e complementos.</div>
 
           {{ formset.management_form }}
           {% with empty=formset.empty_form %}
@@ -216,10 +216,6 @@
                     <label class="form-label small mb-1">Complementos</label>
                     {{ empty.complements }}
                   </div>
-                  <div>
-                    <label class="form-label small mb-1">Bebidas</label>
-                    {{ empty.beverages }}
-                  </div>
                 </div>
                 <div class="item-row-actions">
                   <div class="line-total-pill">
@@ -227,10 +223,11 @@
                     <div class="fw-semibold" data-line-total-text>0,00 MZN</div>
                     <input type="hidden" value="0" data-line-total>
                   </div>
-                  <div class="form-check">
-                    {{ empty.DELETE }}
-                    <label class="form-check-label">Remover</label>
-                  </div>
+                  <div class="d-none">{{ empty.DELETE }}</div>
+                  <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row>
+                    <i class="bi bi-trash me-1"></i>
+                    Remover item
+                  </button>
                 </div>
               </div>
             </template>
@@ -258,10 +255,6 @@
                     <label class="form-label small mb-1">Complementos</label>
                     {{ item_form.complements }}
                   </div>
-                  <div>
-                    <label class="form-label small mb-1">Bebidas</label>
-                    {{ item_form.beverages }}
-                  </div>
                 </div>
                 <div class="item-row-actions">
                   <div class="line-total-pill">
@@ -269,12 +262,92 @@
                     <div class="fw-semibold" data-line-total-text>0,00 MZN</div>
                     <input type="hidden" value="0" data-line-total>
                   </div>
-                  {% if item_form.DELETE %}
-                    <div class="form-check">
-                      {{ item_form.DELETE }}
-                      <label class="form-check-label">Remover</label>
-                    </div>
-                  {% endif %}
+                  {% if item_form.DELETE %}<div class="d-none">{{ item_form.DELETE }}</div>{% endif %}
+                  <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row>
+                    <i class="bi bi-trash me-1"></i>
+                    Remover item
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="order-card">
+          <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+            <div>
+              <div class="order-kicker">Bebidas</div>
+              <h2 class="h6 mb-0">Bebidas do pedido</h2>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-add-beverage>
+              <i class="bi bi-plus-circle me-1"></i>
+              Adicionar bebida
+            </button>
+          </div>
+          <div class="form-text mb-2">As bebidas sao independentes dos itens e podem ter quantidades diferentes.</div>
+
+          {{ beverage_formset.management_form }}
+          {% with empty_beverage=beverage_formset.empty_form %}
+            <template data-beverages-template>
+              <div class="item-line" data-beverage-line>
+                <div class="item-line-grid">
+                  <div>
+                    <label class="form-label small mb-1">Bebida</label>
+                    {{ empty_beverage.menu_item }}
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">Qtd</label>
+                    {{ empty_beverage.quantity }}
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">Preco base</label>
+                    {{ empty_beverage.unit_price }}
+                  </div>
+                </div>
+                <div class="item-row-actions">
+                  <div class="line-total-pill">
+                    <div class="text-muted small">Total bebida</div>
+                    <div class="fw-semibold" data-beverage-line-total-text>0,00 MZN</div>
+                    <input type="hidden" value="0" data-beverage-line-total>
+                  </div>
+                  <div class="d-none">{{ empty_beverage.DELETE }}</div>
+                  <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row>
+                    <i class="bi bi-trash me-1"></i>
+                    Remover bebida
+                  </button>
+                </div>
+              </div>
+            </template>
+          {% endwith %}
+
+          <div class="item-lines" data-beverages-body>
+            {% for beverage_form in beverage_formset %}
+              <div class="item-line" data-beverage-line>
+                <div class="item-line-grid">
+                  <div>
+                    <label class="form-label small mb-1">Bebida</label>
+                    {{ beverage_form.menu_item }}
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">Qtd</label>
+                    {{ beverage_form.quantity }}
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">Preco base</label>
+                    {{ beverage_form.unit_price }}
+                  </div>
+                </div>
+                <div class="item-row-actions">
+                  <div class="line-total-pill">
+                    <div class="text-muted small">Total bebida</div>
+                    <div class="fw-semibold" data-beverage-line-total-text>0,00 MZN</div>
+                    <input type="hidden" value="0" data-beverage-line-total>
+                  </div>
+                  {% if beverage_form.DELETE %}<div class="d-none">{{ beverage_form.DELETE }}</div>{% endif %}
+                  <button class="btn btn-sm btn-outline-danger" type="button" data-remove-row>
+                    <i class="bi bi-trash me-1"></i>
+                    Remover bebida
+                  </button>
                 </div>
               </div>
             {% endfor %}
@@ -378,7 +451,6 @@
           var qtyInput = row.querySelector("[data-order-qty]");
           var priceInput = row.querySelector("[data-order-price]");
           var complementsSelect = row.querySelector("[data-order-complements]");
-          var beveragesSelect = row.querySelector("[data-order-beverages]");
           var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
           var lineOutput = row.querySelector("[data-line-total]");
           var lineOutputText = row.querySelector("[data-line-total-text]");
@@ -389,12 +461,28 @@
           selectedValues(complementsSelect).forEach(function (itemId) {
             addOnPrice += Number((productPrices[itemId] || {}).sale || 0);
           });
-          selectedValues(beveragesSelect).forEach(function (itemId) {
-            addOnPrice += Number((productPrices[itemId] || {}).sale || 0);
-          });
           var unitTotal = basePrice + addOnPrice;
           var lineTotal = qty * unitTotal;
 
+          if (lineOutput) {
+            lineOutput.value = String(lineTotal);
+          }
+          if (lineOutputText) {
+            lineOutputText.textContent = formatMoney(lineTotal);
+          }
+          if (!deleteInput || !deleteInput.checked) {
+            subtotal += lineTotal;
+          }
+        });
+        form.querySelectorAll("[data-beverage-line]").forEach(function (row) {
+          var qtyInput = row.querySelector("[data-order-beverage-qty]");
+          var priceInput = row.querySelector("[data-order-beverage-price]");
+          var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+          var lineOutput = row.querySelector("[data-beverage-line-total]");
+          var lineOutputText = row.querySelector("[data-beverage-line-total-text]");
+          var qty = Math.max(parseInt(numberFromInput(qtyInput), 10) || 0, 0);
+          var basePrice = numberFromInput(priceInput);
+          var lineTotal = qty * basePrice;
           if (lineOutput) {
             lineOutput.value = String(lineTotal);
           }
@@ -438,15 +526,49 @@
             productSelect.tomselect.on("change", syncProductPrice);
           }
         }
-        row.querySelectorAll("[data-order-qty], [data-order-price], [data-order-complements], [data-order-beverages]").forEach(function (input) {
+        row.querySelectorAll("[data-order-qty], [data-order-price], [data-order-complements]").forEach(function (input) {
           input.addEventListener("change", recalcTotals);
           input.addEventListener("input", recalcTotals);
         });
         syncProductPrice();
       };
 
+      var bindBeverageRow = function (row) {
+        if (!row) return;
+        var beverageSelect = row.querySelector("[data-order-beverage-item]");
+        var priceInput = row.querySelector("[data-order-beverage-price]");
+        if (priceInput) {
+          priceInput.readOnly = true;
+        }
+        var syncBeveragePrice = function () {
+          if (!beverageSelect || !priceInput) return;
+          var beverageId = selectedValue(beverageSelect);
+          var data = productPrices[beverageId] || {};
+          if (data.sale !== undefined && data.sale !== null) {
+            priceInput.value = String(data.sale).replace(".", ",");
+          } else if (!beverageId) {
+            priceInput.value = "";
+          }
+          recalcTotals();
+        };
+        if (beverageSelect) {
+          beverageSelect.addEventListener("change", syncBeveragePrice);
+          if (beverageSelect.tomselect && typeof beverageSelect.tomselect.on === "function") {
+            beverageSelect.tomselect.on("change", syncBeveragePrice);
+          }
+        }
+        row.querySelectorAll("[data-order-beverage-qty], [data-order-beverage-price]").forEach(function (input) {
+          input.addEventListener("change", recalcTotals);
+          input.addEventListener("input", recalcTotals);
+        });
+        syncBeveragePrice();
+      };
+
       form.querySelectorAll("[data-item-line]").forEach(function (row) {
         bindRow(row);
+      });
+      form.querySelectorAll("[data-beverage-line]").forEach(function (row) {
+        bindBeverageRow(row);
       });
 
       var addButton = form.querySelector("[data-add-item]");
@@ -471,6 +593,45 @@
           row.scrollIntoView({ behavior: "smooth", block: "center" });
         });
       }
+
+      var addBeverageButton = form.querySelector("[data-add-beverage]");
+      if (addBeverageButton) {
+        addBeverageButton.addEventListener("click", function () {
+          var totalForms = form.querySelector("input[name='beverages-TOTAL_FORMS']");
+          var template = form.querySelector("template[data-beverages-template]");
+          var body = form.querySelector("[data-beverages-body]");
+          if (!totalForms || !template || !body) return;
+          var count = parseInt(totalForms.value || "0", 10);
+          var wrapper = document.createElement("div");
+          wrapper.innerHTML = template.innerHTML.replace(/__prefix__/g, count).trim();
+          var row = wrapper.firstElementChild;
+          if (!row) return;
+          body.appendChild(row);
+          totalForms.value = count + 1;
+          if (window.initTomSelect) {
+            window.initTomSelect(row);
+          }
+          bindBeverageRow(row);
+          recalcTotals();
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+
+      form.addEventListener("click", function (event) {
+        var removeButton = event.target.closest("[data-remove-row]");
+        if (!removeButton) return;
+        event.preventDefault();
+        var row = removeButton.closest("[data-item-line], [data-beverage-line]");
+        if (!row) return;
+        var deleteInput = row.querySelector("input[type='checkbox'][name$='DELETE']");
+        if (deleteInput) {
+          deleteInput.checked = true;
+          row.style.display = "none";
+        } else {
+          row.remove();
+        }
+        recalcTotals();
+      });
 
       var channelField = form.querySelector("[name='channel']");
       var deliverySection = document.querySelector("[data-delivery-section]");

@@ -31,6 +31,7 @@ from food.forms import (
     MenuCategoryForm,
     MenuItemForm,
     MenuItemRecipeFormSet,
+    OrderBeverageFormSet,
     OrderForm,
     OrderItemFormSet,
     OrderPaymentForm,
@@ -110,6 +111,7 @@ def _burger_order_menu_sets(business):
         "complements": items.filter(item_type=MenuItem.TYPE_COMPLEMENT).order_by("name"),
         "beverages": items.filter(
             item_type=MenuItem.TYPE_BEVERAGE,
+            ingredient__category=FoodIngredient.CATEGORY_BEVERAGE,
             ingredient__usage_type__in=[
                 FoodIngredient.USAGE_SELLABLE,
                 FoodIngredient.USAGE_BOTH,
@@ -207,20 +209,30 @@ def order_create(request):
         return redirect("reports:dashboard")
 
     menu_sets = _burger_order_menu_sets(request.business)
-    form_kwargs = {
+    item_form_kwargs = {
         "form_kwargs": {
             "products": menu_sets["main_items"],
             "complement_items": menu_sets["complements"],
-            "beverage_items": menu_sets["beverages"],
             "business": request.business,
         },
+    }
+    beverage_form_kwargs = {
+        "form_kwargs": {
+            "beverage_items": menu_sets["beverages"],
+            "business": request.business,
+        }
     }
 
     if request.method == "POST":
         form = OrderForm(request.POST, business=request.business)
-        formset = OrderItemFormSet(request.POST, prefix="items", **form_kwargs)
+        formset = OrderItemFormSet(request.POST, prefix="items", **item_form_kwargs)
+        beverage_formset = OrderBeverageFormSet(
+            request.POST,
+            prefix="beverages",
+            **beverage_form_kwargs,
+        )
         delivery_form = DeliveryInfoForm(request.POST, prefix="delivery")
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid() and formset.is_valid() and beverage_formset.is_valid():
             items = []
             for item_form in formset:
                 if item_form.cleaned_data.get("DELETE"):
@@ -230,7 +242,6 @@ def order_create(request):
                 unit_price = item_form.cleaned_data.get("unit_price")
                 notes = item_form.cleaned_data.get("notes")
                 complements = list(item_form.cleaned_data.get("complements") or [])
-                beverages = list(item_form.cleaned_data.get("beverages") or [])
                 if not product or not quantity:
                     continue
                 items.append(
@@ -251,15 +262,40 @@ def order_create(request):
                                 "notes": f"Complemento de {product.name}",
                             }
                         )
-                    for beverage in beverages:
-                        items.append(
-                            {
-                                "menu_item": beverage,
-                                "quantity": quantity,
-                                "unit_price": beverage.selling_price,
-                                "notes": f"Bebida de {product.name}",
-                            }
-                        )
+            for beverage_form in beverage_formset:
+                if beverage_form.cleaned_data.get("DELETE"):
+                    continue
+                beverage = beverage_form.cleaned_data.get("menu_item")
+                beverage_qty = beverage_form.cleaned_data.get("quantity")
+                beverage_unit_price = beverage_form.cleaned_data.get("unit_price")
+                beverage_notes = beverage_form.cleaned_data.get("notes")
+                if not beverage or not beverage_qty:
+                    continue
+                items.append(
+                    {
+                        "menu_item": beverage,
+                        "quantity": beverage_qty,
+                        "unit_price": beverage_unit_price or beverage.selling_price,
+                        "notes": (beverage_notes or "").strip() or "Bebida",
+                    }
+                )
+
+            if not items:
+                messages.error(request, "Adicione pelo menos um prato ou bebida.")
+                return render(
+                    request,
+                    "food/order_form.html",
+                    {
+                        "form": form,
+                        "formset": formset,
+                        "beverage_formset": beverage_formset,
+                        "delivery_form": delivery_form,
+                        "product_prices": _product_prices(request.business),
+                        "ingredient_preview": _ingredient_preview_data(request.business),
+                        "pay_before_service": request.business.feature_enabled("pay_before_service"),
+                        "tables_enabled": _tables_enabled(request.business),
+                    },
+                )
 
             delivery_data = None
             if form.cleaned_data.get("channel") == Order.CHANNEL_DELIVERY:
@@ -273,6 +309,7 @@ def order_create(request):
                         {
                             "form": form,
                             "formset": formset,
+                            "beverage_formset": beverage_formset,
                             "delivery_form": delivery_form,
                             "product_prices": _product_prices(request.business),
                             "ingredient_preview": _ingredient_preview_data(request.business),
@@ -297,6 +334,7 @@ def order_create(request):
                     {
                         "form": form,
                         "formset": formset,
+                        "beverage_formset": beverage_formset,
                         "delivery_form": delivery_form,
                         "product_prices": _product_prices(request.business),
                         "ingredient_preview": _ingredient_preview_data(request.business),
@@ -310,7 +348,11 @@ def order_create(request):
         messages.error(request, "Revise os campos obrigatorios.")
     else:
         form = OrderForm(business=request.business)
-        formset = OrderItemFormSet(prefix="items", **form_kwargs)
+        formset = OrderItemFormSet(prefix="items", **item_form_kwargs)
+        beverage_formset = OrderBeverageFormSet(
+            prefix="beverages",
+            **beverage_form_kwargs,
+        )
         delivery_form = DeliveryInfoForm(prefix="delivery")
 
     return render(
@@ -319,6 +361,7 @@ def order_create(request):
         {
             "form": form,
             "formset": formset,
+            "beverage_formset": beverage_formset,
             "delivery_form": delivery_form,
             "product_prices": _product_prices(request.business),
             "ingredient_preview": _ingredient_preview_data(request.business),

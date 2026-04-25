@@ -109,11 +109,6 @@ class OrderItemForm(forms.ModelForm):
         required=False,
         label="Complementos",
     )
-    beverages = forms.ModelMultipleChoiceField(
-        queryset=MenuItem.objects.none(),
-        required=False,
-        label="Bebidas",
-    )
 
     class Meta:
         model = OrderItem
@@ -128,7 +123,6 @@ class OrderItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         products = kwargs.pop("products", None)
         complement_items = kwargs.pop("complement_items", None)
-        beverage_items = kwargs.pop("beverage_items", None)
         business = kwargs.pop("business", None)
         super().__init__(*args, **kwargs)
         if products is not None:
@@ -144,23 +138,6 @@ class OrderItemForm(forms.ModelForm):
                 )
                 .order_by("name")
             )
-        if beverage_items is not None:
-            self.fields["beverages"].queryset = beverage_items
-        elif business is not None and business.business_type == business.BUSINESS_BURGER:
-            self.fields["beverages"].queryset = (
-                MenuItem.objects.filter(
-                    business=business,
-                    is_active=True,
-                    item_type=MenuItem.TYPE_BEVERAGE,
-                    ingredient__usage_type__in=[
-                        FoodIngredient.USAGE_SELLABLE,
-                        FoodIngredient.USAGE_BOTH,
-                    ],
-                )
-                .select_related("ingredient")
-                .order_by("name")
-                .distinct()
-            )
         self.fields["quantity"].widget.attrs.update(
             {"inputmode": "numeric", "step": "1", "min": "1", "data-order-qty": "true"}
         )
@@ -174,7 +151,6 @@ class OrderItemForm(forms.ModelForm):
             }
         )
         self.fields["complements"].widget.attrs.update({"data-order-complements": "true"})
-        self.fields["beverages"].widget.attrs.update({"data-order-beverages": "true"})
         self.fields["notes"].widget.attrs.update(
             {
                 "data-order-notes": "true",
@@ -186,7 +162,6 @@ class OrderItemForm(forms.ModelForm):
         self.fields["unit_price"].required = False
         self.fields["notes"].required = False
         self.fields["complements"].required = False
-        self.fields["beverages"].required = False
         for name, field in self.fields.items():
             if isinstance(field.widget, forms.SelectMultiple):
                 field.widget.attrs["class"] = "form-select tom-select"
@@ -201,13 +176,11 @@ class OrderItemForm(forms.ModelForm):
         self.fields["menu_item"].widget.attrs["data-placeholder"] = "Pesquisar prato..."
         self.fields["menu_item"].widget.attrs["data-dropdown-parent"] = "self"
         self.fields["complements"].widget.attrs["data-placeholder"] = "Batata, molho, queijo extra..."
-        self.fields["beverages"].widget.attrs["data-placeholder"] = "Refresco, agua, sumo..."
 
 
 class OrderItemBaseFormSet(BaseFormSet):
     def clean(self):
         super().clean()
-        has_any = False
         for form in self.forms:
             if not hasattr(form, "cleaned_data"):
                 continue
@@ -215,17 +188,97 @@ class OrderItemBaseFormSet(BaseFormSet):
                 continue
             product = form.cleaned_data.get("menu_item")
             quantity = form.cleaned_data.get("quantity")
-            price = form.cleaned_data.get("unit_price")
-            if product or quantity or price:
-                has_any = True
             if product and (not quantity or quantity <= 0):
                 raise forms.ValidationError("Informe a quantidade dos itens.")
-        if not has_any:
-            raise forms.ValidationError("Adicione pelo menos um item.")
 
 
 OrderItemFormSet = formset_factory(
     OrderItemForm, formset=OrderItemBaseFormSet, extra=1, can_delete=True
+)
+
+
+class OrderBeverageForm(forms.ModelForm):
+    class Meta:
+        model = OrderItem
+        fields = ["menu_item", "quantity", "unit_price", "notes"]
+        labels = {
+            "menu_item": "Bebida",
+            "quantity": "Qtd",
+            "unit_price": "Preco base",
+            "notes": "Observacoes",
+        }
+
+    def __init__(self, *args, **kwargs):
+        beverage_items = kwargs.pop("beverage_items", None)
+        business = kwargs.pop("business", None)
+        super().__init__(*args, **kwargs)
+        if beverage_items is not None:
+            self.fields["menu_item"].queryset = beverage_items
+        elif business is not None and business.business_type == business.BUSINESS_BURGER:
+            self.fields["menu_item"].queryset = (
+                MenuItem.objects.filter(
+                    business=business,
+                    is_active=True,
+                    item_type=MenuItem.TYPE_BEVERAGE,
+                    ingredient__category=FoodIngredient.CATEGORY_BEVERAGE,
+                    ingredient__usage_type__in=[
+                        FoodIngredient.USAGE_SELLABLE,
+                        FoodIngredient.USAGE_BOTH,
+                    ],
+                )
+                .select_related("ingredient")
+                .order_by("name")
+                .distinct()
+            )
+        self.fields["quantity"].widget.attrs.update(
+            {
+                "inputmode": "numeric",
+                "step": "1",
+                "min": "1",
+                "data-order-beverage-qty": "true",
+            }
+        )
+        self.fields["unit_price"].widget.attrs.update(
+            {
+                "inputmode": "decimal",
+                "step": "0.01",
+                "min": "0",
+                "data-order-beverage-price": "true",
+                "readonly": "readonly",
+            }
+        )
+        self.fields["menu_item"].required = False
+        self.fields["quantity"].required = False
+        self.fields["unit_price"].required = False
+        self.fields["notes"].required = False
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs["class"] = "form-select tom-select"
+                field.widget.attrs["data-dropdown-parent"] = "self"
+            else:
+                field.widget.attrs["class"] = "form-control"
+            if field.required:
+                field.widget.attrs["required"] = "required"
+        self.fields["menu_item"].widget.attrs["data-placeholder"] = "Selecionar bebida..."
+        self.fields["menu_item"].widget.attrs["data-order-beverage-item"] = "true"
+
+
+class OrderBeverageBaseFormSet(BaseFormSet):
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get("DELETE"):
+                continue
+            menu_item = form.cleaned_data.get("menu_item")
+            quantity = form.cleaned_data.get("quantity")
+            if menu_item and (not quantity or quantity <= 0):
+                raise forms.ValidationError("Informe a quantidade das bebidas.")
+
+
+OrderBeverageFormSet = formset_factory(
+    OrderBeverageForm, formset=OrderBeverageBaseFormSet, extra=1, can_delete=True
 )
 
 

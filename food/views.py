@@ -97,6 +97,29 @@ def _sellable_ingredients(business):
     return ingredients.order_by("name")
 
 
+def _burger_order_menu_sets(business):
+    items = MenuItem.objects.filter(business=business, is_active=True)
+    if business.business_type != Business.BUSINESS_BURGER:
+        return {
+            "main_items": items.order_by("name"),
+            "complements": MenuItem.objects.none(),
+            "beverages": MenuItem.objects.none(),
+        }
+    return {
+        "main_items": items.filter(item_type=MenuItem.TYPE_FOOD).order_by("name"),
+        "complements": items.filter(item_type=MenuItem.TYPE_COMPLEMENT).order_by("name"),
+        "beverages": items.filter(
+            item_type=MenuItem.TYPE_BEVERAGE,
+            ingredient__usage_type__in=[
+                FoodIngredient.USAGE_SELLABLE,
+                FoodIngredient.USAGE_BOTH,
+            ],
+        )
+        .order_by("name")
+        .distinct(),
+    }
+
+
 @login_required
 @business_required
 @permission_required("food.view_order", raise_exception=True)
@@ -183,9 +206,12 @@ def order_create(request):
     if not _food_enabled(request.business):
         return redirect("reports:dashboard")
 
+    menu_sets = _burger_order_menu_sets(request.business)
     form_kwargs = {
         "form_kwargs": {
-            "products": MenuItem.objects.filter(business=request.business, is_active=True),
+            "products": menu_sets["main_items"],
+            "complement_items": menu_sets["complements"],
+            "beverage_items": menu_sets["beverages"],
             "business": request.business,
         },
     }
@@ -203,8 +229,8 @@ def order_create(request):
                 quantity = item_form.cleaned_data.get("quantity")
                 unit_price = item_form.cleaned_data.get("unit_price")
                 notes = item_form.cleaned_data.get("notes")
-                variant = item_form.cleaned_data.get("variant")
-                extras = list(item_form.cleaned_data.get("extras") or [])
+                complements = list(item_form.cleaned_data.get("complements") or [])
+                beverages = list(item_form.cleaned_data.get("beverages") or [])
                 if not product or not quantity:
                     continue
                 items.append(
@@ -213,10 +239,27 @@ def order_create(request):
                         "quantity": quantity,
                         "unit_price": unit_price or product.selling_price,
                         "notes": notes or "",
-                        "variant": variant,
-                        "extras": extras,
                     }
                 )
+                if request.business.business_type == Business.BUSINESS_BURGER:
+                    for complement in complements:
+                        items.append(
+                            {
+                                "menu_item": complement,
+                                "quantity": quantity,
+                                "unit_price": complement.selling_price,
+                                "notes": f"Complemento de {product.name}",
+                            }
+                        )
+                    for beverage in beverages:
+                        items.append(
+                            {
+                                "menu_item": beverage,
+                                "quantity": quantity,
+                                "unit_price": beverage.selling_price,
+                                "notes": f"Bebida de {product.name}",
+                            }
+                        )
 
             delivery_data = None
             if form.cleaned_data.get("channel") == Order.CHANNEL_DELIVERY:
@@ -232,7 +275,6 @@ def order_create(request):
                             "formset": formset,
                             "delivery_form": delivery_form,
                             "product_prices": _product_prices(request.business),
-                            "extra_prices": _extra_prices(request.business),
                             "ingredient_preview": _ingredient_preview_data(request.business),
                             "pay_before_service": request.business.feature_enabled("pay_before_service"),
                             "tables_enabled": _tables_enabled(request.business),
@@ -257,7 +299,6 @@ def order_create(request):
                         "formset": formset,
                         "delivery_form": delivery_form,
                         "product_prices": _product_prices(request.business),
-                        "extra_prices": _extra_prices(request.business),
                         "ingredient_preview": _ingredient_preview_data(request.business),
                         "pay_before_service": request.business.feature_enabled("pay_before_service"),
                         "tables_enabled": _tables_enabled(request.business),
@@ -280,7 +321,6 @@ def order_create(request):
             "formset": formset,
             "delivery_form": delivery_form,
             "product_prices": _product_prices(request.business),
-            "extra_prices": _extra_prices(request.business),
             "ingredient_preview": _ingredient_preview_data(request.business),
             "pay_before_service": request.business.feature_enabled("pay_before_service"),
             "tables_enabled": _tables_enabled(request.business),
@@ -1879,13 +1919,6 @@ def _product_prices(business):
     return {
         str(prod.id): {"sale": float(prod.selling_price)}
         for prod in MenuItem.objects.filter(business=business, is_active=True)
-    }
-
-
-def _extra_prices(business):
-    return {
-        str(extra.id): float(extra.extra_price)
-        for extra in FoodExtra.objects.filter(business=business, is_active=True)
     }
 
 

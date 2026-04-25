@@ -61,7 +61,8 @@ DEFAULT_MENU_CATEGORIES = [
 
 DEFAULT_MENU_TYPES = [
     ("food", "Prato"),
-    ("beverage", "Produto vendido sozinho"),
+    ("complement", "Complemento"),
+    ("beverage", "Bebida"),
 ]
 
 
@@ -95,11 +96,21 @@ def ensure_default_menu_options(business):
             defaults={"is_active": True},
         )
     for code, name in DEFAULT_MENU_TYPES:
-        MenuItemType.objects.get_or_create(
+        item_type, created = MenuItemType.objects.get_or_create(
             business=business,
             code=code,
             defaults={"name": name, "is_active": True},
         )
+        if not created:
+            update_fields = []
+            if item_type.name != name:
+                item_type.name = name
+                update_fields.append("name")
+            if not item_type.is_active:
+                item_type.is_active = True
+                update_fields.append("is_active")
+            if update_fields:
+                item_type.save(update_fields=update_fields)
 
 
 def _calculate_totals(*, business, items):

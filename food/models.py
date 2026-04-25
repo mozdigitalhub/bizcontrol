@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.utils.text import slugify
 
 from catalog.models import Product
 from customers.models import Customer
@@ -104,6 +105,9 @@ class Order(models.Model):
     tax_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
+    preparation_started_at = models.DateTimeField(null=True, blank=True)
+    ready_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -155,11 +159,41 @@ class MenuCategory(models.Model):
         return self.name
 
 
+class MenuItemType(models.Model):
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="menu_item_types"
+    )
+    name = models.CharField(max_length=80)
+    code = models.SlugField(max_length=30)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"],
+                name="uniq_menu_item_type_business_code",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["business", "name"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)[:30] or "tipo"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class MenuItem(models.Model):
     TYPE_FOOD = "food"
+    TYPE_COMPLEMENT = "complement"
     TYPE_BEVERAGE = "beverage"
     TYPE_CHOICES = [
-        (TYPE_FOOD, "Comida"),
+        (TYPE_FOOD, "Prato"),
+        (TYPE_COMPLEMENT, "Complemento"),
         (TYPE_BEVERAGE, "Bebida"),
     ]
 
@@ -216,8 +250,8 @@ class FoodExtra(models.Model):
     TYPE_EXTRA = "extra"
     TYPE_VARIANT = "variant"
     TYPE_CHOICES = [
-        (TYPE_EXTRA, "Extra"),
-        (TYPE_VARIANT, "Variante"),
+        (TYPE_EXTRA, "Complemento"),
+        (TYPE_VARIANT, "Bebida adicional"),
     ]
 
     business = models.ForeignKey(
@@ -226,6 +260,13 @@ class FoodExtra(models.Model):
     name = models.CharField(max_length=120)
     extra_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_EXTRA)
     extra_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    ingredient = models.ForeignKey(
+        "FoodIngredient",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="food_complements",
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -269,21 +310,115 @@ class OrderPayment(models.Model):
         return f"{self.order_id} - {self.amount}"
 
 
+class FoodIngredientCategory(models.Model):
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="food_ingredient_categories"
+    )
+    name = models.CharField(max_length=80)
+    code = models.SlugField(max_length=30)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"],
+                name="uniq_food_ingredient_category_business_code",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["business", "name"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)[:30] or "categoria"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class FoodIngredientUnit(models.Model):
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="food_ingredient_units"
+    )
+    name = models.CharField(max_length=80)
+    code = models.SlugField(max_length=20)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["business", "code"],
+                name="uniq_food_ingredient_unit_business_code",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["business", "name"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)[:20] or "unidade"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class FoodIngredient(models.Model):
+    USAGE_RECIPE = "recipe"
+    USAGE_SELLABLE = "sellable"
+    USAGE_BOTH = "both"
+    USAGE_CHOICES = [
+        (USAGE_RECIPE, "Composicao de pratos"),
+        (USAGE_SELLABLE, "Produto vendavel"),
+        (USAGE_BOTH, "Composicao e venda"),
+    ]
+
+    CATEGORY_MEAT = "meat"
+    CATEGORY_BREAD = "bread"
+    CATEGORY_DAIRY = "dairy"
+    CATEGORY_BEVERAGE = "beverage"
+    CATEGORY_SAUCE = "sauce"
+    CATEGORY_PACKAGING = "packaging"
+    CATEGORY_EXTRA = "extra"
+    CATEGORY_CONDIMENT = "condiment"
+    CATEGORY_OTHER = "other"
+    CATEGORY_CHOICES = [
+        (CATEGORY_MEAT, "Carnes"),
+        (CATEGORY_BREAD, "Paes"),
+        (CATEGORY_DAIRY, "Laticinios"),
+        (CATEGORY_BEVERAGE, "Bebidas"),
+        (CATEGORY_SAUCE, "Molhos"),
+        (CATEGORY_PACKAGING, "Embalagens"),
+        (CATEGORY_EXTRA, "Extras"),
+        (CATEGORY_CONDIMENT, "Condimentos"),
+        (CATEGORY_OTHER, "Outros"),
+    ]
+
     business = models.ForeignKey(
         Business, on_delete=models.CASCADE, related_name="food_ingredients"
     )
     name = models.CharField(max_length=120)
+    category = models.CharField(
+        max_length=30, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER
+    )
+    usage_type = models.CharField(
+        max_length=20, choices=USAGE_CHOICES, default=USAGE_RECIPE
+    )
     unit = models.CharField(max_length=20, blank=True)
     cost_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     reorder_level = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     stock_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    stock_control = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ("business", "name")
         indexes = [
             models.Index(fields=["business", "name"]),
+            models.Index(fields=["business", "category"]),
         ]
 
     def __str__(self):
@@ -333,8 +468,20 @@ class IngredientStockEntryItem(models.Model):
         IngredientStockEntry, on_delete=models.CASCADE, related_name="items"
     )
     ingredient = models.ForeignKey(FoodIngredient, on_delete=models.PROTECT)
+    purchased_quantity = models.DecimalField(
+        max_digits=12, decimal_places=3, null=True, blank=True
+    )
+    purchase_unit = models.CharField(max_length=30, blank=True)
+    conversion_factor = models.DecimalField(
+        max_digits=12, decimal_places=3, default=1
+    )
     quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    total_cost = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
     unit_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    batch_number = models.CharField(max_length=80, blank=True)
 
     def __str__(self):
         return f"{self.ingredient} {self.quantity}"
@@ -344,10 +491,14 @@ class IngredientMovement(models.Model):
     MOVEMENT_IN = "in"
     MOVEMENT_OUT = "out"
     MOVEMENT_ADJUST = "adjust"
+    MOVEMENT_CANCEL = "cancel"
+    MOVEMENT_WASTE = "waste"
     MOVEMENT_CHOICES = [
         (MOVEMENT_IN, "Entrada"),
-        (MOVEMENT_OUT, "Saida"),
+        (MOVEMENT_OUT, "Venda/consumo"),
         (MOVEMENT_ADJUST, "Ajuste"),
+        (MOVEMENT_CANCEL, "Cancelamento/devolucao"),
+        (MOVEMENT_WASTE, "Perda/desperdicio"),
     ]
 
     business = models.ForeignKey(
@@ -356,6 +507,7 @@ class IngredientMovement(models.Model):
     ingredient = models.ForeignKey(FoodIngredient, on_delete=models.PROTECT)
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_CHOICES)
     quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    unit = models.CharField(max_length=20, blank=True)
     reference_type = models.CharField(max_length=30, blank=True)
     reference_id = models.PositiveIntegerField(null=True, blank=True)
     notes = models.CharField(max_length=255, blank=True)

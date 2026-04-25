@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Editar item{% else %}Novo item{% endif %} - BizControl{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .menu-form-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .menu-form-section {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+    }
+
+    .section-kicker {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .recipe-lines {
+      display: grid;
+      gap: 10px;
+    }
+
+    .recipe-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .recipe-line-actions {
+      display: flex;
+      align-items: end;
+    }
+
+    .menu-image-preview {
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .menu-image-preview img {
+      max-width: 100%;
+      max-height: 220px;
+      display: block;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .menu-image-empty {
+      color: #64748b;
+      font-size: 13px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .recipe-line {
+        grid-template-columns: minmax(220px, 1.2fr) minmax(140px, 0.6fr) minmax(140px, 0.6fr) auto;
+        align-items: end;
+      }
+    }
+
+    @media (min-width: 992px) {
+      .menu-form-shell {
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+        align-items: start;
+      }
+
+      .recipe-section {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  {{ ingredient_preview|json_script:"recipe-ingredient-data" }}
+
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1">{% if is_edit %}Editar item do menu{% else %}Novo item do menu{% endif %}</h1>
+      <div class="text-muted small">Registe pratos, complementos e bebidas com preco e vinculo de stock.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'food:menu_list' %}">Voltar</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" data-menu-item-form>
+    {% csrf_token %}
+    {% if form.non_field_errors or formset.non_form_errors %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors|striptags }}
+        {{ formset.non_form_errors|striptags }}
+      </div>
+    {% endif %}
+
+    <div class="menu-form-shell">
+      <section class="menu-form-section">
+        <div class="section-kicker mb-1">Dados do item</div>
+        <h2 class="h6 mb-3">Identificacao no menu</h2>
+        <div class="row g-3">
+          <div class="col-md-7">
+            <label class="form-label required">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label required">{{ form.item_type.label }}</label>
+            {{ form.item_type }}
+            {% if form.item_type.errors %}<div class="invalid-feedback d-block">{{ form.item_type.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-7">
+            <label class="form-label">{{ form.category.label }}</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label required">{{ form.selling_price.label }}</label>
+            {{ form.selling_price }}
+            {% if form.selling_price.errors %}<div class="invalid-feedback d-block">{{ form.selling_price.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <div class="form-check form-switch">
+              {{ form.is_active }}
+              <label class="form-check-label fw-semibold">{{ form.is_active.label }}</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="menu-form-section">
+        <div class="section-kicker mb-1">Stock e imagem</div>
+        <h2 class="h6 mb-3">Venda e apresentacao</h2>
+        <div class="row g-3">
+          <div class="col-12" data-linked-ingredient-field>
+            <label class="form-label">{{ form.ingredient.label }}</label>
+            {{ form.ingredient }}
+            <div class="form-text">
+              Para complementos e bebidas vendaveis. Cada unidade vendida baixa 1 unidade base deste insumo.
+            </div>
+            {% if form.ingredient.errors %}<div class="invalid-feedback d-block">{{ form.ingredient.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ form.image.label }}</label>
+            {{ form.image }}
+            <div class="menu-image-preview mt-2" data-image-preview-box>
+              {% if is_edit and item and item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" data-image-preview>
+              {% else %}
+                <div class="menu-image-empty" data-image-placeholder>Pre-visualizacao da imagem</div>
+              {% endif %}
+            </div>
+            {% if form.image.errors %}<div class="invalid-feedback d-block">{{ form.image.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-12">
+            <div class="alert alert-info mb-0 small" data-menu-mode-help>
+              <strong>Prato:</strong> use a ficha tecnica para baixar os insumos da receita.
+              <strong>Complemento/Bebida:</strong> vincule um insumo vendavel para baixar stock em cada venda.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="menu-form-section recipe-section" data-recipe-section>
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <div>
+            <div class="section-kicker mb-1">Composicao</div>
+            <h2 class="h6 mb-0">Ficha tecnica do prato</h2>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-add-recipe>
+            <i class="bi bi-plus-circle me-1"></i>
+            Adicionar insumo
+          </button>
+        </div>
+        <div class="alert alert-info py-2 small">
+          Informe a quantidade consumida na unidade base. Ex: 150 gramas de carne, 2 fatias de queijo,
+          1 unidade de pao e 1 unidade de embalagem.
+        </div>
+        {{ formset.management_form }}
+        {% with empty=formset.empty_form %}
+          <template data-recipe-template>
+            <div class="recipe-line" data-recipe-line>
+              <div>
+                <label class="form-label small mb-1">Insumo</label>
+                {{ empty.ingredient }}
+              </div>
+              <div>
+                <label class="form-label small mb-1">Qtd consumida</label>
+                {{ empty.quantity }}
+              </div>
+              <div>
+                <label class="form-label small mb-1">Unidade base</label>
+                {{ empty.unit }}
+              </div>
+              <div class="recipe-line-actions">
+                <div class="form-check">
+                  {{ empty.DELETE }}
+                  <label class="form-check-label">Remover</label>
+                </div>
+              </div>
+            </div>
+          </template>
+        {% endwith %}
+        <div class="recipe-lines" data-recipe-body>
+          {% for recipe_form in formset %}
+            <div class="recipe-line" data-recipe-line>
+              <div>
+                <label class="form-label small mb-1">Insumo</label>
+                {{ recipe_form.ingredient }}
+                {% if recipe_form.ingredient.errors %}<div class="invalid-feedback d-block">{{ recipe_form.ingredient.errors|striptags }}</div>{% endif %}
+              </div>
+              <div>
+                <label class="form-label small mb-1">Qtd consumida</label>
+                {{ recipe_form.quantity }}
+                {% if recipe_form.quantity.errors %}<div class="invalid-feedback d-block">{{ recipe_form.quantity.errors|striptags }}</div>{% endif %}
+              </div>
+              <div>
+                <label class="form-label small mb-1">Unidade base</label>
+                {{ recipe_form.unit }}
+                {% if recipe_form.unit.errors %}<div class="invalid-feedback d-block">{{ recipe_form.unit.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="recipe-line-actions">
+                {% if recipe_form.DELETE %}
+                  <div class="form-check">
+                    {{ recipe_form.DELETE }}
+                    <label class="form-check-label">Remover</label>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="form-note mt-2">Complementos e bebidas nao precisam de ficha tecnica.</div>
+      </section>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+      <button class="btn btn-primary btn-lg" type="submit">Guardar item</button>
+    </div>
+  </form>
+
+  <script>
+    (function () {
+      var form = document.querySelector("[data-menu-item-form]");
+      if (!form) return;
+      var addButton = form.querySelector("[data-add-recipe]");
+      var dataNode = document.getElementById("recipe-ingredient-data");
+      var ingredientData = dataNode ? JSON.parse(dataNode.textContent || "{}") : {};
+      var imageInput = form.querySelector('[name="image"]');
+      var imageBox = form.querySelector("[data-image-preview-box]");
+
+      function syncRecipeUnit(row) {
+        var ingredient = row.querySelector('[name$="-ingredient"]');
+        var unit = row.querySelector('[name$="-unit"]');
+        if (!ingredient || !unit) return;
+        var selected = ingredientData[ingredient.value];
+        if (selected && selected.unit) {
+          unit.value = selected.unit;
+          unit.readOnly = true;
+        }
+      }
+
+      function syncMenuMode() {
+        var typeSelect = form.querySelector('[name="item_type"]');
+        var recipeSection = form.querySelector("[data-recipe-section]");
+        var linkedField = form.querySelector("[data-linked-ingredient-field]");
+        if (!typeSelect || !recipeSection || !linkedField) return;
+        var isFood = typeSelect.value === "food";
+        recipeSection.style.display = isFood ? "" : "none";
+        linkedField.style.display = isFood ? "none" : "";
+      }
+
+      function syncImagePreview() {
+        if (!imageInput || !imageBox) return;
+        var preview = imageBox.querySelector("[data-image-preview]");
+        var placeholder = imageBox.querySelector("[data-image-placeholder]");
+        var file = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+
+        if (!file) {
+          if (!preview && !placeholder) {
+            imageBox.innerHTML = '<div class="menu-image-empty" data-image-placeholder>Pre-visualizacao da imagem</div>';
+          }
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (event) {
+          if (!preview) {
+            imageBox.innerHTML = '<img alt="Pre-visualizacao" data-image-preview>';
+            preview = imageBox.querySelector("[data-image-preview]");
+          }
+          if (placeholder) {
+            placeholder.remove();
+          }
+          preview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      form.querySelectorAll("[data-recipe-line]").forEach(function (row) {
+        syncRecipeUnit(row);
+        row.addEventListener("change", function () {
+          syncRecipeUnit(row);
+        });
+      });
+
+      var typeSelect = form.querySelector('[name="item_type"]');
+      if (typeSelect) {
+        typeSelect.addEventListener("change", syncMenuMode);
+      }
+      syncMenuMode();
+      if (imageInput) {
+        imageInput.addEventListener("change", syncImagePreview);
+      }
+
+      if (addButton) {
+        addButton.addEventListener("click", function () {
+          var totalForms = form.querySelector("input[name='recipe-TOTAL_FORMS']");
+          var template = form.querySelector("template[data-recipe-template]");
+          var body = form.querySelector("[data-recipe-body]");
+          if (!totalForms || !template || !body) return;
+          var count = parseInt(totalForms.value || "0", 10);
+          var wrapper = document.createElement("div");
+          wrapper.innerHTML = template.innerHTML.replace(/__prefix__/g, count).trim();
+          var row = wrapper.firstElementChild;
+          if (!row) return;
+          body.appendChild(row);
+          totalForms.value = count + 1;
+          if (window.initTomSelect) {
+            window.initTomSelect(row);
+          }
+          syncRecipeUnit(row);
+          row.addEventListener("change", function () {
+            syncRecipeUnit(row);
+          });
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+    })();
+  </script>
+{% endblock %}

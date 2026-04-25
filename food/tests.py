@@ -96,6 +96,7 @@ class FoodOrderTests(TestCase):
         self.assertIn("Hamburgueres", categories)
         self.assertIn("Bebidas", categories)
         self.assertIn("food", types)
+        self.assertIn("complement", types)
         self.assertIn("beverage", types)
 
     def test_restaurant_table_changes_status_with_order_flow(self):
@@ -725,3 +726,102 @@ class FoodFinancialPermissionTests(TestCase):
         self._login_with_business(self.viewer)
         response = self.client.get(reverse("food:cashflow_dashboard"))
         self.assertEqual(response.status_code, 403)
+
+
+class FoodOrderCreateBurgerFlowTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_superuser(
+            username="burger-order-admin",
+            email="burger-order-admin@example.com",
+            password="pass1234",
+        )
+        self.business = Business.objects.create(
+            name="Burger UI",
+            slug="burger-ui",
+            business_type=Business.BUSINESS_BURGER,
+        )
+        BusinessMembership.objects.create(
+            business=self.business,
+            user=self.user,
+            role=BusinessMembership.ROLE_OWNER,
+        )
+        ensure_default_menu_options(self.business)
+        self.dish = MenuItem.objects.create(
+            business=self.business,
+            name="Burger Classico",
+            item_type=MenuItem.TYPE_FOOD,
+            selling_price=Decimal("250.00"),
+        )
+        self.complement = MenuItem.objects.create(
+            business=self.business,
+            name="Dose de batatas",
+            item_type=MenuItem.TYPE_COMPLEMENT,
+            selling_price=Decimal("90.00"),
+        )
+        drink_stock = FoodIngredient.objects.create(
+            business=self.business,
+            name="Refresco lata",
+            usage_type=FoodIngredient.USAGE_SELLABLE,
+            unit="unidade",
+            stock_qty=Decimal("100.000"),
+        )
+        self.beverage = MenuItem.objects.create(
+            business=self.business,
+            name="Refresco",
+            item_type=MenuItem.TYPE_BEVERAGE,
+            selling_price=Decimal("70.00"),
+            ingredient=drink_stock,
+        )
+        self.client.force_login(self.user)
+        session = self.client.session
+        session["business_id"] = self.business.id
+        session.save()
+
+    def test_order_form_separates_dishes_complements_and_beverages(self):
+        response = self.client.get(reverse("food:order_create"))
+        self.assertEqual(response.status_code, 200)
+        form = response.context["formset"].forms[0]
+        menu_ids = set(form.fields["menu_item"].queryset.values_list("id", flat=True))
+        self.assertEqual(menu_ids, {self.dish.id})
+        self.assertIn(self.complement, form.fields["complements"].queryset)
+        self.assertIn(self.beverage, form.fields["beverages"].queryset)
+
+    def test_order_create_expands_selected_complements_and_beverages(self):
+        response = self.client.post(
+            reverse("food:order_create"),
+            {
+                "customer": "",
+                "channel": Order.CHANNEL_TAKEAWAY,
+                "table": "",
+                "notes": "",
+                "items-TOTAL_FORMS": "1",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "items-0-menu_item": str(self.dish.id),
+                "items-0-quantity": "2",
+                "items-0-unit_price": "",
+                "items-0-notes": "",
+                "items-0-complements": [str(self.complement.id)],
+                "items-0-beverages": [str(self.beverage.id)],
+                "items-0-DELETE": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.filter(business=self.business).latest("id")
+        self.assertEqual(order.items.count(), 3)
+        self.assertEqual(
+            order.items.filter(menu_item=self.dish).values_list("quantity", flat=True).first(),
+            2,
+        )
+        self.assertEqual(
+            order.items.filter(menu_item=self.complement).values_list("quantity", flat=True).first(),
+            2,
+        )
+        self.assertEqual(
+            order.items.filter(menu_item=self.beverage).values_list("quantity", flat=True).first(),
+            2,
+        )
+        expected_total = (self.dish.selling_price + self.complement.selling_price + self.beverage.selling_price) * 2
+        self.assertEqual(order.total, expected_total)

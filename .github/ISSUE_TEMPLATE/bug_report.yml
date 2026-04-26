@@ -1,0 +1,43 @@
+name: Bug report
+description: Registar erro encontrado no sistema
+title: "[BUG] "
+labels:
+  - bug
+body:
+  - type: input
+    id: context
+    attributes:
+      label: Contexto
+      placeholder: Modulo/tela onde aconteceu
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: 1. ... 2. ... 3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Resultado atual
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidade
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true

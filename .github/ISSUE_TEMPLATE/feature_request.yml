@@ -1,0 +1,37 @@
+name: Feature request
+description: Propor nova funcionalidade
+title: "[FEATURE] "
+labels:
+  - feature
+body:
+  - type: input
+    id: objective
+    attributes:
+      label: Objetivo
+      placeholder: O que esta funcionalidade resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+      placeholder: Descreva a solucao proposta
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceitacao
+      placeholder: Como validar que esta pronto?
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impacto
+      options:
+        - Alto
+        - Medio
+        - Baixo
+    validations:
+      required: true

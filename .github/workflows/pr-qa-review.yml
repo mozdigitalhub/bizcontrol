@@ -1,0 +1,78 @@
+name: PR QA Review Gate
+
+on:
+  pull_request:
+    branches:
+      - qa
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+
+concurrency:
+  group: pr-qa-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  quality-gate:
+    name: Validate PR for QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate PR linked to issue/task
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+
+          body = os.environ.get("PR_BODY", "") or ""
+          pattern = re.compile(r"(closes|fixes|resolves)\s+#\d+", re.IGNORECASE)
+          if pattern.search(body):
+              print("PR linked to issue/task.")
+              sys.exit(0)
+
+          print("::error::Add issue/task link in PR body, e.g. 'Closes #123'.")
+          sys.exit(1)
+          PY
+
+      - name: Django checks
+        env:
+          SECRET_KEY: ci-secret-key
+          DEBUG: "false"
+          USE_SPACES: "false"
+          DATABASE_URL: sqlite:///db.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          python manage.py check
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ci-secret-key
+          DEBUG: "false"
+          USE_SPACES: "false"
+          DATABASE_URL: sqlite:///db.sqlite3
+        run: |
+          python manage.py test --verbosity 2

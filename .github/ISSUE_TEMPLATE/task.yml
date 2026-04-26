@@ -1,0 +1,27 @@
+name: Task
+description: Tarefa tecnica/operacional
+title: "[TASK] "
+labels:
+  - task
+body:
+  - type: input
+    id: scope
+    attributes:
+      label: Escopo
+      placeholder: Qual area/modulo sera alterado?
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Plano de implementacao
+      placeholder: Passos tecnicos
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definicao de pronto
+      placeholder: Checklist de entrega
+    validations:
+      required: true
